@@ -1,0 +1,38 @@
+{
+  "name": "virtual_botanical_laboratory",
+  "version": "0.0.0",
+  "description": "A virtual botanical laboratory",
+  "main": "dist/node-lab.js",
+  "directories": {
+    "example": "examples",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "npm run build && mocha",
+    "build": "rollup --config noderollup.config.js && rollup --config webrollup.config.js",
+    "doc": "node_modules/jsdoc/jsdoc.js ./src --destination documentation/api --recurse --template node_modules/docdash"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/htdebeer/virtual_botanical_laboratory.git"
+  },
+  "keywords": [
+    "lsystem",
+    "JavaScript",
+    "virtual",
+    "botanical",
+    "laboratory"
+  ],
+  "author": "Huub de Beer",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/htdebeer/virtual_botanical_laboratory/issues"
+  },
+  "homepage": "https://github.com/htdebeer/virtual_botanical_laboratory#readme",
+  "devDependencies": {
+    "docdash": "^0.4.0",
+    "jsdoc": "^3.5.3",
+    "mocha": "^3.4.2",
+    "rollup": "^0.45.2"
+  }
+}
