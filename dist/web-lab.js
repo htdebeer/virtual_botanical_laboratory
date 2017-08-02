@@ -2152,7 +2152,7 @@ class Interpretation {
  * 
  */
 class TurtleInterpretation extends Interpretation {
-    constructor(x = 0, y = 0, d = 0, delta = Math.PI/2, angle = 0) {
+    constructor({x = 0, y = 0, d = 0, delta = Math.PI/2, angle = 0} = {}) {
         super();
         this.addVariable("delta", delta);
         this.addVariable("d", d);
@@ -2176,6 +2176,20 @@ class TurtleInterpretation extends Interpretation {
         });
         
         this.addCommand("F", function (canvas) {
+            this.x = this.x + this.d * Math.cos(this.angle);
+            this.y = this.y + this.d * Math.sin(this.angle);
+
+            canvas.lineTo(this.x, this.y);
+        });
+        
+        this.addCommand("Fl", function (canvas) {
+            this.x = this.x + this.d * Math.cos(this.angle);
+            this.y = this.y + this.d * Math.sin(this.angle);
+
+            canvas.lineTo(this.x, this.y);
+        });
+        
+        this.addCommand("Fr", function (canvas) {
             this.x = this.x + this.d * Math.cos(this.angle);
             this.y = this.y + this.d * Math.sin(this.angle);
 

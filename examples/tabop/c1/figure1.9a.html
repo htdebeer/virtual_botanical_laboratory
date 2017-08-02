@@ -8,7 +8,10 @@
             <h3>Prusinkiewicz and Lindenmayer (1990) <i>The Algorithmic Beauty of Plants</i> (<a
                     href="http://algorithmicbotany.org/papers/abop/abop.lowquality.pdf">pdf</a>)</h3>
             <h2>Chapter 1—Graphical modeling using L-systems</h2>
-            <h1>Figure 1.6: Generating a quadratic Koch island (p. 8)</h1>
+            <h1>Figure 1.9: A sequence of Koch curves obtained by successive
+                modification
+                of the production successor. a)
+                (p. 10)</h1>
         </header>
         <main>
             <canvas id="canvas"></canvas>
@@ -20,7 +23,7 @@ const SIMPLE_LSYSTEM = `lsystem(
     alphabet: {F, f, -, +},
     axiom: F - F - F - F,
     productions: {
-        F -> F - F + F + F F - F - F + F
+        F -> F F - F - F - F - F - F + F
     }
 )`; 
 
@@ -32,19 +35,19 @@ const canvas = canvasElement.getContext("2d");
 canvas.strokeStyle = "Crimson";
 
 const interpretation = new TurtleInterpretation({
-    x: 120, 
-    y: 120, 
-    d: 5, 
-    angle: Math.PI/2
+    x: 250, 
+    y: 300, 
+    d: 2, 
+    delta: Math.PI/2, 
+    angle: 0
 });
 const lsystem = LSystem.parse(SIMPLE_LSYSTEM);
 
 canvas.clearRect(0, 0, canvasElement.width, canvasElement.height);
 canvas.beginPath();
 
-interpretation.render(canvas, lsystem.derive(3));
+interpretation.render(canvas, lsystem.derive(4));
 
-canvas.closePath();
 canvas.stroke();
         </script>
     </body>
