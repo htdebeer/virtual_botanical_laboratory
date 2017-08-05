@@ -18,18 +18,42 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {LexicalError} from "./lsystem/LexicalError.js";
-import {ParseError} from "./lsystem/ParseError.js";
-import {LSystem} from "./lsystem/LSystem.js";
-import {Interpretation} from "./interpretation/Interpretation.js";
-import {TurtleInterpretation} from "./interpretation/TurtleInterpretation.js";
-import {CanvasTurtleInterpretation} from "./interpretation/CanvasTurtleInterpretation.js";
+import {TurtleInterpretation} from "./TurtleInterpretation.js";
+
+const _canvas = new WeakMap();
+
+class CanvasTurtleInterpretation extends TurtleInterpretation {
+    constructor(canvas, initialState = {}) {
+        super(initialState);
+        _canvas.set(this, canvas);
+    }
+
+    initialize() {
+        super.initialize();
+        const canvas = _canvas.get(this);
+        canvas.clearRect(0, 0, canvas.canvas.width, canvas.canvas.height);
+        canvas.beginPath();
+    }
+
+    finalize() {
+        super.finalize();
+        const canvas = _canvas.get(this);
+        if (this.getProperty("close", true)) {
+            canvas.closePath();
+        }
+        canvas.stroke();
+    }
+
+    moveTo(x, y) {
+        _canvas.get(this).moveTo(x, y);
+    }
+
+    lineTo(x, y) {
+        _canvas.get(this).lineTo(x, y);
+    }
+        
+}
 
 export {
-    LexicalError,
-    ParseError,
-    LSystem,
-    Interpretation,
-    TurtleInterpretation,
     CanvasTurtleInterpretation
-};
+}

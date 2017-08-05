@@ -2021,20 +2021,94 @@ const LSystem = class {
  * 
  */
 
+const _function = new WeakMap();
 
-const _scope = new WeakMap();
+class Command {
+    constructor(...args) {
+        let func;
+
+        if (0 >= args.length) {
+            // create an empty function; does do nothing
+            func = function () {};
+        } else if (1 === args.length) {
+            // create with a function or a constant
+            if ("function" === typeof args[0]) {
+                func = args[0];
+            } else {
+                func = function () { return args[0]; };
+            }
+        } else if (2 === args.length) {
+            // create with formal parameters and a function body in a string
+            func = new Function(args[0], args[1]);
+        } else {
+            // ?
+            throw new Error(`Expected at most 2 arguments, got ${args.length} instead.`);
+        }
+
+        _function.set(this, func);
+    }
+
+    /**
+     * Execute this Command in this interpretation given the supplier
+     * parameters
+     *
+     * @param {Interpretation} interpretation - the interpretation in which this command is executed
+     * @param {Array} [parameters = []] - the parameters used in this Commmand
+     */
+    execute(interpretation, parameters = []) {
+        _function.get(this).apply(interpretation, parameters);
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
 const _commands = new WeakMap();
+const _initialState = new WeakMap();
+const _states = new WeakMap();
 
 /**
  * An Interpretation of a LSystem
+ *
+ * @property {Object} state - the current state of this Interpretation.
  */
 class Interpretation {
     /**
      * Create a new instance of an LSystem Interpretation.
+     * 
+     * @param {RenderingContext|SVGElement} canvas - the canvas to draw on.
+     * @param {Object} scope - the scope of this Interpretation.
      */
-    constructor() {
+    constructor(initialState = {}) {
+        _initialState.set(this, initialState);
+        _states.set(this, []);
         _commands.set(this, {});
-        _scope.set(this, {});
+    }
+
+    get state() {
+        const states = _states.get(this);
+        if (0 === states.length) {
+            this.initialize();
+        }
+
+        return states[states.length - 1];
     }
 
     /**
@@ -2047,87 +2121,109 @@ class Interpretation {
      */
 
     /**
-     * Add a command to this Interpretation
+     * Execute a command with given parameters in the context of this
+     * Interpretation.
      *
-     * @param {String} name - the command's name
-     * @param {commandFunction} func - the actual command
+     * @param {String} name - the name of the command to execute.
+     * @param {Array} [parameters = []] - an optional list of actual
+     * parameters to apply when the command is executed.
      */
-    addCommand(name, func) {
-        _commands.get(this)[name] = func;
+    execute(name, parameters = []) {
+        const command = _commands.get(this)[name];
+
+        if (undefined === command) {
+            throw new Error(`This interpretation has no command '${name}' to execute.`);
+        }
+
+        if ("string" === typeof command) {
+            this.execute(command, parameters);
+        } else if (command instanceof Command) {
+            command.execute(this, parameters);
+        } else {
+            throw new Error(`'${name}' is not an executable command in this interpretation.`);
+        }
     }
 
     /**
-     * Get the command with 'name'.
+     * Set a property of this Interpretation.
      *
-     * @param {String} name - the name of the command to get
-     * @returns {commandFunction}
+     * @param {String} name - the name of the property.
+     * @param {Object} value - the new value of the property.
+     */
+    setProperty(name, value) {
+        this.state[name] = value;
+        // set it on the canvas/svg
+    }
+
+    /**
+     * Get a property of this Interpretation. If no such property exists, or
+     * if its value is undefined or null, return the defaultValue.
+     *
+     * @param {String} name - the name of the property.
+     * @param {defaultValue} [defaultValue = 0] - the default value of this
+     * property if no such property exists or its value is undefined or null.
+     *
+     * @returns {Object} the value of the property.
+     */
+    getProperty(name, defaultValue = 0) {
+        const value = this.state[name];
+        return (undefined === value || null === value) ? defaultValue : value;
+    }
+
+
+    /**
+     * Set a command in this Interpretation.
+     *
+     * @param {String} name - the name of the command to set.
+     * @param {Command|String} command - the command or alias to set.
+     */
+    setCommand(name, command) {
+        _commands.get(this)[name] = command;
+    }
+
+    /**
+     * Get a command in this Interpretation.
+     *
+     * @param {String} name - the name of the command to get.
+     * @returns {Command|undefined}
      */
     getCommand(name) {
-        if (this.hasCommand(name)) {
-            return _commands.get(this)[name];
+        const command = _commands.get(this)[name];
+
+        if (command instanceof Command) {
+            return command;
+        } else if ("string" === typeof command) {
+            return getCommand(command);
         } else {
             return undefined;
         }
     }
 
     /**
-     * Does this Interpretation have a command with 'name'?
-     *
-     * @param {String} name
-     * @returns {Boolean} True if a command with this name has been added.
+     * Initialize a new rendering of this interpretation.
      */
-    hasCommand(name) {
-        return name in _commands.get(this);
-    }
-
-    /**
-     * Add a global variable to this Interpretation
-     *
-     * @param {String} name - the variable's name
-     * @param {Number} [value = 0] - the variable's value
-     */
-    addVariable(name, value= 0) {
-        _scope.get(this)[name] = value;
-    }
-
-    /**
-     * Get the value of the variable in this Interpretation.
-     *
-     * @param {String} name - the name of the variable
-     * @returns {Number|undefined} The value of this variable if defined in
-     * this Interpretation,
-     * undefined otherwise
-     */
-    getVariable(name) {
-        return _scope.get(this)[name];
-    }
-
-    /**
-     * Does this Interpretation have 'name' defined as a variable?
-     *
-     * @param {String} name
-     * @returns {Boolean} True if this Interpretation has a variable with
-     * 'name'
-     */
-    hasVariable(name) {
-        return name in _scope.get(this);
+    initialize() {
+        _states.set(this, [_initialState.get(this)]);
     }
 
     /**
      * Render a moduleTree given this Interpretation.
      *
-     * @param {RenderingContext} canvas - the canvas to render the
-     * interpretation of the moduleTree on.
      * @param {ModuleTree} moduleTree - the moduleTree to render on the
      * canvas.
      */
-    render(canvas, moduleTree) {
+    render(moduleTree) {
+        this.initialize();
         for (const module of moduleTree) {
-            if (this.hasCommand(module.name)){
-                const command = this.getCommand(module.name);
-                command.apply(_scope.get(this), [canvas].concat(module.parameters));
-            }
+            this.execute(module.name, module.parameters);
         }
+        this.finalize();
+    }
+
+    /**
+     * Finalize a rendering of this interpretation.
+     */
+    finalize() {
     }
 }
 
@@ -2151,50 +2247,89 @@ class Interpretation {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+// Default values
+const X = 0;
+const Y = 0;
+const D = 2;
+const DELTA = Math.PI / 2;
+const ALPHA = 0;
+
 class TurtleInterpretation extends Interpretation {
-    constructor({x = 0, y = 0, d = 0, delta = Math.PI/2, angle = 0} = {}) {
-        super();
-        this.addVariable("delta", delta);
-        this.addVariable("d", d);
-        this.addVariable("x", x);
-        this.addVariable("y", y);
-        this.addVariable("angle", angle);
+    constructor(initialState = {}) {
+        super(initialState);
 
-        this.addCommand("+", function (canvas) {
-            this.angle = this.angle + this.delta;
-        });
+        this.setCommand("+", new Command(function () {
+            this.alpha = this.alpha + this.delta;
+        }));
 
-        this.addCommand("-", function (canvas) {
-            this.angle = this.angle - this.delta;
-        });
+        this.setCommand("-", new Command(function () {
+            this.alpha = this.alpha - this.delta;
+        }));
 
-        this.addCommand("f", function (canvas) {
-            this.x = this.x + this.d * Math.cos(this.angle);
-            this.y = this.y + this.d * Math.sin(this.angle);
+        this.setCommand("f", new Command(function () {
+            this.x = this.x + this.d * Math.cos(this.alpha);
+            this.y = this.y + this.d * Math.sin(this.alpha);
 
-            canvas.moveTo(this.x, this.y);
-        });
+            this.moveTo(this.x, this.y);
+        }));
         
-        this.addCommand("F", function (canvas) {
-            this.x = this.x + this.d * Math.cos(this.angle);
-            this.y = this.y + this.d * Math.sin(this.angle);
+        this.setCommand("F", new Command(function () {
+            this.x = this.x + this.d * Math.cos(this.alpha);
+            this.y = this.y + this.d * Math.sin(this.alpha);
 
-            canvas.lineTo(this.x, this.y);
-        });
-        
-        this.addCommand("Fl", function (canvas) {
-            this.x = this.x + this.d * Math.cos(this.angle);
-            this.y = this.y + this.d * Math.sin(this.angle);
+            this.lineTo(this.x, this.y);
+        }));
 
-            canvas.lineTo(this.x, this.y);
-        });
-        
-        this.addCommand("Fr", function (canvas) {
-            this.x = this.x + this.d * Math.cos(this.angle);
-            this.y = this.y + this.d * Math.sin(this.angle);
+        this.setCommand("Fl", "F");
+        this.setCommand("Fr", "F");
+    }
 
-            canvas.lineTo(this.x, this.y);
-        });
+    moveTo(x, y) {
+        // to be implemented by a sub class 
+    }
+
+    lineTo(x, y) {
+        // to be implemented by a sub class 
+    }
+
+    get x() {
+        return this.getProperty("x", X);
+    }
+
+    set x(value = 0) {
+        this.setProperty("x", value);
+    }
+
+    get y() {
+        return this.getProperty("y", Y);
+    }
+
+    set y(value = 0) {
+        this.setProperty("y", value);
+    }
+
+    get d() {
+        return this.getProperty("d", D);
+    }
+
+    set d(value = 1) {
+        this.setProperty("d", value);
+    }
+
+    get alpha() {
+        return this.getProperty("alpha", ALPHA);
+    }
+
+    set alpha(value = 0) {
+        this.setProperty("alpha", value);
+    }
+
+    get delta() {
+        return this.getProperty("delta", DELTA);
+    }
+
+    set delta(value = 1) {
+        this.setProperty("delta", value);
     }
 
 }
@@ -2219,5 +2354,59 @@ class TurtleInterpretation extends Interpretation {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+const _canvas = new WeakMap();
 
-export { LexicalError, ParseError, LSystem, Interpretation, TurtleInterpretation };
+class CanvasTurtleInterpretation extends TurtleInterpretation {
+    constructor(canvas, initialState = {}) {
+        super(initialState);
+        _canvas.set(this, canvas);
+    }
+
+    initialize() {
+        super.initialize();
+        const canvas = _canvas.get(this);
+        canvas.clearRect(0, 0, canvas.canvas.width, canvas.canvas.height);
+        canvas.beginPath();
+    }
+
+    finalize() {
+        super.finalize();
+        const canvas = _canvas.get(this);
+        if (this.getProperty("close", true)) {
+            canvas.closePath();
+        }
+        canvas.stroke();
+    }
+
+    moveTo(x, y) {
+        _canvas.get(this).moveTo(x, y);
+    }
+
+    lineTo(x, y) {
+        _canvas.get(this).lineTo(x, y);
+    }
+        
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+export { LexicalError, ParseError, LSystem, Interpretation, TurtleInterpretation, CanvasTurtleInterpretation };

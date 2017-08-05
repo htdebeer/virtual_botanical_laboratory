@@ -18,21 +18,37 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
+import {Command} from "./Command.js";
 
-
-const _scope = new WeakMap();
 const _commands = new WeakMap();
+const _initialState = new WeakMap();
+const _states = new WeakMap();
 
 /**
  * An Interpretation of a LSystem
+ *
+ * @property {Object} state - the current state of this Interpretation.
  */
 class Interpretation {
     /**
      * Create a new instance of an LSystem Interpretation.
+     * 
+     * @param {RenderingContext|SVGElement} canvas - the canvas to draw on.
+     * @param {Object} scope - the scope of this Interpretation.
      */
-    constructor() {
+    constructor(initialState = {}) {
+        _initialState.set(this, initialState);
+        _states.set(this, []);
         _commands.set(this, {});
-        _scope.set(this, {});
+    }
+
+    get state() {
+        const states = _states.get(this);
+        if (0 === states.length) {
+            this.initialize();
+        }
+
+        return states[states.length - 1];
     }
 
     /**
@@ -45,87 +61,109 @@ class Interpretation {
      */
 
     /**
-     * Add a command to this Interpretation
+     * Execute a command with given parameters in the context of this
+     * Interpretation.
      *
-     * @param {String} name - the command's name
-     * @param {commandFunction} func - the actual command
+     * @param {String} name - the name of the command to execute.
+     * @param {Array} [parameters = []] - an optional list of actual
+     * parameters to apply when the command is executed.
      */
-    addCommand(name, func) {
-        _commands.get(this)[name] = func;
-    }
+    execute(name, parameters = []) {
+        const command = _commands.get(this)[name];
 
-    /**
-     * Get the command with 'name'.
-     *
-     * @param {String} name - the name of the command to get
-     * @returns {commandFunction}
-     */
-    getCommand(name) {
-        if (this.hasCommand(name)) {
-            return _commands.get(this)[name];
+        if (undefined === command) {
+            throw new Error(`This interpretation has no command '${name}' to execute.`);
+        }
+
+        if ("string" === typeof command) {
+            this.execute(command, parameters);
+        } else if (command instanceof Command) {
+            command.execute(this, parameters);
         } else {
-            return undefined;
+            throw new Error(`'${name}' is not an executable command in this interpretation.`);
         }
     }
 
     /**
-     * Does this Interpretation have a command with 'name'?
+     * Set a property of this Interpretation.
      *
-     * @param {String} name
-     * @returns {Boolean} True if a command with this name has been added.
+     * @param {String} name - the name of the property.
+     * @param {Object} value - the new value of the property.
      */
-    hasCommand(name) {
-        return name in _commands.get(this);
+    setProperty(name, value) {
+        this.state[name] = value;
+        // set it on the canvas/svg
     }
 
     /**
-     * Add a global variable to this Interpretation
+     * Get a property of this Interpretation. If no such property exists, or
+     * if its value is undefined or null, return the defaultValue.
      *
-     * @param {String} name - the variable's name
-     * @param {Number} [value = 0] - the variable's value
+     * @param {String} name - the name of the property.
+     * @param {defaultValue} [defaultValue = 0] - the default value of this
+     * property if no such property exists or its value is undefined or null.
+     *
+     * @returns {Object} the value of the property.
      */
-    addVariable(name, value= 0) {
-        _scope.get(this)[name] = value;
+    getProperty(name, defaultValue = 0) {
+        const value = this.state[name]
+        return (undefined === value || null === value) ? defaultValue : value;
+    }
+
+
+    /**
+     * Set a command in this Interpretation.
+     *
+     * @param {String} name - the name of the command to set.
+     * @param {Command|String} command - the command or alias to set.
+     */
+    setCommand(name, command) {
+        _commands.get(this)[name] = command;
     }
 
     /**
-     * Get the value of the variable in this Interpretation.
+     * Get a command in this Interpretation.
      *
-     * @param {String} name - the name of the variable
-     * @returns {Number|undefined} The value of this variable if defined in
-     * this Interpretation,
-     * undefined otherwise
+     * @param {String} name - the name of the command to get.
+     * @returns {Command|undefined}
      */
-    getVariable(name) {
-        return _scope.get(this)[name];
+    getCommand(name) {
+        const command = _commands.get(this)[name];
+
+        if (command instanceof Command) {
+            return command;
+        } else if ("string" === typeof command) {
+            return getCommand(command);
+        } else {
+            return undefined;
+        };
     }
 
     /**
-     * Does this Interpretation have 'name' defined as a variable?
-     *
-     * @param {String} name
-     * @returns {Boolean} True if this Interpretation has a variable with
-     * 'name'
+     * Initialize a new rendering of this interpretation.
      */
-    hasVariable(name) {
-        return name in _scope.get(this);
+    initialize() {
+        _states.set(this, [_initialState.get(this)]);
     }
 
     /**
      * Render a moduleTree given this Interpretation.
      *
-     * @param {RenderingContext} canvas - the canvas to render the
-     * interpretation of the moduleTree on.
      * @param {ModuleTree} moduleTree - the moduleTree to render on the
      * canvas.
      */
-    render(canvas, moduleTree) {
+    render(moduleTree) {
+        this.initialize();
         for (const module of moduleTree) {
-            if (this.hasCommand(module.name)){
-                const command = this.getCommand(module.name);
-                command.apply(_scope.get(this), [canvas].concat(module.parameters));
-            }
+            this.execute(module.name, module.parameters);
         }
+        this.finalize();
+    }
+
+    /**
+     * Finalize a rendering of this interpretation.
+     */
+    finalize() {
     }
 }
 

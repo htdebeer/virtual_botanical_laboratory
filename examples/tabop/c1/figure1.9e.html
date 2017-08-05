@@ -17,7 +17,7 @@
             <canvas id="canvas"></canvas>
         </main>
         <script type="module">
-            import {LSystem, TurtleInterpretation} from "../../../dist/web-lab.js";
+            import {LSystem, CanvasTurtleInterpretation} from "../../../dist/web-lab.js";
 
 const SIMPLE_LSYSTEM = `lsystem(
     alphabet: {F, f, -, +},
@@ -34,7 +34,7 @@ const canvas = canvasElement.getContext("2d");
 
 canvas.strokeStyle = "Crimson";
 
-const interpretation = new TurtleInterpretation({
+const interpretation = new CanvasTurtleInterpretation(canvas, {
     x: 450, 
     y: 200, 
     d: 4, 
@@ -42,13 +42,7 @@ const interpretation = new TurtleInterpretation({
     angle: 0
 });
 const lsystem = LSystem.parse(SIMPLE_LSYSTEM);
-
-canvas.clearRect(0, 0, canvasElement.width, canvasElement.height);
-canvas.beginPath();
-
-interpretation.render(canvas, lsystem.derive(5));
-
-canvas.stroke();
+interpretation.render(lsystem.derive(5));
         </script>
     </body>
 </html>
