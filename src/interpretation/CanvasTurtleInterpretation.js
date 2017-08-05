@@ -33,6 +33,7 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
         const canvas = _canvas.get(this);
         canvas.clearRect(0, 0, canvas.canvas.width, canvas.canvas.height);
         canvas.beginPath();
+        canvas.moveTo(this.x, this.y);
     }
 
     finalize() {
@@ -50,6 +51,23 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
 
     lineTo(x, y) {
         _canvas.get(this).lineTo(x, y);
+    }
+
+    enter() {
+        const canvas = _canvas.get(this);
+        canvas.stroke();
+        canvas.save();
+        super.enter();
+        canvas.beginPath();
+        canvas.moveTo(this.x, this.y);
+    }
+
+    exit() {
+        const canvas = _canvas.get(this);
+        canvas.stroke();
+        canvas.closePath();
+        canvas.restore();
+        super.exit();
     }
         
 }

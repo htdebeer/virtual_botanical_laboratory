@@ -24,6 +24,18 @@ const _commands = new WeakMap();
 const _initialState = new WeakMap();
 const _states = new WeakMap();
 
+const renderTree = function (interpretation, moduleTree) {
+    for (const item of moduleTree) {
+        if (Array.isArray(item)) {
+            interpretation.enter();
+            renderTree(interpretation, item);
+            interpretation.exit();
+        } else {
+            interpretation.execute(item.name, item.parameters);
+        }
+    }
+};
+
 /**
  * An Interpretation of a LSystem
  *
@@ -55,7 +67,6 @@ class Interpretation {
      * A command function has the following signature:
      *
      * @callback commandFunction
-     * @param {RenderingContext} canvas - a canvas element to draw upon.
      * @param {Number[]} [parameters = []] - a list of numerical parameters
      * you can use in the command;
      */
@@ -92,7 +103,6 @@ class Interpretation {
      */
     setProperty(name, value) {
         this.state[name] = value;
-        // set it on the canvas/svg
     }
 
     /**
@@ -115,10 +125,26 @@ class Interpretation {
      * Set a command in this Interpretation.
      *
      * @param {String} name - the name of the command to set.
-     * @param {Command|String} command - the command or alias to set.
+     * @param {Command} command - the command.
      */
     setCommand(name, command) {
         _commands.get(this)[name] = command;
+    }
+
+    /**
+     * Alias a command.
+     *
+     * @param {String|String[]} aliasNames - a list of aliases for command.
+     * @param {String} commandName - a command's name.
+     */
+    alias(aliasNames, commandName) {
+        if (!Array.isArray(aliasNames)) {
+            aliasNames = [aliasNames];
+        }
+
+        for(const alias of aliasNames) {
+            _commands.get(this)[alias] = commandName;
+        }
     }
 
     /**
@@ -154,10 +180,23 @@ class Interpretation {
      */
     render(moduleTree) {
         this.initialize();
-        for (const module of moduleTree) {
-            this.execute(module.name, module.parameters);
-        }
+        renderTree(this, moduleTree);
         this.finalize();
+    }
+
+    /**
+     * Enter a sub tree.
+     */
+    enter() {
+        const currentState = Object.assign({}, this.state);
+        _states.get(this).push(currentState);
+    }
+
+    /**
+     * Exit a sub tree.
+     */
+    exit() {
+        _states.get(this).pop();
     }
 
     /**

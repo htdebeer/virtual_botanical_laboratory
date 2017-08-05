@@ -60,8 +60,8 @@ class TurtleInterpretation extends Interpretation {
             this.lineTo(this.x, this.y);
         }));
 
-        this.setCommand("Fl", "F");
-        this.setCommand("Fr", "F");
+
+        this.alias(["Fl", "Fr"], "F");
     }
 
     moveTo(x, y) {
