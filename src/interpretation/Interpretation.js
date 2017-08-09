@@ -200,9 +200,17 @@ class Interpretation {
     }
 
     /**
-     * Finalize a rendering of this interpretation.
+     * Finalize a rendering of this interpretation. Needs to be implemented in
+     * concrete subclasses.
      */
     finalize() {
+    }
+
+    /**
+     * Reset this Interpretation to the original state.
+     */
+    reset() {
+        this.initialize();
     }
 }
 

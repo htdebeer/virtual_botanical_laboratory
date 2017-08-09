@@ -24,23 +24,26 @@ const config = {
     interpretation: {
         type: "canvas",
         config: {
-            x: 100,
-            y: 100,
+            x: 200,
+            y: 200,
             d: 4,
             delta: Math.PI / 2,
             angle: 0,
             close: false
         }
     },
-    steps: 10
+    derivationLength: 13,
+    animate: true
 };
 
 const lab = new Lab(config);
 const labElement = document.getElementById("lab");
 labElement.appendChild(lab.element);
 
+// For testing/experimenting purposes, the lab is added to the global scope so
+// you can access it from the web browser JavaScript console via the `lab`
+// variable.
 window.lab = lab;
-
         </script>
     </body>
 </html>

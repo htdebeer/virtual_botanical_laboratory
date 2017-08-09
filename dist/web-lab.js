@@ -1889,6 +1889,7 @@ const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
 const _productions = new WeakMap();
 const _currentDerivation = new WeakMap();
+const _derivationLength = new WeakMap();
 
 
 const findProduction = function (lsystem, module) {
@@ -1932,6 +1933,8 @@ const derive = function(lsystem, moduleTree) {
  * @property {ModuleTree} axiom - the axion of this LSystem
  * @property {Production[]} productions - the set of productions of this
  * LSystem
+ * @property {Integer} derivationLength - the length of the derivation of this
+ * LSystem
  */
 const LSystem = class {
     /**
@@ -1945,7 +1948,8 @@ const LSystem = class {
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
         _productions.set(this, productions);
-        _currentDerivation.set(this, axiom);
+
+        this.reset();
     }
 
     /**
@@ -1972,6 +1976,10 @@ const LSystem = class {
         return _productions.get(this);
     }
 
+    get derivationLength() {
+        return _derivationLength.get(this);
+    }
+
     /**
      * Create a String representation of this LSystem. This representation can
      * be parsed again to an LSystem equal to this one.
@@ -1995,8 +2003,17 @@ const LSystem = class {
         for (let i = 0; i < steps; i++) {
             // do a derivation
             _currentDerivation.set(this, derive(this, _currentDerivation.get(this)));
+            _derivationLength.set(this, this.derivationLength + 1);
         }
         return _currentDerivation.get(this);
+    }
+
+    /**
+     * Reset the LSystem to the starting state.
+     */
+    reset() {
+        _currentDerivation.set(this, this.axiom);
+        _derivationLength.set(this, 0);
     }
 };
 
@@ -2260,9 +2277,17 @@ class Interpretation {
     }
 
     /**
-     * Finalize a rendering of this interpretation.
+     * Finalize a rendering of this interpretation. Needs to be implemented in
+     * concrete subclasses.
      */
     finalize() {
+    }
+
+    /**
+     * Reset this Interpretation to the original state.
+     */
+    reset() {
+        this.initialize();
     }
 }
 
@@ -2465,13 +2490,17 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-
-const SIZE = 400;
+const SIZE = 400; // px
+const SPEED = 500; // ms
 
 const _element = new WeakMap();
 const _lsystem = new WeakMap();
 const _interpretation = new WeakMap();
 const _description = new WeakMap();
+
+const _running = new WeakMap();
+const _animate = new WeakMap();
+const _speed = new WeakMap();
 
 const createInterpretation = function (lab, interpretation = {}) {
     if (!(interpretation instanceof Interpretation)) {
@@ -2502,11 +2531,40 @@ const createLSystem = function (lab, lsystem = "") {
     _lsystem.set(lab, lsystem);
 };
 
-const initializeAndRun = function (lab, steps = 0) {
-    if (!Number.isInteger(steps) || 0 > steps) {
-        steps = 0;
+const initializeAndRun = function (lab, derivationLength = 0) {
+    if (!Number.isInteger(derivationLength) || 0 >= derivationLength) {
+        derivationLength = 0;
     }
-    lab.run(steps);
+    lab.run(derivationLength);
+};
+
+const animateDeriving = function (lab, steps, currentStep) {
+    if (lab.running && currentStep < steps) {
+        setTimeout(() => {
+            lab.derive();
+            animateDeriving(lab, steps, currentStep + 1);
+        }, lab.speed);
+    } else {
+        _running.set(lab, false);
+    }
+};
+
+const setupAnimation = function (lab, animate = false) {
+    if (Number.isInteger(animate)) {
+        if (0 < animate) {
+            _animate.set(lab, true);
+            _speed.set(lab, animate);
+        } else {
+            _animate.set(lab, false);
+            _speed.set(lab, undefined);
+        }
+    } else if (animate && true === animate) {
+        _animate.set(lab, true);
+        _speed.set(lab, SPEED);
+    } else {
+        _animate.set(lab, false);
+        _speed.set(lab, undefined);
+    }
 };
 
 /**
@@ -2517,9 +2575,18 @@ const initializeAndRun = function (lab, steps = 0) {
  */
 class Lab {
     constructor(config = {}) {
+        _running.set(this, false);
+
         createInterpretation(this, config.interpretation);
         createLSystem(this, config.lsystem);
-        initializeAndRun(this, config.steps);
+
+        if (config.description && "" !== config.description) {
+            this.description = config.description;
+        }
+
+        setupAnimation(this, config.animate);
+
+        initializeAndRun(this, config.derivationLength);
     }
 
     get element() {
@@ -2550,19 +2617,55 @@ class Lab {
         _description.set(this, description);
     }
 
+    get running() {
+        return _running.get(this);
+    }
+
+    get animate() {
+        return _animate.get(this);
+    }
+
+    set animate(animate) {
+        setupAnimation(this, animate);
+    }
+        
+    get speed() {
+        return _speed.get(this);
+    }
+
 
     // actions
     // control rendering
     run(steps = 0) {
-        this.interpretation.render(this.lsystem.derive(steps));
+        if (this.animate) {
+            _running.set(this, true);
+            animateDeriving(this, steps, 0);
+        } else {
+            this.derive(steps);
+        }
     }
 
-    stop() {}
-    step() {}
-    pause() {}
+    stop() {
+        _running.set(this, false);
+    }
 
+    /**
+     * Derive the next sequence from this Lab's LSystem and render its
+     * interpretation. 
+     *
+     * @param {Integer} [derivationLength = 1] - the number of derivations to
+     * perform, defaults to one step.
+     */
+    derive(length = 1) {
+        this.interpretation.render(this.lsystem.derive(length));
+    }
+
+    /**
+     * Reset this lab to its initial state.
+     */
     reset() {
-            
+        this.interpretation.reset();
+        this.lsystem.reset(); 
     }
 
     // Properties

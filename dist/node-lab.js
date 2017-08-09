@@ -579,6 +579,7 @@ const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
 const _productions = new WeakMap();
 const _currentDerivation = new WeakMap();
+const _derivationLength = new WeakMap();
 
 
 const findProduction = function (lsystem, module) {
@@ -622,6 +623,8 @@ const derive = function(lsystem, moduleTree) {
  * @property {ModuleTree} axiom - the axion of this LSystem
  * @property {Production[]} productions - the set of productions of this
  * LSystem
+ * @property {Integer} derivationLength - the length of the derivation of this
+ * LSystem
  */
 const LSystem = class {
     /**
@@ -635,7 +638,8 @@ const LSystem = class {
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
         _productions.set(this, productions);
-        _currentDerivation.set(this, axiom);
+
+        this.reset();
     }
 
     /**
@@ -662,6 +666,10 @@ const LSystem = class {
         return _productions.get(this);
     }
 
+    get derivationLength() {
+        return _derivationLength.get(this);
+    }
+
     /**
      * Create a String representation of this LSystem. This representation can
      * be parsed again to an LSystem equal to this one.
@@ -685,8 +693,17 @@ const LSystem = class {
         for (let i = 0; i < steps; i++) {
             // do a derivation
             _currentDerivation.set(this, derive(this, _currentDerivation.get(this)));
+            _derivationLength.set(this, this.derivationLength + 1);
         }
         return _currentDerivation.get(this);
+    }
+
+    /**
+     * Reset the LSystem to the starting state.
+     */
+    reset() {
+        _currentDerivation.set(this, this.axiom);
+        _derivationLength.set(this, 0);
     }
 };
 
@@ -2264,9 +2281,17 @@ class Interpretation {
     }
 
     /**
-     * Finalize a rendering of this interpretation.
+     * Finalize a rendering of this interpretation. Needs to be implemented in
+     * concrete subclasses.
      */
     finalize() {
+    }
+
+    /**
+     * Reset this Interpretation to the original state.
+     */
+    reset() {
+        this.initialize();
     }
 }
 
