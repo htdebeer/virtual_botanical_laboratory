@@ -20,55 +20,79 @@
  */
 
 import {LSystem} from "./lsystem/LSystem.js";
+import {Interpretation} from "./interpretation/Interpretation.js";
 import {CanvasTurtleInterpretation} from "./interpretation/CanvasTurtleInterpretation.js";
-
-const CANVAS = new Symbol();
-const SVG = new Symbol();
 
 const SIZE = 400;
 
 const _element = new WeakMap();
 const _lsystem = new WeakMap();
 const _interpretation = new WeakMap();
-const _config = new WeakMap();
 const _description = new WeakMap();
 
-const createCanvas = function (lab) {
-    const element = document.createElement("canvas");
-    element.width = SIZE;
-    element.height = SIZE;
-    _element.set(lab, element);
+const createInterpretation = function (lab, interpretation = {}) {
+    if (!(interpretation instanceof Interpretation)) {
+        if ("canvas" === interpretation.type) {
+            const element = document.createElement("canvas");
+            element.width = SIZE;
+            element.height = SIZE;
+            
+            _element.set(lab, element);
+            
+            interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretation.config);
+        } else {
+            // not implemented yet
+            throw new Error("Only the canvas format has been implemented yet.");
+        }
+    }
+
+    _interpretation.set(lab, interpretation);
 };
 
+const createLSystem = function (lab, lsystem = "") {
+    if (!(lsystem instanceof LSystem)) {
+        // Interpret lsystem as a string to parse into an LSystem. Will
+        // throw a parse error if it does not succeed
+        lsystem = LSystem.parse(lsystem);
+    }
+
+    _lsystem.set(lab, lsystem);
+};
+
+const initializeAndRun = function (lab, steps = 0) {
+    if (!Number.isInteger(steps) || 0 > steps) {
+        steps = 0;
+    }
+    lab.run(steps);
+};
+
+/**
+ * Lab is the public API to interact with an lsystem and its interpretation.
+ * Use this class to build an application on top of.
+ *
+ * Each Lab has a valid LSystem and a corresponding Interpretation. 
+ */
 class Lab {
     constructor(config = {}) {
-        _config.set(this, config);
-        createCanvas(this);
-        _interpretation.set(this, new CanvasTurtleInterpretation(this.element.getContext("2d"), config.interpretation || {}));
-
-        if (config.lsystem) {
-            this.lsystem = config.lsystem;
-        }
-        if (config.run && Number.isInteger(config.run) && config.run >= 0) {
-            this.run(config.run);
-        }
+        createInterpretation(this, config.interpretation);
+        createLSystem(this, config.lsystem);
+        initializeAndRun(this, config.steps);
     }
 
     get element() {
         return _element.get(this);
     }
 
-    get config() {
-        return _config.get(this);
-    }
-
     get interpretation() {
         return _interpretation.get(this);
     }
 
-    // LSystem
+    set interpretation(config = {}) {
+        createInterpretation(this, config);
+    }
+
     set lsystem(lsystem) {
-        _lsystem.set(this, LSystem.parse(lsystem));
+        createLSystem(this, lsystem);
     }
 
     get lsystem() {
@@ -86,7 +110,7 @@ class Lab {
 
     // actions
     // control rendering
-    run(steps = 1) {
+    run(steps = 0) {
         this.interpretation.render(this.lsystem.derive(steps))
     }
 
@@ -95,7 +119,7 @@ class Lab {
     pause() {}
 
     reset() {
-        
+            
     }
 
     // Properties

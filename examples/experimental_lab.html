@@ -10,7 +10,7 @@
         <main id="lab">
         </main>
         <script type="module">
-            import {Lab} from "../../../dist/web-lab.js";
+            import {Lab} from "../../../src/Lab.js";
 
 const config = {
     lsystem: `lsystem(
@@ -22,14 +22,17 @@ const config = {
         }
     )`,
     interpretation: {
-        x: 100,
-        y: 100,
-        d: 4,
-        delta: Math.PI / 2,
-        angle: 0,
-        close: false
+        type: "canvas",
+        config: {
+            x: 100,
+            y: 100,
+            d: 4,
+            delta: Math.PI / 2,
+            angle: 0,
+            close: false
+        }
     },
-    run: 10
+    steps: 10
 };
 
 const lab = new Lab(config);
