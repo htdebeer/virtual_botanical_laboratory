@@ -24,6 +24,7 @@ import {LSystem} from "./lsystem/LSystem.js";
 import {Interpretation} from "./interpretation/Interpretation.js";
 import {TurtleInterpretation} from "./interpretation/TurtleInterpretation.js";
 import {CanvasTurtleInterpretation} from "./interpretation/CanvasTurtleInterpretation.js";
+import {Lab} from "./Lab.js";
 
 export {
     LexicalError,
@@ -31,5 +32,6 @@ export {
     LSystem,
     Interpretation,
     TurtleInterpretation,
-    CanvasTurtleInterpretation
+    CanvasTurtleInterpretation,
+    Lab
 };

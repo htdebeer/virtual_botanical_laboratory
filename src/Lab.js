@@ -25,40 +25,88 @@ import {CanvasTurtleInterpretation} from "./interpretation/CanvasTurtleInterpret
 const CANVAS = new Symbol();
 const SVG = new Symbol();
 
+const SIZE = 400;
+
 const _element = new WeakMap();
 const _lsystem = new WeakMap();
 const _interpretation = new WeakMap();
+const _config = new WeakMap();
+const _description = new WeakMap();
+
+const createCanvas = function (lab) {
+    const element = document.createElement("canvas");
+    element.width = SIZE;
+    element.height = SIZE;
+    _element.set(lab, element);
+};
 
 class Lab {
     constructor(config = {}) {
+        _config.set(this, config);
+        createCanvas(this);
+        _interpretation.set(this, new CanvasTurtleInterpretation(this.element.getContext("2d"), config.interpretation || {}));
 
+        if (config.lsystem) {
+            this.lsystem = config.lsystem;
+        }
+        if (config.run && Number.isInteger(config.run) && config.run >= 0) {
+            this.run(config.run);
+        }
     }
 
     get element() {
         return _element.get(this);
     }
 
+    get config() {
+        return _config.get(this);
+    }
+
+    get interpretation() {
+        return _interpretation.get(this);
+    }
+
+    // LSystem
+    set lsystem(lsystem) {
+        _lsystem.set(this, LSystem.parse(lsystem));
+    }
+
+    get lsystem() {
+        return _lsystem.get(this);
+    }
+
+    get description() {
+        return _description.get(this);
+    }
+
+    set description(description) {
+        _description.set(this, description);
+    }
+
+
     // actions
     // control rendering
-    run() {}
+    run(steps = 1) {
+        this.interpretation.render(this.lsystem.derive(steps))
+    }
+
     stop() {}
     step() {}
     pause() {}
-    reset() {}
 
-    // LSystem
-    setLSystem(lsystem) {}
-    getLSystem() {}
+    reset() {
+        
+    }
 
     // Properties
     setProperty(name, value) {}
     getProperty(name) {}
-    eachProperty*() {}
+    getAllProperties() {}
 
     // Commands
     setCommand(name, command) {}
     getCommand(name) {}
-    eachCommand*() {}
+    getAllCommands() {}
 
     // New/open/save
     new() {}
@@ -71,10 +119,21 @@ class Lab {
     toHTML() {}
     
     // Information
-    getDescription() {}
-    setDescription(description) {}
-    about() {}
-    help() {}
+    about() {
+        
+        return `The virtual botanical library is a free software project to
+        explore the ideas in the book Prusinkiewicz and Lindenmayer (1990) The
+        algorithmic beauty of plants. You can find the project at
+        https://github.com/htdebeer/virtual_botanical_laboratory.`;
+
+    }
+
+    help() {
+
+        return `There is no help at the moment; the project is still under
+        heavy development.`;
+
+    }
 }
 
 export {
