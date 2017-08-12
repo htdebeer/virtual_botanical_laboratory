@@ -31,6 +31,7 @@ import {
 import {ParseError} from "./ParseError.js";
 import {LSystem} from "./LSystem.js";
 import {Module} from "./Module.js";
+import {ModuleTree} from "./ModuleTree.js";
 import {ModuleDefinition} from "./ModuleDefinition.js";
 
 import {Alphabet} from "./Alphabet.js";
@@ -270,7 +271,7 @@ const parseActualModule = function (parser) {
     const moduleName = moduleNameToken.value;
 
     if (!defined(parser, moduleName, MODULE)) {
-        throw new ParseError(`Module '${moduleName}' at position ${moduleToken.position()} not in the alphabet.`);
+        throw new ParseError(`Module '${moduleName}' at position ${moduleNameToken.position()} not in the alphabet.`);
     }
 
     let actualParameters = [];
@@ -285,6 +286,29 @@ const parseActualModule = function (parser) {
 
     return new Module(moduleName, actualParameters);
 };
+
+const parseModuleTree = function (parser, withSubTrees = true) {
+    const moduleTree = new ModuleTree();
+
+    while (
+        !lookAhead(parser, OPERATOR, "->") && (
+            lookAhead(parser, IDENTIFIER, undefined, 1, MODULE_NAME) || 
+            lookAhead(parser, BRACKET_OPEN, "[")
+        )
+    ) {
+        if (withSubTrees && lookAhead(parser, BRACKET_OPEN, "[")) {
+            // Match a sub tree
+            match(parser, BRACKET_OPEN, "[");
+            moduleTree.push(parsemoduleTree(parser));
+            match(parser, BRACKET_CLOSE, "]");
+        } else {
+            // Match a module in the moduleTree
+            moduleTree.push(parseActualModule(parser));
+        }
+    }
+
+    return moduleTree;
+}
 
 const parseSuccessor = function (parser) {
     const successor = new Successor();
@@ -345,8 +369,8 @@ const parsePredecessor = function (parser) {
     const modules = []
     let hasLeftContext = false;
     let hasRightContext = false;
-   
-    modules.push(parseActualModule(parser));
+
+    modules.push(parseModuleTree(parser, false));
     
     if (lookAhead(parser, BRACKET_OPEN, "<", 1, CONTEXT)) {
         match(parser, BRACKET_OPEN, "<", CONTEXT);
@@ -356,20 +380,20 @@ const parsePredecessor = function (parser) {
     
     if (lookAhead(parser, BRACKET_CLOSE, ">", 1, CONTEXT)) {
         match(parser, BRACKET_CLOSE, ">", CONTEXT);
-        modules.push(parseActualModule(parser));
+        modules.push(parseModuleTree(parser));
         hasRightContext = true;
     }
 
     let predecessor = undefined;
 
     if (1 === modules.length) {
-        predecessor = new Predecessor(modules[0]);
+        predecessor = new Predecessor(modules[0][0]);
     } else if (2 === modules.length) {
         if (hasLeftContext) {
             predecessor = new Predecessor(modules[1]);
             predecessor.leftContext = modules[0];
         } else {
-            predecessor = new Predecessor(modules[0]);
+            predecessor = new Predecessor(modules[0][0]);
             predecessor.rightContext = modules[1];
         }
     } else {

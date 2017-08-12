@@ -400,9 +400,152 @@ class Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+// A Module's private properties
+const _name$1 = new WeakMap();
+const _parameters = new WeakMap();
+
+/**
+ * A Module represents a symbol in a LSystem.
+ *
+ * @property {String} name - the name of the module.
+ * @property {Object[]} parameters - the parameters of this module.
+ */
+class Module {
+
+    /**
+     * Create a new Module
+     *
+     * @param {String} name - the module's name
+     * @param {Object[]} [parameters = []] - the module's parameters, if any
+     */
+    constructor(name, parameters = []) {
+        _name$1.set(this, name);
+        _parameters.set(this, parameters);
+    }
+
+    get name() {
+        return _name$1.get(this);
+    }
+
+    get parameters() {
+        return _parameters.get(this);
+    }
+
+    /**
+     * Is this Module equal to another module?
+     *
+     * @param {Module} other - the other module to compare this module with
+     * @return {Boolean} True if the names are the same as well as their
+     * number of parameters.
+     */
+    equals(other) {
+        // console.log(`${this.name} === ${other.name} and ${this.parameters.length} === ${other.parameters.length}`);
+        return this.name === other.name && this.parameters.length === other.parameters.length;
+    }
+
+    /**
+     * Is this Module parameterized?
+     *
+     * @returns {Boolean} true if it has parameters.
+     */
+    isParameterized() {
+        return 0 < this.parameters.length;
+    }
+
+    /**
+     * Create a String representation of this Module.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        if (this.isParameterized()) {
+            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(',')})`;
+        } else {
+            return this.name;
+        }
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
 const _module = new WeakMap();
 const _leftContext = new WeakMap();
 const _rightContext = new WeakMap();
+
+const edgeMatches = function (predecessor, edge) {
+    return predecessor.module.equals(edge);
+};
+
+const leftContextMatches = function (leftContext, pathTaken) {
+    let match = false;
+    if (pathTaken.length >= leftContext.length) {
+        // leftContext fits in the path
+        match = true;
+        let reverseIndex = 1;
+        while (match && reverseIndex <= leftContext.length) {
+            const actual = pathTaken[pathTaken.length - reverseIndex];
+            const formal = leftContext[leftContext.length - reverseIndex];
+
+            match = match && actual.equals(formal);
+            reverseIndex++;
+        }
+    }
+    return match;
+};
+
+const rightContextMatches = function (rightContext, rightContextIndex, moduleTree, edgeIndex, ignore = []) {
+    let contextIndex = 0;
+    let moduleTreeIndex = edgeIndex;
+    let match = true;
+
+    while (rightContextIndex < rightContext.length) {
+        if (moduleTreeIndex + 1 >= moduleTree.length) {
+            return false;
+        }
+
+        const actual = moduleTree[moduleTreeIndex + 1];
+        const formal = rightContext[rightContextIndex];
+   
+        if (formal instanceof ModuleTree) {
+            match = match && 
+                actual instanceof ModuleTree &&
+                rightContextMatches(formal, 0, actual, 0, ignore);
+            contextIndex++;
+        } else {
+            if (actual instanceof Module) {
+                const ignored = ignore.filter(m => m.equals(actual));
+                if (0 >= ignored.length) {
+                    match = match && actual.equals(formal); 
+                    rightContextIndex++;
+                }
+            } else {
+                // skip the sub tree as it is not part of the right context
+                // Or try enter the subtree?
+                match = match && rightContextMatches(formal, rightContextIndex, actual, 0, ignore);
+            }
+        }
+        moduleTreeIndex++;
+    }
+    return match;
+};
 
 /**
  * A Predecessor in a Production.
@@ -486,16 +629,32 @@ class Predecessor {
     /**
      * Does this predecessor match a given module?
      *
-     * @param {Module} module - the module to match against this predecessor.
-     * @param {ModuleTree} [leftContext = undefined] - an optional left
-     * context to match.
-     * @param {ModuleTree} [rightContext = undefined] - an optional right
-     * context to match.
-     * @returns {Boolean} True if the module matches agains this predecessor,
+     * @param {Module} edge - the module to match against this predecessor.
+     * @param {ModuleTree} moduleTree - the sub tree in the predecessor the
+     * module is part of
+     * @param {Module[]} [pathTaken = []] - the path taken to reach module,
+     * this is the left context
+     * @param {Integer} [edgeIndex = 0] - the index of module in moduleTree.
+     * This is used to determine the right context.
+     * @param {Module[]} [ignore = []] - a list with modules to ignore when
+     * determining the right context.
+     *
+     * @returns{Boolean} True if the module matches agains this predecessor,
      * i.e, they are equal and the context matches.
      */
-    matches(module, leftContext = undefined, rightContext = undefined) {
-        return this.module.equals(module);
+    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = []) {
+        let left = true;
+        let right = true;
+        
+        if (this.hasLeftContext()) {
+            left =  leftContextMatches(this.leftContext, pathTaken);
+        }
+
+        if (this.hasRightContext()) {
+            right = rightContextMatches(this.rightContext, 0, moduleTree, edgeIndex, ignore);
+        }
+
+        return left && edgeMatches(this, edge) && right;
     }
 
     /**
@@ -583,12 +742,8 @@ const _ignore = new WeakMap();
 const _currentDerivation = new WeakMap();
 const _derivationLength = new WeakMap();
 
-const leftContext = function (lsystem) {
-    return undefined;
-};
-
-const rightContext = function (lsystem) {
-    return undefined;
+const ignore = function (lsystem, edge) {
+    return 0 < lsystem.ignore.filter(m => m.equals(edge)).length;
 };
 
 const selectBestProduction = function (lsystem, productions) {
@@ -602,14 +757,21 @@ const selectBestProduction = function (lsystem, productions) {
         // If multiple context-sensitive
         // rules apply, choose the one with the longest matching context (?)
 
-        return productions[0];
+        const contextSensitive =  productions.filter(p => p.predecessor.isContextSensitive());
+
+        if (0 < contextSensitive.length) {
+            return contextSensitive[0];
+        } else {
+            return productions[0];
+        }
     }
 };
 
-const findProduction = function (lsystem, module, context) {
+const findProduction = function (lsystem, module, moduleTree, pathTaken, edgeIndex) {
+    //console.log(module.stringify(), edgeIndex, moduleTree.stringify());
     const candidates = lsystem
         .productions
-        .filter((p) => p.predecessor.matches(module, leftContext(lsystem), rightContext(lsystem)));
+        .filter((p) => p.predecessor.matches(module, moduleTree, pathTaken, edgeIndex, lsystem.ignore));
 
     if (0 < candidates.length) {
         return selectBestProduction(lsystem, candidates);
@@ -621,20 +783,31 @@ const findProduction = function (lsystem, module, context) {
     }
 };
 
-const derive = function(lsystem, moduleTree, context) {
+const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
     const successor = new Successor();
 
-    for (const node of moduleTree) {
-        if (node instanceof ModuleTree) {
-            successor.push(derive(lsystem, node, context));
+    while (edgeIndex < moduleTree.length) {
+        const edge = moduleTree[edgeIndex];
+        if (edge instanceof ModuleTree) {
+            successor.push(derive(lsystem, edge, pathTaken, 0));
         } else {
-            const production = findProduction(lsystem, node, context);
+            const production = findProduction(lsystem, edge, moduleTree, pathTaken, edgeIndex);
             const rewrittenNode = production.follow();
+
+            //console.log(edgeIndex, production.stringify());
 
             for (const successorNode of rewrittenNode) {
                 successor.push(successorNode);
             }
+
+            // Add node to the path taken if it should not be ignored in the
+            // context.
+            if (!ignore(lsystem, edge)) {
+                pathTaken.push(edge);
+            }
         }
+
+        edgeIndex++;
     }
 
     return successor;
@@ -708,6 +881,7 @@ const LSystem = class {
      */
     stringify() {
         let lsystem = `lsystem(alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
+
         if (0 < this.ignore.length) {
             lsystem += `, ignore: {${this.ignore.map(m => m.stringify()).join(", ")}}`;
         }
@@ -727,8 +901,9 @@ const LSystem = class {
     derive(steps = 1) {
         for (let i = 0; i < steps; i++) {
             // do a derivation
+            //console.log("predecessor: ", _currentDerivation.get(this).stringify());
             const predecessor = _currentDerivation.get(this);
-            _currentDerivation.set(this, derive(this, predecessor, predecessor));
+            _currentDerivation.set(this, derive(this, predecessor));
             _derivationLength.set(this, this.derivationLength + 1);
         }
         return _currentDerivation.get(this);
@@ -742,92 +917,6 @@ const LSystem = class {
         _derivationLength.set(this, 0);
     }
 };
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-// A Module's private properties
-const _name$1 = new WeakMap();
-const _parameters = new WeakMap();
-
-/**
- * A Module represents a symbol in a LSystem.
- *
- * @property {String} name - the name of the module.
- * @property {Object[]} parameters - the parameters of this module.
- */
-class Module {
-
-    /**
-     * Create a new Module
-     *
-     * @param {String} name - the module's name
-     * @param {Object[]} [parameters = []] - the module's parameters, if any
-     */
-    constructor(name, parameters = []) {
-        _name$1.set(this, name);
-        _parameters.set(this, parameters);
-    }
-
-    get name() {
-        return _name$1.get(this);
-    }
-
-    get parameters() {
-        return _parameters.get(this);
-    }
-
-    /**
-     * Is this Module equal to another module?
-     *
-     * @param {Module} other - the other module to compare this module with
-     * @return {Boolean} True if the names are the same as well as their
-     * number of parameters.
-     */
-    equals(other) {
-        // console.log(`${this.name} === ${other.name} and ${this.parameters.length} === ${other.parameters.length}`);
-        return this.name === other.name && this.parameters.length === other.parameters.length;
-    }
-
-    /**
-     * Is this Module parameterized?
-     *
-     * @returns {Boolean} true if it has parameters.
-     */
-    isParameterized() {
-        return 0 < this.parameters.length;
-    }
-
-    /**
-     * Create a String representation of this Module.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        if (this.isParameterized()) {
-            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(',')})`;
-        } else {
-            return this.name;
-        }
-    }
-}
 
 /*
  * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
@@ -1482,7 +1571,7 @@ const parseActualModule = function (parser) {
     const moduleName = moduleNameToken.value;
 
     if (!defined(parser, moduleName, MODULE)) {
-        throw new ParseError(`Module '${moduleName}' at position ${moduleToken.position()} not in the alphabet.`);
+        throw new ParseError(`Module '${moduleName}' at position ${moduleNameToken.position()} not in the alphabet.`);
     }
 
     let actualParameters = [];
@@ -1496,6 +1585,29 @@ const parseActualModule = function (parser) {
     }
 
     return new Module(moduleName, actualParameters);
+};
+
+const parseModuleTree = function (parser, withSubTrees = true) {
+    const moduleTree = new ModuleTree();
+
+    while (
+        !lookAhead(parser, OPERATOR, "->") && (
+            lookAhead(parser, IDENTIFIER, undefined, 1, MODULE_NAME) || 
+            lookAhead(parser, BRACKET_OPEN, "[")
+        )
+    ) {
+        if (withSubTrees && lookAhead(parser, BRACKET_OPEN, "[")) {
+            // Match a sub tree
+            match(parser, BRACKET_OPEN, "[");
+            moduleTree.push(parsemoduleTree(parser));
+            match(parser, BRACKET_CLOSE, "]");
+        } else {
+            // Match a module in the moduleTree
+            moduleTree.push(parseActualModule(parser));
+        }
+    }
+
+    return moduleTree;
 };
 
 const parseSuccessor = function (parser) {
@@ -1557,8 +1669,8 @@ const parsePredecessor = function (parser) {
     const modules = [];
     let hasLeftContext = false;
     let hasRightContext = false;
-   
-    modules.push(parseActualModule(parser));
+
+    modules.push(parseModuleTree(parser, false));
     
     if (lookAhead(parser, BRACKET_OPEN, "<", 1, CONTEXT)) {
         match(parser, BRACKET_OPEN, "<", CONTEXT);
@@ -1568,20 +1680,20 @@ const parsePredecessor = function (parser) {
     
     if (lookAhead(parser, BRACKET_CLOSE, ">", 1, CONTEXT)) {
         match(parser, BRACKET_CLOSE, ">", CONTEXT);
-        modules.push(parseActualModule(parser));
+        modules.push(parseModuleTree(parser));
         hasRightContext = true;
     }
 
     let predecessor = undefined;
 
     if (1 === modules.length) {
-        predecessor = new Predecessor(modules[0]);
+        predecessor = new Predecessor(modules[0][0]);
     } else if (2 === modules.length) {
         if (hasLeftContext) {
             predecessor = new Predecessor(modules[1]);
             predecessor.leftContext = modules[0];
         } else {
-            predecessor = new Predecessor(modules[0]);
+            predecessor = new Predecessor(modules[0][0]);
             predecessor.rightContext = modules[1];
         }
     } else {
@@ -2304,7 +2416,7 @@ class Interpretation {
      * Initialize a new rendering of this interpretation.
      */
     initialize() {
-        _states.set(this, [_initialState.get(this)]);
+        _states.set(this, [Object.assign({}, _initialState.get(this))]);
     }
 
     /**

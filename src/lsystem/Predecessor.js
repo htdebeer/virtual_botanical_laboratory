@@ -18,9 +18,69 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
+import {ModuleTree} from "./ModuleTree.js";
+import {Module} from "./Module.js";
+
 const _module = new WeakMap();
 const _leftContext = new WeakMap();
 const _rightContext = new WeakMap();
+
+const edgeMatches = function (predecessor, edge) {
+    return predecessor.module.equals(edge);
+};
+
+const leftContextMatches = function (leftContext, pathTaken) {
+    let match = false;
+    if (pathTaken.length >= leftContext.length) {
+        // leftContext fits in the path
+        match = true;
+        let reverseIndex = 1;
+        while (match && reverseIndex <= leftContext.length) {
+            const actual = pathTaken[pathTaken.length - reverseIndex];
+            const formal = leftContext[leftContext.length - reverseIndex];
+
+            match = match && actual.equals(formal);
+            reverseIndex++;
+        }
+    }
+    return match;
+};
+
+const rightContextMatches = function (rightContext, rightContextIndex, moduleTree, edgeIndex, ignore = []) {
+    let contextIndex = 0;
+    let moduleTreeIndex = edgeIndex;
+    let match = true;
+
+    while (rightContextIndex < rightContext.length) {
+        if (moduleTreeIndex + 1 >= moduleTree.length) {
+            return false;
+        }
+
+        const actual = moduleTree[moduleTreeIndex + 1];
+        const formal = rightContext[rightContextIndex];
+   
+        if (formal instanceof ModuleTree) {
+            match = match && 
+                actual instanceof ModuleTree &&
+                rightContextMatches(formal, 0, actual, 0, ignore);
+            contextIndex++;
+        } else {
+            if (actual instanceof Module) {
+                const ignored = ignore.filter(m => m.equals(actual));
+                if (0 >= ignored.length) {
+                    match = match && actual.equals(formal); 
+                    rightContextIndex++;
+                }
+            } else {
+                // skip the sub tree as it is not part of the right context
+                // Or try enter the subtree?
+                match = match && rightContextMatches(formal, rightContextIndex, actual, 0, ignore);
+            }
+        }
+        moduleTreeIndex++;
+    }
+    return match;
+};
 
 /**
  * A Predecessor in a Production.
@@ -104,16 +164,32 @@ class Predecessor {
     /**
      * Does this predecessor match a given module?
      *
-     * @param {Module} module - the module to match against this predecessor.
-     * @param {ModuleTree} [leftContext = undefined] - an optional left
-     * context to match.
-     * @param {ModuleTree} [rightContext = undefined] - an optional right
-     * context to match.
-     * @returns {Boolean} True if the module matches agains this predecessor,
+     * @param {Module} edge - the module to match against this predecessor.
+     * @param {ModuleTree} moduleTree - the sub tree in the predecessor the
+     * module is part of
+     * @param {Module[]} [pathTaken = []] - the path taken to reach module,
+     * this is the left context
+     * @param {Integer} [edgeIndex = 0] - the index of module in moduleTree.
+     * This is used to determine the right context.
+     * @param {Module[]} [ignore = []] - a list with modules to ignore when
+     * determining the right context.
+     *
+     * @returns{Boolean} True if the module matches agains this predecessor,
      * i.e, they are equal and the context matches.
      */
-    matches(module, leftContext = undefined, rightContext = undefined) {
-        return this.module.equals(module);
+    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = []) {
+        let left = true;
+        let right = true;
+        
+        if (this.hasLeftContext()) {
+            left =  leftContextMatches(this.leftContext, pathTaken);
+        }
+
+        if (this.hasRightContext()) {
+            right = rightContextMatches(this.rightContext, 0, moduleTree, edgeIndex, ignore);
+        }
+
+        return left && edgeMatches(this, edge) && right;
     }
 
     /**

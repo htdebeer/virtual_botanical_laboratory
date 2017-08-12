@@ -173,7 +173,7 @@ class Interpretation {
      * Initialize a new rendering of this interpretation.
      */
     initialize() {
-        _states.set(this, [_initialState.get(this)]);
+        _states.set(this, [Object.assign({}, _initialState.get(this))]);
     }
 
     /**

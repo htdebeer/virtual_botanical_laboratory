@@ -22,7 +22,7 @@ import {LSystem} from "./lsystem/LSystem.js";
 import {Interpretation} from "./interpretation/Interpretation.js";
 import {CanvasTurtleInterpretation} from "./interpretation/CanvasTurtleInterpretation.js";
 
-const SIZE = 400; // px
+const SIZE = 1000; // px
 const SPEED = 500; // ms
 
 const _element = new WeakMap();

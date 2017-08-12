@@ -17,13 +17,13 @@ const config = {
         alphabet: {O, I, F, -, +},
         axiom: F I F I F I,
         productions: {
-            O < O > O -> O,
-            O < O > I -> I [ + F I F I ],
+            O < O > O -> I,
+            O < O > I -> I [ - F I F I ],
             O < I > O -> I,
             O < I > I -> I,
             I < O > O -> O,
             I < O > I -> I F I,
-            I < I > O -> O,
+            I < I > O -> I,
             I < I > I -> O,
             + -> -,
             - -> +
@@ -33,16 +33,16 @@ const config = {
     interpretation: {
         type: "canvas",
         config: {
-            x: 10,
-            y: 200,
-            d: 4,
-            delta: (22.5 / 180) * Math.PI,
+            x: 0,
+            y: 400,
+            d: 10,
+            delta: (22.5 * Math.PI)/180,
             angle: 0,
             close: false
         }
     },
     derivationLength: 30,
-    animate: 100
+    animate: 500
 };
 
 const lab = new Lab(config);

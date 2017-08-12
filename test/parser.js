@@ -31,6 +31,12 @@ describe('Parser', function () {
         it(`should match "${simple}"`, function () {
             const parser = new lab.Parser();
             let lsystem;
+            try {
+                lsystem = parser.parse(simple);
+                lsystem = parser.parse(lsystem.stringify());
+            } catch (e) {
+                console.log("ERROR: ", e);
+            }
             assert.doesNotThrow(() => lsystem = parser.parse(simple));
             assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
         });

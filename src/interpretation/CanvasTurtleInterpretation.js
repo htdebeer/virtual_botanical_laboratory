@@ -39,7 +39,7 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
     finalize() {
         super.finalize();
         const canvas = _canvas.get(this);
-        if (this.getProperty("close", true)) {
+        if (this.getProperty("close", false)) {
             canvas.closePath();
         }
         canvas.stroke();
@@ -55,19 +55,22 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
 
     enter() {
         const canvas = _canvas.get(this);
-        canvas.stroke();
         canvas.save();
         super.enter();
-        canvas.beginPath();
+        if (this.getProperty("close", false)) {
+            canvas.beginPath();
+        }
         canvas.moveTo(this.x, this.y);
     }
 
     exit() {
         const canvas = _canvas.get(this);
-        canvas.stroke();
-        canvas.closePath();
+        if (this.getProperty("close", false)) {
+            canvas.closePath();
+        }
         canvas.restore();
         super.exit();
+        canvas.moveTo(this.x, this.y);
     }
         
 }

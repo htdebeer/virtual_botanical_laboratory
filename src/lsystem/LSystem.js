@@ -31,12 +31,8 @@ const _ignore = new WeakMap();
 const _currentDerivation = new WeakMap();
 const _derivationLength = new WeakMap();
 
-const leftContext = function (lsystem) {
-    return undefined;
-};
-
-const rightContext = function (lsystem) {
-    return undefined;
+const ignore = function (lsystem, edge) {
+    return 0 < lsystem.ignore.filter(m => m.equals(edge)).length;
 };
 
 const selectBestProduction = function (lsystem, productions) {
@@ -50,14 +46,21 @@ const selectBestProduction = function (lsystem, productions) {
         // If multiple context-sensitive
         // rules apply, choose the one with the longest matching context (?)
 
-        return productions[0];
+        const contextSensitive =  productions.filter(p => p.predecessor.isContextSensitive());
+
+        if (0 < contextSensitive.length) {
+            return contextSensitive[0];
+        } else {
+            return productions[0];
+        }
     }
 };
 
-const findProduction = function (lsystem, module, context) {
+const findProduction = function (lsystem, module, moduleTree, pathTaken, edgeIndex) {
+    //console.log(module.stringify(), edgeIndex, moduleTree.stringify());
     const candidates = lsystem
         .productions
-        .filter((p) => p.predecessor.matches(module, leftContext(lsystem), rightContext(lsystem)));
+        .filter((p) => p.predecessor.matches(module, moduleTree, pathTaken, edgeIndex, lsystem.ignore));
 
     if (0 < candidates.length) {
         return selectBestProduction(lsystem, candidates);
@@ -69,20 +72,31 @@ const findProduction = function (lsystem, module, context) {
     }
 };
 
-const derive = function(lsystem, moduleTree, context) {
+const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
     const successor = new Successor();
 
-    for (const node of moduleTree) {
-        if (node instanceof ModuleTree) {
-            successor.push(derive(lsystem, node, context));
+    while (edgeIndex < moduleTree.length) {
+        const edge = moduleTree[edgeIndex];
+        if (edge instanceof ModuleTree) {
+            successor.push(derive(lsystem, edge, pathTaken, 0));
         } else {
-            const production = findProduction(lsystem, node, context);
+            const production = findProduction(lsystem, edge, moduleTree, pathTaken, edgeIndex);
             const rewrittenNode = production.follow();
+
+            //console.log(edgeIndex, production.stringify());
 
             for (const successorNode of rewrittenNode) {
                 successor.push(successorNode);
             }
+
+            // Add node to the path taken if it should not be ignored in the
+            // context.
+            if (!ignore(lsystem, edge)) {
+                pathTaken.push(edge);
+            }
         }
+
+        edgeIndex++;
     }
 
     return successor;
@@ -176,8 +190,9 @@ const LSystem = class {
     derive(steps = 1) {
         for (let i = 0; i < steps; i++) {
             // do a derivation
+            //console.log("predecessor: ", _currentDerivation.get(this).stringify());
             const predecessor = _currentDerivation.get(this);
-            _currentDerivation.set(this, derive(this, predecessor, predecessor));
+            _currentDerivation.set(this, derive(this, predecessor));
             _derivationLength.set(this, this.derivationLength + 1);
         }
         return _currentDerivation.get(this);
