@@ -17,7 +17,7 @@ const config = {
         alphabet: {O, I, F, -, +},
         axiom: F I F I F I,
         productions: {
-            O < O > O -> I,
+            O < O > O -> O,
             O < O > I -> I [ - F I F I ],
             O < I > O -> I,
             O < I > I -> I,
@@ -42,7 +42,7 @@ const config = {
         }
     },
     derivationLength: 30,
-    animate: 500
+    animate: false
 };
 
 const lab = new Lab(config);
