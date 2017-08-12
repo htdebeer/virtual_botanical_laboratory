@@ -10,30 +10,39 @@
         <main id="lab">
         </main>
         <script type="module">
-            import {Lab} from "../../../src/Lab.js";
+import {Lab} from "../../../src/Lab.js";
 
 const config = {
     lsystem: `lsystem(
-        alphabet: {Fl, Fr, -, +},
-        axiom: Fl,
+        alphabet: {O, I, F, -, +},
+        axiom: F I F I F I,
         productions: {
-            Fl -> Fl + Fr +,
-            Fr -> - Fl - Fr
-        }
+            O < O > O -> O,
+            O < O > I -> I [ + F I F I ],
+            O < I > O -> I,
+            O < I > I -> I,
+            I < O > O -> O,
+            I < O > I -> I F I,
+            I < I > O -> O,
+            I < I > I -> O,
+            + -> -,
+            - -> +
+        },
+        ignore: {+, -, F}
     )`,
     interpretation: {
         type: "canvas",
         config: {
-            x: 200,
+            x: 10,
             y: 200,
             d: 4,
-            delta: Math.PI / 2,
+            delta: (22.5 / 180) * Math.PI,
             angle: 0,
             close: false
         }
     },
-    derivationLength: 13,
-    animate: true
+    derivationLength: 30,
+    animate: 100
 };
 
 const lab = new Lab(config);

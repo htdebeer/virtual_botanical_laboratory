@@ -416,6 +416,15 @@ const parseProductions = function (parser) {
     return productions;
 };
 
+const parseIgnore = function (parser) {
+    match(parser, KEYWORD, "ignore");
+    match(parser, DELIMITER, ":");
+    match(parser, BRACKET_OPEN, "{");
+    const ignoreList = parseList(parser, parseActualModule, "}");
+    match(parser, BRACKET_CLOSE, "}");
+    return ignoreList;
+};
+
 const parseLSystem = function (parser) {
     match(parser, KEYWORD, "lsystem");
     match(parser, BRACKET_OPEN, "(");
@@ -424,8 +433,13 @@ const parseLSystem = function (parser) {
     const axiom = parseAxiom(parser);
     match(parser, DELIMITER, ",");
     const productions = parseProductions(parser);
+    let ignore = []
+    if (lookAhead(parser, DELIMITER, ",")) {
+        match(parser, DELIMITER, ",");
+        ignore = parseIgnore(parser);
+    }
     match(parser, BRACKET_CLOSE, ")");
-    const lsystem = new LSystem(alphabet, axiom, productions);
+    const lsystem = new LSystem(alphabet, axiom, productions, ignore);
     return lsystem;
 }
 

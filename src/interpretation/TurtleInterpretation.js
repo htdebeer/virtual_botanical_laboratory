@@ -61,7 +61,7 @@ class TurtleInterpretation extends Interpretation {
         }));
 
 
-        this.alias(["Fl", "Fr"], "F");
+        this.alias(["Fl", "Fr", "Fa", "Fb"], "F");
     }
 
     moveTo(x, y) {

@@ -83,7 +83,9 @@ class Interpretation {
         const command = _commands.get(this)[name];
 
         if (undefined === command) {
-            throw new Error(`This interpretation has no command '${name}' to execute.`);
+            // By default commands that are unknown are ignored, only those
+            // that need interpretation should be added to the interpretation.
+            return;
         }
 
         if ("string" === typeof command) {
@@ -91,7 +93,9 @@ class Interpretation {
         } else if (command instanceof Command) {
             command.execute(this, parameters);
         } else {
-            throw new Error(`'${name}' is not an executable command in this interpretation.`);
+            // By default commands that are unknown are ignored, only those
+            // that need interpretation should be added to the interpretation.
+            return;
         }
     }
 

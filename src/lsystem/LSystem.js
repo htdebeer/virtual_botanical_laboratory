@@ -26,17 +26,41 @@ import {Parser} from "./Parser.js";
 const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
 const _productions = new WeakMap();
+const _ignore = new WeakMap();
+
 const _currentDerivation = new WeakMap();
 const _derivationLength = new WeakMap();
 
+const leftContext = function (lsystem) {
+    return undefined;
+};
 
-const findProduction = function (lsystem, module) {
+const rightContext = function (lsystem) {
+    return undefined;
+};
+
+const selectBestProduction = function (lsystem, productions) {
+    if (1 === productions.length) {
+        return productions[0];
+    } else {
+        // For context-sensitive L-systems, there can be multiple rules that
+        // match. If so, choose the most specific one: a context-sensitive rule
+        // has precedence over a context-free one. 
+        //
+        // If multiple context-sensitive
+        // rules apply, choose the one with the longest matching context (?)
+
+        return productions[0];
+    }
+};
+
+const findProduction = function (lsystem, module, context) {
     const candidates = lsystem
         .productions
-        .filter((p) => p.predecessor.matches(module));
+        .filter((p) => p.predecessor.matches(module, leftContext(lsystem), rightContext(lsystem)));
 
     if (0 < candidates.length) {
-        return candidates[0];
+        return selectBestProduction(lsystem, candidates);
     } else {
         // Modules that do not match any production are copied to the
         // successor directly. This is also known as the 'identity' production
@@ -45,14 +69,14 @@ const findProduction = function (lsystem, module) {
     }
 };
 
-const derive = function(lsystem, moduleTree) {
+const derive = function(lsystem, moduleTree, context) {
     const successor = new Successor();
 
     for (const node of moduleTree) {
         if (node instanceof ModuleTree) {
-            successor.push(derive(lsystem, node));
+            successor.push(derive(lsystem, node, context));
         } else {
-            const production = findProduction(lsystem, node);
+            const production = findProduction(lsystem, node, context);
             const rewrittenNode = production.follow();
 
             for (const successorNode of rewrittenNode) {
@@ -81,11 +105,13 @@ const LSystem = class {
      * @param {Alphabet} alphabet
      * @param {ModuleTree} axiom
      * @param {Production[]} productions
+     * @param {Module[]} ignore
      */
-    constructor(alphabet, axiom, productions) {
+    constructor(alphabet, axiom, productions, ignore = []) {
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
         _productions.set(this, productions);
+        _ignore.set(this, ignore);
 
         this.reset();
     }
@@ -114,6 +140,10 @@ const LSystem = class {
         return _productions.get(this);
     }
 
+    get ignore() {
+        return _ignore.get(this);
+    }
+
     get derivationLength() {
         return _derivationLength.get(this);
     }
@@ -125,7 +155,13 @@ const LSystem = class {
      * @return {String}
      */
     stringify() {
-        return `lsystem(alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}})`;
+        let lsystem = `lsystem(alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
+
+        if (0 < this.ignore.length) {
+            lsystem += `, ignore: {${this.ignore.map(m => m.stringify()).join(", ")}}`;
+        }
+        lsystem += `)`;
+        return lsystem;
     }
 
     /**
@@ -140,7 +176,8 @@ const LSystem = class {
     derive(steps = 1) {
         for (let i = 0; i < steps; i++) {
             // do a derivation
-            _currentDerivation.set(this, derive(this, _currentDerivation.get(this)));
+            const predecessor = _currentDerivation.get(this);
+            _currentDerivation.set(this, derive(this, predecessor, predecessor));
             _derivationLength.set(this, this.derivationLength + 1);
         }
         return _currentDerivation.get(this);

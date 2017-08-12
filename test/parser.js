@@ -124,7 +124,8 @@ describe('Parser', function () {
                 A(t) -> A(t+1) B B A(t-1),
                 B -> B A(0) A(10) B,
                 C(p, q) -> C(p - 1, q * 2)
-            }
+            },
+            ignore: {B}
         )`;
         
         it(`should match "${simpleParameterized}"`, function () {
