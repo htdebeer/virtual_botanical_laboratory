@@ -26,6 +26,7 @@ const _evaluator = new WeakMap();
  * An Expression can be evaluated to yield a value.
  *
  * @property {String} expression - a textual representation of this expression
+ * @property {String[]} formalParameters - a list of formal parameter names
  */
 class Expression {
 
@@ -41,6 +42,10 @@ class Expression {
         _formalParameters.set(this, formalParameters);
         _expression.set(this, expression);
         _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
+    }
+
+    get formalParameters() {
+        return _formalParameters.get(this);
     }
 
     /**

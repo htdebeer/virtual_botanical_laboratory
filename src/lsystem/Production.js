@@ -76,8 +76,9 @@ class Production {
      * @returns {Successor} The successor of this Production with parameters
      * applied.
      */
-    follow(parameters = []) {
-        return this.successor.apply(parameters);
+    follow(actualParameters = []) {
+        const formalParameters = this.predecessor.module.parameters.map(p => p.stringify());
+        return this.successor.apply(formalParameters, actualParameters);
     }
 
     /**

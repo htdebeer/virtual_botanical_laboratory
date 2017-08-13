@@ -157,6 +157,104 @@ class ModuleTree extends Array {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+// A Module's private properties
+const _name = new WeakMap();
+const _parameters = new WeakMap();
+
+/**
+ * A Module represents a symbol in a LSystem.
+ *
+ * @property {String} name - the name of the module.
+ * @property {Object[]} parameters - the parameters of this module.
+ */
+class Module {
+
+    /**
+     * Create a new Module
+     *
+     * @param {String} name - the module's name
+     * @param {Object[]} [parameters = []] - the module's parameters, if any
+     */
+    constructor(name, parameters = []) {
+        _name.set(this, name);
+        _parameters.set(this, parameters);
+    }
+
+    get name() {
+        return _name.get(this);
+    }
+
+    get parameters() {
+        return _parameters.get(this);
+    }
+
+    /**
+     * Is this Module equal to another module?
+     *
+     * @param {Module} other - the other module to compare this module with
+     * @return {Boolean} True if the names are the same as well as their
+     * number of parameters.
+     */
+    equals(other) {
+        // console.log(`${this.name} === ${other.name} and ${this.parameters.length} === ${other.parameters.length}`);
+        return this.name === other.name && this.parameters.length === other.parameters.length;
+    }
+
+    /**
+     * Is this Module parameterized?
+     *
+     * @returns {Boolean} true if it has parameters.
+     */
+    isParameterized() {
+        return 0 < this.parameters.length;
+    }
+
+    /**
+     * Create a String representation of this Module.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        if (this.isParameterized()) {
+            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(',')})`;
+        } else {
+            return this.name;
+        }
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const applyParametersToModuleTree = function (moduleTree, formalParameters = [], actualParameters = []) {
+    const successor = new ModuleTree();
+    for (const module of moduleTree) {
+        if (module instanceof ModuleTree) {
+            successor.push(applyParametersToModuleTree(module, formalParameters, actualParameters));
+        } else {
+            successor.push(new Module(module.name, module.parameters.map(p => p.evaluate(actualParameters))));
+        }
+    }
+    return successor;
+};
+
 /**
  * A successor in a production.
  *
@@ -165,14 +263,17 @@ class ModuleTree extends Array {
 class Successor extends ModuleTree {
     /**
      * Apply parameters to this successor.
-     *
-     * @param {NumericalExpression[]} [parameters = []] - the parameters to
-     * apply to this Successor.
+     * 
+     * @param {String[]} [formalParameters = []] - the parameter names to
+     * apply
+     * @param {Number[]} [actualParameters = []] - the parameter values to
+     * apply
      *
      * @returns {Successor} This Successor with parameters applied, if any.
      */
-    apply(parameters = []) {
-        return this;
+    apply(formalParameters = [], actualParameters = []) {
+        console.log(`Applying parameters (${formalParameters.join(", ")}) = (${actualParameters.join(", ")})`);
+        return applyParametersToModuleTree(this, formalParameters, actualParameters);
     }
 }
 
@@ -254,8 +355,9 @@ class Production {
      * @returns {Successor} The successor of this Production with parameters
      * applied.
      */
-    follow(parameters = []) {
-        return this.successor.apply(parameters);
+    follow(actualParameters = []) {
+        const formalParameters = this.predecessor.module.parameters.map(p => p.stringify());
+        return this.successor.apply(formalParameters, actualParameters);
     }
 
     /**
@@ -270,92 +372,6 @@ class Production {
         }
         str += ` -> ${this.successor.stringify()}`;
         return str;
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-// A Module's private properties
-const _name = new WeakMap();
-const _parameters = new WeakMap();
-
-/**
- * A Module represents a symbol in a LSystem.
- *
- * @property {String} name - the name of the module.
- * @property {Object[]} parameters - the parameters of this module.
- */
-class Module {
-
-    /**
-     * Create a new Module
-     *
-     * @param {String} name - the module's name
-     * @param {Object[]} [parameters = []] - the module's parameters, if any
-     */
-    constructor(name, parameters = []) {
-        _name.set(this, name);
-        _parameters.set(this, parameters);
-    }
-
-    get name() {
-        return _name.get(this);
-    }
-
-    get parameters() {
-        return _parameters.get(this);
-    }
-
-    /**
-     * Is this Module equal to another module?
-     *
-     * @param {Module} other - the other module to compare this module with
-     * @return {Boolean} True if the names are the same as well as their
-     * number of parameters.
-     */
-    equals(other) {
-        // console.log(`${this.name} === ${other.name} and ${this.parameters.length} === ${other.parameters.length}`);
-        return this.name === other.name && this.parameters.length === other.parameters.length;
-    }
-
-    /**
-     * Is this Module parameterized?
-     *
-     * @returns {Boolean} true if it has parameters.
-     */
-    isParameterized() {
-        return 0 < this.parameters.length;
-    }
-
-    /**
-     * Create a String representation of this Module.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        if (this.isParameterized()) {
-            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(',')})`;
-        } else {
-            return this.name;
-        }
     }
 }
 
@@ -1370,6 +1386,7 @@ const _evaluator = new WeakMap();
  * An Expression can be evaluated to yield a value.
  *
  * @property {String} expression - a textual representation of this expression
+ * @property {String[]} formalParameters - a list of formal parameter names
  */
 class Expression {
 
@@ -1385,6 +1402,10 @@ class Expression {
         _formalParameters.set(this, formalParameters);
         _expression.set(this, expression);
         _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
+    }
+
+    get formalParameters() {
+        return _formalParameters.get(this);
     }
 
     /**
@@ -1820,6 +1841,7 @@ const parseAxiom = function (parser) {
     match(parser, KEYWORD, "axiom");
     match(parser, DELIMITER, ":");
     const axiom = parseSuccessor(parser);
+    axiom.apply();
     return axiom;
 };
 
@@ -2055,7 +2077,7 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
             successor.push(derive(lsystem, edge, pathTaken, 0));
         } else {
             const production = findProduction(lsystem, edge, moduleTree, pathTaken, edgeIndex);
-            const rewrittenNode = production.follow();
+            const rewrittenNode = production.follow(edge.parameters);
 
             //console.log(edgeIndex, production.stringify());
 
@@ -2164,7 +2186,7 @@ const LSystem = class {
     derive(steps = 1) {
         for (let i = 0; i < steps; i++) {
             // do a derivation
-            // console.log("predecessor: ", _currentDerivation.get(this).stringify());
+            console.log("predecessor: ", _currentDerivation.get(this).stringify());
             const predecessor = _currentDerivation.get(this);
             _currentDerivation.set(this, derive(this, predecessor));
             _derivationLength.set(this, this.derivationLength + 1);
@@ -2511,7 +2533,6 @@ class TurtleInterpretation extends Interpretation {
 
             this.lineTo(this.x, this.y);
         }));
-
 
         this.alias(["Fl", "Fr", "Fa", "Fb"], "F");
     }

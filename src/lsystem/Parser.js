@@ -335,6 +335,7 @@ const parseAxiom = function (parser) {
     match(parser, KEYWORD, "axiom");
     match(parser, DELIMITER, ":");
     const axiom = parseSuccessor(parser);
+    axiom.apply();
     return axiom;
 };
 

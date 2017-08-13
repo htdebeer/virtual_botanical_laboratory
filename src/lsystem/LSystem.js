@@ -81,7 +81,7 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
             successor.push(derive(lsystem, edge, pathTaken, 0));
         } else {
             const production = findProduction(lsystem, edge, moduleTree, pathTaken, edgeIndex);
-            const rewrittenNode = production.follow();
+            const rewrittenNode = production.follow(edge.parameters);
 
             //console.log(edgeIndex, production.stringify());
 
@@ -190,7 +190,7 @@ const LSystem = class {
     derive(steps = 1) {
         for (let i = 0; i < steps; i++) {
             // do a derivation
-            // console.log("predecessor: ", _currentDerivation.get(this).stringify());
+            console.log("predecessor: ", _currentDerivation.get(this).stringify());
             const predecessor = _currentDerivation.get(this);
             _currentDerivation.set(this, derive(this, predecessor));
             _derivationLength.set(this, this.derivationLength + 1);

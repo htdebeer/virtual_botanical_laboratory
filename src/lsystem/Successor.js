@@ -18,7 +18,21 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
+import {Module} from "./Module.js";
 import {ModuleTree} from "./ModuleTree.js";
+
+
+const applyParametersToModuleTree = function (moduleTree, formalParameters = [], actualParameters = []) {
+    const successor = new ModuleTree();
+    for (const module of moduleTree) {
+        if (module instanceof ModuleTree) {
+            successor.push(applyParametersToModuleTree(module, formalParameters, actualParameters));
+        } else {
+            successor.push(new Module(module.name, module.parameters.map(p => p.evaluate(actualParameters))))
+        }
+    }
+    return successor;
+};
 
 /**
  * A successor in a production.
@@ -28,14 +42,17 @@ import {ModuleTree} from "./ModuleTree.js";
 class Successor extends ModuleTree {
     /**
      * Apply parameters to this successor.
-     *
-     * @param {NumericalExpression[]} [parameters = []] - the parameters to
-     * apply to this Successor.
+     * 
+     * @param {String[]} [formalParameters = []] - the parameter names to
+     * apply
+     * @param {Number[]} [actualParameters = []] - the parameter values to
+     * apply
      *
      * @returns {Successor} This Successor with parameters applied, if any.
      */
-    apply(parameters = []) {
-        return this;
+    apply(formalParameters = [], actualParameters = []) {
+        console.log(`Applying parameters (${formalParameters.join(", ")}) = (${actualParameters.join(", ")})`);
+        return applyParametersToModuleTree(this, formalParameters, actualParameters);
     }
 }
 
