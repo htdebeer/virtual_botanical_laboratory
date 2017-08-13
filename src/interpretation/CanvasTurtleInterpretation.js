@@ -60,7 +60,6 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
         if (this.getProperty("close", false)) {
             canvas.beginPath();
         }
-        canvas.moveTo(this.x, this.y);
     }
 
     exit() {

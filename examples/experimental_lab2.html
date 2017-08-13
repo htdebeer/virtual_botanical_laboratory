@@ -14,34 +14,24 @@ import {Lab} from "../../../src/Lab.js";
 
 const config = {
     lsystem: `lsystem(
-        alphabet: {F, O, I, -, +},
-        axiom: F I F I F I,
+        alphabet: {A(s), F(s), -, +},
+        axiom: A(1),
         productions: {
-            O < O > O -> I,
-            O < O > I -> I [ - F I F I ],
-            O < I > O -> I,
-            O < I > I -> I,
-            I < O > O -> O,
-            I < O > I -> I F I,
-            I < I > O -> I,
-            I < I > I -> O,
-            + -> -,
-            - -> +
-        },
-        ignore: {+, -, F}
+            A(s) -> F(s) [ + A(s/1.456)] [ - A(s/1.456)]
+        }
     )`,
     interpretation: {
         type: "canvas",
         config: {
             x: 400,
-            y: 1000,
+            y: 800,
             d: 10,
-            delta: (-22.5 * Math.PI)/180,
+            delta: (-85 * Math.PI)/180,
             alpha: (270 * Math.PI)/180,
             close: false
         }
     },
-    derivationLength: 30,
+    derivationLength: 6,
     animate: false
 };
 

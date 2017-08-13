@@ -46,24 +46,22 @@ const leftContextMatches = function (leftContext, pathTaken) {
     return match;
 };
 
-const rightContextMatches = function (rightContext, rightContextIndex, moduleTree, edgeIndex, ignore = []) {
-    let contextIndex = 0;
-    let moduleTreeIndex = edgeIndex;
+const rightContextMatches = function (rightContext, rightContextIndex, moduleTree, moduleTreeIndex, ignore = []) {
     let match = true;
 
-    while (rightContextIndex < rightContext.length) {
-        if (moduleTreeIndex + 1 >= moduleTree.length) {
+    while (match && rightContextIndex < rightContext.length) {
+        if (moduleTreeIndex >= moduleTree.length) {
             return false;
         }
 
-        const actual = moduleTree[moduleTreeIndex + 1];
+        const actual = moduleTree[moduleTreeIndex];
         const formal = rightContext[rightContextIndex];
    
         if (formal instanceof ModuleTree) {
             match = match && 
                 actual instanceof ModuleTree &&
                 rightContextMatches(formal, 0, actual, 0, ignore);
-            contextIndex++;
+            rightContextIndex++;
         } else {
             if (actual instanceof Module) {
                 const ignored = ignore.filter(m => m.equals(actual));
@@ -72,13 +70,17 @@ const rightContextMatches = function (rightContext, rightContextIndex, moduleTre
                     rightContextIndex++;
                 }
             } else {
-                // skip the sub tree as it is not part of the right context
-                // Or try enter the subtree?
-                match = match && rightContextMatches(formal, rightContextIndex, actual, 0, ignore);
+                // See if the subtree is a match. If it isn't, ignore it and
+                // continue at the current level. If it is a match, the rest
+                // of the rightContext has been matched, so this is a match.
+                if (rightContextMatches(rightContext, rightContextIndex, actual, 0, ignore)) {
+                    return true;
+                }
             }
         }
         moduleTreeIndex++;
     }
+
     return match;
 };
 
@@ -186,7 +188,7 @@ class Predecessor {
         }
 
         if (this.hasRightContext()) {
-            right = rightContextMatches(this.rightContext, 0, moduleTree, edgeIndex, ignore);
+            right = rightContextMatches(this.rightContext, 0, moduleTree, edgeIndex + 1, ignore);
         }
 
         return left && edgeMatches(this, edge) && right;
