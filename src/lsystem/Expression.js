@@ -48,6 +48,10 @@ class Expression {
         return _formalParameters.get(this);
     }
 
+    get expression() {
+        return _expression.get(this);
+    }
+
     /**
      * Evaluate this Expression given an optional list of actual parameters.
      *
@@ -60,10 +64,6 @@ class Expression {
      */
     evaluate(actualParameters = []) {
         return _evaluator.get(this).apply(undefined, actualParameters);
-    }
-
-    get expression() {
-        return _expression.get(this);
     }
 
     /**

@@ -19,7 +19,6 @@
  * 
  */
 import {ModuleTree} from "./ModuleTree.js";
-import {Successor} from "./Successor.js";
 import {IdentityProduction} from "./IdentityProduction.js";
 import {Parser} from "./Parser.js";
 
@@ -46,7 +45,7 @@ const selectBestProduction = function (lsystem, productions) {
         // If multiple context-sensitive
         // rules apply, choose the one with the longest matching context (?)
 
-        const contextSensitive =  productions.filter(p => p.predecessor.isContextSensitive());
+        const contextSensitive = productions.filter(p => p.predecessor.isContextSensitive());
 
         if (0 < contextSensitive.length) {
             return contextSensitive[0];
@@ -57,7 +56,6 @@ const selectBestProduction = function (lsystem, productions) {
 };
 
 const findProduction = function (lsystem, module, moduleTree, pathTaken, edgeIndex) {
-    //console.log(module.stringify(), edgeIndex, moduleTree.stringify());
     const candidates = lsystem
         .productions
         .filter((p) => p.predecessor.matches(module, moduleTree, pathTaken, edgeIndex, lsystem.ignore));
@@ -73,7 +71,7 @@ const findProduction = function (lsystem, module, moduleTree, pathTaken, edgeInd
 };
 
 const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
-    const successor = new Successor();
+    const successor = new ModuleTree();
 
     while (edgeIndex < moduleTree.length) {
         const edge = moduleTree[edgeIndex];
@@ -81,7 +79,7 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
             successor.push(derive(lsystem, edge, pathTaken, 0));
         } else {
             const production = findProduction(lsystem, edge, moduleTree, pathTaken, edgeIndex);
-            const rewrittenNode = production.follow(edge.parameters);
+            const rewrittenNode = production.follow(edge);
 
             //console.log(edgeIndex, production.stringify());
 

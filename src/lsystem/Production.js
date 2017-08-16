@@ -69,16 +69,36 @@ class Production {
     /**
      * Follow this productions
      *
-     * @param {NumericalExpression[]} [parameters = []] - an optional list of
-     * parameters to check the condition and to apply to the successor of this
-     * production.
+     * @param {Module} edge - the actual module to apply this production to.
      *
      * @returns {Successor} The successor of this Production with parameters
      * applied.
      */
-    follow(actualParameters = []) {
-        const formalParameters = this.predecessor.module.parameters.map(p => p.stringify());
-        return this.successor.apply(formalParameters, actualParameters);
+    follow(edge) {
+        if (this.predecessor.module.isParameterized()) {
+            // In each production, the predecessor is exactly one module. However,
+            // its successor can consist of one or more modules. Construct a map
+            // of formal parameters to their current actual value (based on the
+            // edge)
+
+            const formalParameters = this.predecessor.module.parameters.reduce((ps, p) => {
+                return ps.concat([p]);
+            }, []);
+
+            const parameters = {};
+            formalParameters.forEach((name) => {
+                const actualValue = edge.getValue(name);
+                if (undefined !== actualValue) {
+                    parameters[name] = actualValue;
+                } else {
+                    console.log(`Expected a value`, edge.parameters);
+                }
+            });
+            console.log("parameters: ", parameters);
+            return this.successor.apply(formalParameters, parameters);
+        } else {
+            return this.successor.apply();
+        }
     }
 
     /**

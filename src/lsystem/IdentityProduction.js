@@ -21,6 +21,8 @@
 import {Production} from "./Production.js";
 import {Successor} from "./Successor.js";
 import {Predecessor} from "./Predecessor.js";
+import {ModuleApplication} from "./ModuleApplication.js";
+import {NumericalExpression} from "./NumericalExpression.js";
 
 /**
  * An IdentityProduction is a Production that maps a Module to itself. This is
@@ -36,7 +38,15 @@ class IdentityProduction extends Production {
      * IdentityProduction.
      */
     constructor(module) {
-        super(new Predecessor(module), new Successor([module]));
+        const expressions = [];
+        if (module.isParameterized()) {
+            for (const name of module.parameters) {
+                expressions.push(new NumericalExpression(name, name));
+            }
+        }
+        const moduleApplication = new ModuleApplication(module.name, module, expressions);
+
+        super(new Predecessor(moduleApplication), new Successor([moduleApplication]));
     }
 }
 

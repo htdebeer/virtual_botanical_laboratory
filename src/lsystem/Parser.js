@@ -33,6 +33,8 @@ import {LSystem} from "./LSystem.js";
 import {Module} from "./Module.js";
 import {ModuleTree} from "./ModuleTree.js";
 import {ModuleDefinition} from "./ModuleDefinition.js";
+import {ModuleValue} from "./ModuleValue.js";
+import {ModuleApplication} from "./ModuleApplication.js";
 
 import {Alphabet} from "./Alphabet.js";
 
@@ -57,6 +59,11 @@ const BOOL_EXPR = Symbol("BOOL_EXPR");
 const ACTUAL_PARAMETERS = Symbol("ACTUAL_PARAMETERS");
 const MODULE_NAME = Symbol("MODULE_NAME");
 
+const defined = function (parser, name, scope = MODULE) {
+    const idTable = _idTable.get(parser);
+    return idTable.find((id) => id.name === name && id.scope === scope);
+};
+
 const installIdentifier = function (parser, identifierToken, scope = MODULE) {
     const idTable = _idTable.get(parser);
     const name = identifierToken.value;
@@ -67,9 +74,9 @@ const installIdentifier = function (parser, identifierToken, scope = MODULE) {
     }
 };
 
-const defined = function (parser, name, scope = MODULE) {
-    const idTable = _idTable.get(parser);
-    return idTable.find((id) => id.name === name && id.scope === scope);
+const installModuleDefinition = function (parser, moduleDefinition) {
+    const identifier = defined(parser, moduleDefinition.name);
+    identifier.moduleDefinition = moduleDefinition;
 };
 
 const lookAhead = function (parser, name, value = undefined, distance = 1, context = undefined) {
@@ -120,7 +127,9 @@ const parseModuleDefinition = function (parser) {
         match(parser, BRACKET_CLOSE, ")");
     }
 
-    return new ModuleDefinition(moduleName, formalParameters);
+    const moduleDefinition = new ModuleDefinition(moduleName, formalParameters);
+    installModuleDefinition(parser, moduleDefinition);
+    return moduleDefinition;
 };
 
 const parseAlphabet = function (parser) {
@@ -266,11 +275,13 @@ const parseActualParameter = function (parser) {
     return new NumericalExpression(vars, expr);
 };
 
-const parseActualModule = function (parser) {
+const parseActualModule = function (parser, ModuleClass) {
     const moduleNameToken = match(parser, IDENTIFIER, undefined, MODULE_NAME);
     const moduleName = moduleNameToken.value;
 
-    if (!defined(parser, moduleName, MODULE)) {
+    const module = defined(parser, moduleName, MODULE);
+
+    if (undefined === module) {
         throw new ParseError(`Module '${moduleName}' at position ${moduleNameToken.position()} not in the alphabet.`);
     }
 
@@ -280,14 +291,20 @@ const parseActualModule = function (parser) {
         match(parser, BRACKET_OPEN, "(");
         actualParameters = parseList(parser, parseActualParameter);
         match(parser, BRACKET_CLOSE, ")");
-
-        // TODO: check match formal module
     }
 
-    return new Module(moduleName, actualParameters);
+    return new ModuleClass(moduleName, module.moduleDefinition, actualParameters);
 };
 
-const parseModuleTree = function (parser, withSubTrees = true) {
+const parseModuleValue = function (parser) {
+    return parseActualModule(parser, ModuleValue);
+};
+
+const parseModuleApplication = function (parser) {
+    return parseActualModule(parser, ModuleApplication);
+};
+
+const parseModuleTree = function (parser, ModuleClass, withSubTrees = true) {
     const moduleTree = new ModuleTree();
 
     while (
@@ -303,12 +320,21 @@ const parseModuleTree = function (parser, withSubTrees = true) {
             match(parser, BRACKET_CLOSE, "]");
         } else {
             // Match a module in the moduleTree
-            moduleTree.push(parseActualModule(parser));
+            moduleTree.push(parseActualModule(parser, ModuleClass));
         }
     }
 
     return moduleTree;
-}
+};
+
+const parseModuleValueTree = function (parser, withSubTrees = true) {
+    return parseModuleTree(parser, ModuleValue, withSubTrees);
+};
+
+const parseModuleApplicationTree = function (parser, withSubTrees = true) {
+    return parseModuleTree(parser, ModuleApplication, withSubTrees);
+};
+
 
 const parseSuccessor = function (parser) {
     const successor = new Successor();
@@ -324,7 +350,8 @@ const parseSuccessor = function (parser) {
             match(parser, BRACKET_CLOSE, "]");
         } else {
             // Match a module in the successor
-            successor.push(parseActualModule(parser));
+            const module = parseModuleApplication(parser);
+            successor.push(module);
         }
     }
 
@@ -334,9 +361,7 @@ const parseSuccessor = function (parser) {
 const parseAxiom = function (parser) {
     match(parser, KEYWORD, "axiom");
     match(parser, DELIMITER, ":");
-    const axiom = parseSuccessor(parser);
-    axiom.apply();
-    return axiom;
+    return parseModuleValueTree(parser);
 };
 
 
@@ -371,17 +396,17 @@ const parsePredecessor = function (parser) {
     let hasLeftContext = false;
     let hasRightContext = false;
 
-    modules.push(parseModuleTree(parser, false));
+    modules.push(parseModuleApplicationTree(parser, false));
     
     if (lookAhead(parser, BRACKET_OPEN, "<", 1, CONTEXT)) {
         match(parser, BRACKET_OPEN, "<", CONTEXT);
-        modules.push(parseActualModule(parser));
+        modules.push(parseModuleApplication(parser));
         hasLeftContext = true;
     }
     
     if (lookAhead(parser, BRACKET_CLOSE, ">", 1, CONTEXT)) {
         match(parser, BRACKET_CLOSE, ">", CONTEXT);
-        modules.push(parseModuleTree(parser));
+        modules.push(parseModuleApplicationTree(parser));
         hasRightContext = true;
     }
 
@@ -445,7 +470,7 @@ const parseIgnore = function (parser) {
     match(parser, KEYWORD, "ignore");
     match(parser, DELIMITER, ":");
     match(parser, BRACKET_OPEN, "{");
-    const ignoreList = parseList(parser, parseActualModule, "}");
+    const ignoreList = parseList(parser, parseModuleApplication, "}");
     match(parser, BRACKET_CLOSE, "}");
     return ignoreList;
 };

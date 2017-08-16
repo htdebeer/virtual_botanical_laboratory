@@ -18,32 +18,35 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {Module} from './Module.js';
+import {Module} from "./Module.js";
+import {ModuleValue} from "./ModuleValue.js";
 
-const _values = new WeakMap();
+const _expressions = new WeakMap();
 
 /**
- * A ModuleValue defines an actual module in a string.
+ * A ModuleApplication defines a module in a successor of a production
  *
  * @property {Number[]} values
  */
-class ModuleValue extends Module {
+class ModuleApplication extends Module {
 
     constructor(name, moduleDefinition, actualParameters) {
         const formalParameters = moduleDefinition.parameters;
+
         if (formalParameters.length !== actualParameters.length) {
-            throw new Error(`Number of actual parameters (${actualParameters.length}) should be equal to the number of formal parameters (${formalParameters.length}).`);
+            throw new Error(`Number of actual parameters (${actualParameters.lenght}) should be equal to the number of formal parameters (${formalParameters.length}).`);
         }
+
         super(name, formalParameters);
 
-        const values = {};
+        const expressions = {};
 
         for (let index = 0; index < formalParameters.length; index++) {
             const name = formalParameters[index];
-            values[name] = actualParameters[index].evaluate();
+            expressions[name] = actualParameters[index];
         }
 
-        _values.set(this, values);
+        _expressions.set(this, expressions);
     }
 
     /**
@@ -53,9 +56,18 @@ class ModuleValue extends Module {
      * @return {Number} the value of this parameter, or undefined if it does
      * not exist.
      */
-    getValue(name) {
-        console.log(Object.values(_values.get(this)), name);
-        return _values.get(this)[name];
+    getExpression(name) {
+        return _expressions.get(this)[name];
+    }
+
+    apply(parameters) {
+        const values = [];
+        for (const name of this.parameters) {
+            const value = this.getExpression(name).evaluate(parameters[name]);
+            console.log("value for", name, value, this.getExpression(name).stringify());
+            values.push(this.getExpression(name).evaluate(parameters[name]));
+        }
+        return new ModuleValue(this.name, this, values);
     }
 
     /**
@@ -65,7 +77,7 @@ class ModuleValue extends Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${Object.values(_values.get(this)).join(',')})`;
+            return `${this.name}(${Object.values(_expressions.get(this)).map(e => e.stringify()).join(',')})`;
         } else {
             return this.name;
         }
@@ -73,5 +85,5 @@ class ModuleValue extends Module {
 }
 
 export {
-    ModuleValue
+    ModuleApplication
 }

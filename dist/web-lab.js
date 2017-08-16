@@ -157,6 +157,124 @@ class ModuleTree extends Array {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+const _predecessor = new WeakMap();
+const _successor = new WeakMap();
+const _condition = new WeakMap();
+
+/**
+ * A Production is a rewriting rule from a predecessor to a successor.
+ *
+ * @property {Predecessor} predecessor
+ * @property {BooleanExpression} [condition = undefined] - productions in a
+ * parameterized LSystem can have a condition guarding a production.
+ * @property {Successor} successor
+ */
+class Production {
+    /**
+     * Create a new Production instance based on the predecessor, an optional
+     * condition and a successor.
+     *
+     * @param {Predecessor} predecessor
+     * @param {Successor} successor
+     * @param {BooleanExpression} [condition = undefined]
+     */
+    constructor(predecessor, successor, condition = undefined) {
+        _predecessor.set(this, predecessor);
+        _successor.set(this, successor);
+        _condition.set(this, condition);
+    }
+
+    get predecessor() {
+        return _predecessor.get(this);
+    }
+
+    get successor() {
+        return _successor.get(this);
+    }
+
+    get condition() {
+        return _condition.get(this);
+    }
+
+    /**
+     * Is this production conditional?
+     *
+     * @return {Boolean} True if this production has a condition.
+     */
+    isConditional() {
+        return undefined !== this.condition;
+    }
+
+    /**
+     * Follow this productions
+     *
+     * @param {Module} edge - the actual module to apply this production to.
+     *
+     * @returns {Successor} The successor of this Production with parameters
+     * applied.
+     */
+    follow(edge) {
+        if (this.predecessor.module.isParameterized()) {
+            // In each production, the predecessor is exactly one module. However,
+            // its successor can consist of one or more modules. Construct a map
+            // of formal parameters to their current actual value (based on the
+            // edge)
+
+            const formalParameters = this.predecessor.module.parameters.reduce((ps, p) => {
+                return ps.concat([p]);
+            }, []);
+
+            const parameters = {};
+            formalParameters.forEach((name) => {
+                const actualValue = edge.getValue(name);
+                if (undefined !== actualValue) {
+                    parameters[name] = actualValue;
+                } else {
+                    console.log(`Expected a value`, edge.parameters);
+                }
+            });
+            console.log("parameters: ", parameters);
+            return this.successor.apply(formalParameters, parameters);
+        } else {
+            return this.successor.apply();
+        }
+    }
+
+    /**
+     * Create a String representation of this Production.
+     *
+     * @return {String}
+     */
+    stringify() {
+        let str = this.predecessor.stringify();
+        if (this.isConditional()) {
+            str += `: ${this.condition.stringify()}`;
+        }
+        str += ` -> ${this.successor.stringify()}`;
+        return str;
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
 // A Module's private properties
 const _name = new WeakMap();
 const _parameters = new WeakMap();
@@ -243,37 +361,55 @@ class Module {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const applyParametersToModuleTree = function (moduleTree, formalParameters = [], actualParameters = []) {
-    const successor = new ModuleTree();
-    for (const module of moduleTree) {
-        if (module instanceof ModuleTree) {
-            successor.push(applyParametersToModuleTree(module, formalParameters, actualParameters));
-        } else {
-            successor.push(new Module(module.name, module.parameters.map(p => p.evaluate(actualParameters))));
-        }
-    }
-    return successor;
-};
+const _values = new WeakMap();
 
 /**
- * A successor in a production.
+ * A ModuleValue defines an actual module in a string.
  *
- * @property {Module[]} a list of modules
+ * @property {Number[]} values
  */
-class Successor extends ModuleTree {
+class ModuleValue extends Module {
+
+    constructor(name, moduleDefinition, actualParameters) {
+        const formalParameters = moduleDefinition.parameters;
+        if (formalParameters.length !== actualParameters.length) {
+            throw new Error(`Number of actual parameters (${actualParameters.length}) should be equal to the number of formal parameters (${formalParameters.length}).`);
+        }
+        super(name, formalParameters);
+
+        const values = {};
+
+        for (let index = 0; index < formalParameters.length; index++) {
+            const name = formalParameters[index];
+            values[name] = actualParameters[index].evaluate();
+        }
+
+        _values.set(this, values);
+    }
+
     /**
-     * Apply parameters to this successor.
-     * 
-     * @param {String[]} [formalParameters = []] - the parameter names to
-     * apply
-     * @param {Number[]} [actualParameters = []] - the parameter values to
-     * apply
+     * Get the value of a parameter.
      *
-     * @returns {Successor} This Successor with parameters applied, if any.
+     * @param {String} name - the name of the parameter to get
+     * @return {Number} the value of this parameter, or undefined if it does
+     * not exist.
      */
-    apply(formalParameters = [], actualParameters = []) {
-        console.log(`Applying parameters (${formalParameters.join(", ")}) = (${actualParameters.join(", ")})`);
-        return applyParametersToModuleTree(this, formalParameters, actualParameters);
+    getValue(name) {
+        console.log(Object.values(_values.get(this)), name);
+        return _values.get(this)[name];
+    }
+
+    /**
+     * Create a String representation of this Module.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        if (this.isParameterized()) {
+            return `${this.name}(${Object.values(_values.get(this)).join(',')})`;
+        } else {
+            return this.name;
+        }
     }
 }
 
@@ -297,81 +433,117 @@ class Successor extends ModuleTree {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const _predecessor = new WeakMap();
-const _successor = new WeakMap();
-const _condition = new WeakMap();
+const _expressions = new WeakMap();
 
 /**
- * A Production is a rewriting rule from a predecessor to a successor.
+ * A ModuleApplication defines a module in a successor of a production
  *
- * @property {Predecessor} predecessor
- * @property {BooleanExpression} [condition = undefined] - productions in a
- * parameterized LSystem can have a condition guarding a production.
- * @property {Successor} successor
+ * @property {Number[]} values
  */
-class Production {
+class ModuleApplication extends Module {
+
+    constructor(name, moduleDefinition, actualParameters) {
+        const formalParameters = moduleDefinition.parameters;
+
+        if (formalParameters.length !== actualParameters.length) {
+            throw new Error(`Number of actual parameters (${actualParameters.lenght}) should be equal to the number of formal parameters (${formalParameters.length}).`);
+        }
+
+        super(name, formalParameters);
+
+        const expressions = {};
+
+        for (let index = 0; index < formalParameters.length; index++) {
+            const name = formalParameters[index];
+            expressions[name] = actualParameters[index];
+        }
+
+        _expressions.set(this, expressions);
+    }
+
     /**
-     * Create a new Production instance based on the predecessor, an optional
-     * condition and a successor.
+     * Get the value of a parameter.
      *
-     * @param {Predecessor} predecessor
-     * @param {Successor} successor
-     * @param {BooleanExpression} [condition = undefined]
+     * @param {String} name - the name of the parameter to get
+     * @return {Number} the value of this parameter, or undefined if it does
+     * not exist.
      */
-    constructor(predecessor, successor, condition = undefined) {
-        _predecessor.set(this, predecessor);
-        _successor.set(this, successor);
-        _condition.set(this, condition);
+    getExpression(name) {
+        return _expressions.get(this)[name];
     }
 
-    get predecessor() {
-        return _predecessor.get(this);
-    }
-
-    get successor() {
-        return _successor.get(this);
-    }
-
-    get condition() {
-        return _condition.get(this);
+    apply(parameters) {
+        const values = [];
+        for (const name of this.parameters) {
+            const value = this.getExpression(name).evaluate(parameters[name]);
+            console.log("value for", name, value, this.getExpression(name).stringify());
+            values.push(this.getExpression(name).evaluate(parameters[name]));
+        }
+        return new ModuleValue(this.name, this, values);
     }
 
     /**
-     * Is this production conditional?
+     * Create a String representation of this Module.
      *
-     * @return {Boolean} True if this production has a condition.
-     */
-    isConditional() {
-        return undefined !== this.condition;
-    }
-
-    /**
-     * Follow this productions
-     *
-     * @param {NumericalExpression[]} [parameters = []] - an optional list of
-     * parameters to check the condition and to apply to the successor of this
-     * production.
-     *
-     * @returns {Successor} The successor of this Production with parameters
-     * applied.
-     */
-    follow(actualParameters = []) {
-        const formalParameters = this.predecessor.module.parameters.map(p => p.stringify());
-        return this.successor.apply(formalParameters, actualParameters);
-    }
-
-    /**
-     * Create a String representation of this Production.
-     *
-     * @return {String}
+     * @returns {String}
      */
     stringify() {
-        let str = this.predecessor.stringify();
-        if (this.isConditional()) {
-            str += `: ${this.condition.stringify()}`;
+        if (this.isParameterized()) {
+            return `${this.name}(${Object.values(_expressions.get(this)).map(e => e.stringify()).join(',')})`;
+        } else {
+            return this.name;
         }
-        str += ` -> ${this.successor.stringify()}`;
-        return str;
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
+    const successor = new ModuleTree();
+    for (const module of moduleTree) {
+        if (module instanceof ModuleTree) {
+            successor.push(applyParametersToModuleTree(module, parameters));
+        } else {
+            successor.push(module.apply(parameters));
+        }
+    }
+    return successor;
+};
+
+/**
+ * A successor in a production.
+ *
+ * @property {Module[]} a list of modules
+ */
+class Successor extends ModuleTree {
+    /**
+     * Apply parameters to this successor.
+     * 
+     * @param {Object[]} [parameters = {}] - the parameters to apply.
+     *
+     * @returns {Successor} This Successor with parameters applied, if any.
+     */
+    apply(parameters = {}) {
+        console.log(`Applying parameters '${Object.values(parameters).join(", ")}'`);
+        return applyParametersToModuleTree(this, parameters);
     }
 }
 
@@ -607,6 +779,132 @@ class Predecessor {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+const _formalParameters = new WeakMap();
+const _expression = new WeakMap();
+const _evaluator = new WeakMap();
+
+/**
+ * An Expression can be evaluated to yield a value.
+ *
+ * @property {String} expression - a textual representation of this expression
+ * @property {String[]} formalParameters - a list of formal parameter names
+ */
+class Expression {
+
+    /**
+     * Create a new instance of an Expression.
+     *
+     * @param {String[]} [formalParameters = []] - an optional list of formal
+     * parameter names.
+     * @param {Boolean|Number|undefined} [expression = undefined] - an optional expression
+     * value, defaults to undefined.
+     */
+    constructor(formalParameters = [], expression = undefined) {
+        _formalParameters.set(this, formalParameters);
+        _expression.set(this, expression);
+        _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
+    }
+
+    get formalParameters() {
+        return _formalParameters.get(this);
+    }
+
+    get expression() {
+        return _expression.get(this);
+    }
+
+    /**
+     * Evaluate this Expression given an optional list of actual parameters.
+     *
+     * @param {Number[]|Boolean[]} [actualParameters = []] - an optional list
+     * of actual parameters to apply to this Expression before evaluating the
+     * Expression.
+     *
+     * @return {Number|Boolean|undefined} the result of the evaluating this
+     * Expression.
+     */
+    evaluate(actualParameters = []) {
+        return _evaluator.get(this).apply(undefined, actualParameters);
+    }
+
+    /**
+     * Create a String representation of this Expression.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        return this.expression;
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+/**
+ * A NumericalExpression, which yields a Number value when evaluated
+ */
+class NumericalExpression extends Expression {
+    /**
+     * Create a new NumericalExpression instance.
+     *
+     * @param {String[]} [formalParameter = []] - an optional list of formal
+     * parameter names used in this NumericalExpression.
+     * @param {Number} [expression = NaN] - an optional default value.
+     */
+    constructor(formalParameters = [], expression = NaN) {
+        super(formalParameters, expression);
+    }
+
+    /**
+     * Create a String representation of this NumericalExpression.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        return super
+            .stringify()
+            .replace(/\*\*/g, " ^ ");
+    }
+
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
 /**
  * An IdentityProduction is a Production that maps a Module to itself. This is
  * used in an LSystem for all Modules in an Alphabet that do not have a
@@ -621,7 +919,15 @@ class IdentityProduction extends Production {
      * IdentityProduction.
      */
     constructor(module) {
-        super(new Predecessor(module), new Successor([module]));
+        const expressions = [];
+        if (module.isParameterized()) {
+            for (const name of module.parameters) {
+                expressions.push(new NumericalExpression(name, name));
+            }
+        }
+        const moduleApplication = new ModuleApplication(module.name, module, expressions);
+
+        super(new Predecessor(moduleApplication), new Successor([moduleApplication]));
     }
 }
 
@@ -1378,84 +1684,6 @@ class StochasticProduction extends Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const _formalParameters = new WeakMap();
-const _expression = new WeakMap();
-const _evaluator = new WeakMap();
-
-/**
- * An Expression can be evaluated to yield a value.
- *
- * @property {String} expression - a textual representation of this expression
- * @property {String[]} formalParameters - a list of formal parameter names
- */
-class Expression {
-
-    /**
-     * Create a new instance of an Expression.
-     *
-     * @param {String[]} [formalParameters = []] - an optional list of formal
-     * parameter names.
-     * @param {Boolean|Number|undefined} [expression = undefined] - an optional expression
-     * value, defaults to undefined.
-     */
-    constructor(formalParameters = [], expression = undefined) {
-        _formalParameters.set(this, formalParameters);
-        _expression.set(this, expression);
-        _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
-    }
-
-    get formalParameters() {
-        return _formalParameters.get(this);
-    }
-
-    /**
-     * Evaluate this Expression given an optional list of actual parameters.
-     *
-     * @param {Number[]|Boolean[]} [actualParameters = []] - an optional list
-     * of actual parameters to apply to this Expression before evaluating the
-     * Expression.
-     *
-     * @return {Number|Boolean|undefined} the result of the evaluating this
-     * Expression.
-     */
-    evaluate(actualParameters = []) {
-        return _evaluator.get(this).apply(undefined, actualParameters);
-    }
-
-    get expression() {
-        return _expression.get(this);
-    }
-
-    /**
-     * Create a String representation of this Expression.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        return this.expression;
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
 /**
  * A BooleanExpression
  */
@@ -1506,54 +1734,6 @@ class BooleanExpression extends Expression {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-/**
- * A NumericalExpression, which yields a Number value when evaluated
- */
-class NumericalExpression extends Expression {
-    /**
-     * Create a new NumericalExpression instance.
-     *
-     * @param {String[]} [formalParameter = []] - an optional list of formal
-     * parameter names used in this NumericalExpression.
-     * @param {Number} [expression = NaN] - an optional default value.
-     */
-    constructor(formalParameters = [], expression = NaN) {
-        super(formalParameters, expression);
-    }
-
-    /**
-     * Create a String representation of this NumericalExpression.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        return super
-            .stringify()
-            .replace(/\*\*/g, " ^ ");
-    }
-
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
 const _lexer = new WeakMap();
 const _idTable = new WeakMap();
 
@@ -1562,6 +1742,11 @@ const MODULE = Symbol("MODULE");
 // Contexts
 const CONTEXT = Symbol("CONTEXT");
 const MODULE_NAME = Symbol("MODULE_NAME");
+
+const defined = function (parser, name, scope = MODULE) {
+    const idTable = _idTable.get(parser);
+    return idTable.find((id) => id.name === name && id.scope === scope);
+};
 
 const installIdentifier = function (parser, identifierToken, scope = MODULE) {
     const idTable = _idTable.get(parser);
@@ -1573,9 +1758,9 @@ const installIdentifier = function (parser, identifierToken, scope = MODULE) {
     }
 };
 
-const defined = function (parser, name, scope = MODULE) {
-    const idTable = _idTable.get(parser);
-    return idTable.find((id) => id.name === name && id.scope === scope);
+const installModuleDefinition = function (parser, moduleDefinition) {
+    const identifier = defined(parser, moduleDefinition.name);
+    identifier.moduleDefinition = moduleDefinition;
 };
 
 const lookAhead = function (parser, name, value = undefined, distance = 1, context = undefined) {
@@ -1626,7 +1811,9 @@ const parseModuleDefinition = function (parser) {
         match(parser, BRACKET_CLOSE, ")");
     }
 
-    return new ModuleDefinition(moduleName, formalParameters);
+    const moduleDefinition = new ModuleDefinition(moduleName, formalParameters);
+    installModuleDefinition(parser, moduleDefinition);
+    return moduleDefinition;
 };
 
 const parseAlphabet = function (parser) {
@@ -1772,11 +1959,13 @@ const parseActualParameter = function (parser) {
     return new NumericalExpression(vars, expr);
 };
 
-const parseActualModule = function (parser) {
+const parseActualModule = function (parser, ModuleClass) {
     const moduleNameToken = match(parser, IDENTIFIER, undefined, MODULE_NAME);
     const moduleName = moduleNameToken.value;
 
-    if (!defined(parser, moduleName, MODULE)) {
+    const module = defined(parser, moduleName, MODULE);
+
+    if (undefined === module) {
         throw new ParseError(`Module '${moduleName}' at position ${moduleNameToken.position()} not in the alphabet.`);
     }
 
@@ -1786,14 +1975,16 @@ const parseActualModule = function (parser) {
         match(parser, BRACKET_OPEN, "(");
         actualParameters = parseList(parser, parseActualParameter);
         match(parser, BRACKET_CLOSE, ")");
-
-        // TODO: check match formal module
     }
 
-    return new Module(moduleName, actualParameters);
+    return new ModuleClass(moduleName, module.moduleDefinition, actualParameters);
 };
 
-const parseModuleTree = function (parser, withSubTrees = true) {
+const parseModuleApplication = function (parser) {
+    return parseActualModule(parser, ModuleApplication);
+};
+
+const parseModuleTree = function (parser, ModuleClass, withSubTrees = true) {
     const moduleTree = new ModuleTree();
 
     while (
@@ -1809,12 +2000,21 @@ const parseModuleTree = function (parser, withSubTrees = true) {
             match(parser, BRACKET_CLOSE, "]");
         } else {
             // Match a module in the moduleTree
-            moduleTree.push(parseActualModule(parser));
+            moduleTree.push(parseActualModule(parser, ModuleClass));
         }
     }
 
     return moduleTree;
 };
+
+const parseModuleValueTree = function (parser, withSubTrees = true) {
+    return parseModuleTree(parser, ModuleValue, withSubTrees);
+};
+
+const parseModuleApplicationTree = function (parser, withSubTrees = true) {
+    return parseModuleTree(parser, ModuleApplication, withSubTrees);
+};
+
 
 const parseSuccessor = function (parser) {
     const successor = new Successor();
@@ -1830,7 +2030,8 @@ const parseSuccessor = function (parser) {
             match(parser, BRACKET_CLOSE, "]");
         } else {
             // Match a module in the successor
-            successor.push(parseActualModule(parser));
+            const module = parseModuleApplication(parser);
+            successor.push(module);
         }
     }
 
@@ -1840,9 +2041,7 @@ const parseSuccessor = function (parser) {
 const parseAxiom = function (parser) {
     match(parser, KEYWORD, "axiom");
     match(parser, DELIMITER, ":");
-    const axiom = parseSuccessor(parser);
-    axiom.apply();
-    return axiom;
+    return parseModuleValueTree(parser);
 };
 
 
@@ -1877,17 +2076,17 @@ const parsePredecessor = function (parser) {
     let hasLeftContext = false;
     let hasRightContext = false;
 
-    modules.push(parseModuleTree(parser, false));
+    modules.push(parseModuleApplicationTree(parser, false));
     
     if (lookAhead(parser, BRACKET_OPEN, "<", 1, CONTEXT)) {
         match(parser, BRACKET_OPEN, "<", CONTEXT);
-        modules.push(parseActualModule(parser));
+        modules.push(parseModuleApplication(parser));
         hasLeftContext = true;
     }
     
     if (lookAhead(parser, BRACKET_CLOSE, ">", 1, CONTEXT)) {
         match(parser, BRACKET_CLOSE, ">", CONTEXT);
-        modules.push(parseModuleTree(parser));
+        modules.push(parseModuleApplicationTree(parser));
         hasRightContext = true;
     }
 
@@ -1951,7 +2150,7 @@ const parseIgnore = function (parser) {
     match(parser, KEYWORD, "ignore");
     match(parser, DELIMITER, ":");
     match(parser, BRACKET_OPEN, "{");
-    const ignoreList = parseList(parser, parseActualModule, "}");
+    const ignoreList = parseList(parser, parseModuleApplication, "}");
     match(parser, BRACKET_CLOSE, "}");
     return ignoreList;
 };
@@ -2042,7 +2241,7 @@ const selectBestProduction = function (lsystem, productions) {
         // If multiple context-sensitive
         // rules apply, choose the one with the longest matching context (?)
 
-        const contextSensitive =  productions.filter(p => p.predecessor.isContextSensitive());
+        const contextSensitive = productions.filter(p => p.predecessor.isContextSensitive());
 
         if (0 < contextSensitive.length) {
             return contextSensitive[0];
@@ -2053,7 +2252,6 @@ const selectBestProduction = function (lsystem, productions) {
 };
 
 const findProduction = function (lsystem, module, moduleTree, pathTaken, edgeIndex) {
-    //console.log(module.stringify(), edgeIndex, moduleTree.stringify());
     const candidates = lsystem
         .productions
         .filter((p) => p.predecessor.matches(module, moduleTree, pathTaken, edgeIndex, lsystem.ignore));
@@ -2069,7 +2267,7 @@ const findProduction = function (lsystem, module, moduleTree, pathTaken, edgeInd
 };
 
 const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
-    const successor = new Successor();
+    const successor = new ModuleTree();
 
     while (edgeIndex < moduleTree.length) {
         const edge = moduleTree[edgeIndex];
@@ -2077,7 +2275,7 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
             successor.push(derive(lsystem, edge, pathTaken, 0));
         } else {
             const production = findProduction(lsystem, edge, moduleTree, pathTaken, edgeIndex);
-            const rewrittenNode = production.follow(edge.parameters);
+            const rewrittenNode = production.follow(edge);
 
             //console.log(edgeIndex, production.stringify());
 

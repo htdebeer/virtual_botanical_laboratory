@@ -31,12 +31,6 @@ describe('Parser', function () {
         it(`should match "${simple}"`, function () {
             const parser = new lab.Parser();
             let lsystem;
-            try {
-                lsystem = parser.parse(simple);
-                lsystem = parser.parse(lsystem.stringify());
-            } catch (e) {
-                console.log("ERROR: ", e);
-            }
             assert.doesNotThrow(() => lsystem = parser.parse(simple));
             assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
         });
@@ -155,6 +149,13 @@ describe('Parser', function () {
         it(`should match "${simpleConditionalParameterized}"`, function () {
             const parser = new lab.Parser();
             let lsystem;
+            try {
+                lsystem = parser.parse(simpleConditionalParameterized);
+                console.log(lsystem.stringify());
+                lsystem = parser.parse(lsystem.stringify());
+            } catch (e) {
+                console.log("ERROR: ", e);
+            }
             assert.doesNotThrow(() => lsystem = parser.parse(simpleConditionalParameterized));
             assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
         });
