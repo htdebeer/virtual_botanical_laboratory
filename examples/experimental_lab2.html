@@ -14,17 +14,18 @@ import {Lab} from "../../../src/Lab.js";
 
 const config = {
     lsystem: `lsystem(
-        alphabet: {A(s), F(s), -, +},
-        axiom: A(1),
+        alphabet: {A, F(s), -, +},
+        axiom: A,
         productions: {
-            A(s) -> F(s) [ + A(s/1.456)] [ - A(s/1.456)]
+            A -> F(4) [ + A ] [ - A ],
+            F(s) -> F(s * 1.456)
         }
     )`,
     interpretation: {
         type: "canvas",
         config: {
             x: 400,
-            y: 500,
+            y: 600,
             d: 10,
             delta: (-85 * Math.PI)/180,
             alpha: (270 * Math.PI)/180,

@@ -2735,7 +2735,7 @@ class TurtleInterpretation extends Interpretation {
         }));
         
         this.setCommand("F", new Command(function () {
-            const d = arguments.length > 0 ? arguments[0] * 100: this.d;
+            const d = arguments.length > 0 ? arguments[0] * 200: this.d;
             this.x = this.x + d * Math.cos(this.alpha);
             this.y = this.y + d * Math.sin(this.alpha);
 
