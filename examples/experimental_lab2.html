@@ -17,7 +17,7 @@ const config = {
         alphabet: {A, F(s), -, +},
         axiom: A,
         productions: {
-            A -> F(4) [ + A ] [ - A ],
+            A -> F(3) [ + A ] [ - A ],
             F(s) -> F(s * 1.456)
         }
     )`,
@@ -27,7 +27,7 @@ const config = {
             x: 400,
             y: 600,
             d: 10,
-            delta: (-85 * Math.PI)/180,
+            delta: (-45 * Math.PI)/180,
             alpha: (270 * Math.PI)/180,
             close: false
         }

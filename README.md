@@ -36,3 +36,9 @@ great for this task.
 Note. Currently the examples use JavaScript modules. You need a modern web
 browser with that functionality enabled.
 
+With the version of 2017-08-17, I generated the following tree (based on
+LSystem 1.40 (p. 50) of Prusinkiewucs and LindenMmayer (1990) The Algorithmic
+Beauty of Plants):
+
+![Generated tree](./generated_tree.png)
+
