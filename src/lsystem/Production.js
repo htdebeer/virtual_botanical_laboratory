@@ -22,6 +22,35 @@ const _predecessor = new WeakMap();
 const _successor = new WeakMap();
 const _condition = new WeakMap();
 
+const determineParameters = function (production, edge) {
+    const formalParameters = production.predecessor.module.parameters.reduce((ps, p) => {
+        return ps.concat([p]);
+    }, []);
+
+    const parameters = {};
+
+    formalParameters.forEach((name) => {
+        const actualValue = edge.getValue(name);
+        if (undefined !== actualValue) {
+            parameters[name] = actualValue;
+        }
+    });
+
+    return parameters;
+}
+
+const conditionHolds = function (production, edge) {
+    if (!production.isConditional()) {
+        // No condition always holds
+        return true;
+    }
+
+    const parameters = determineParameters(production, edge);
+    const condition = production.condition;
+    const value = condition.evaluate(determineParameters(production, edge));
+    return production.condition.evaluate(determineParameters(production, edge));
+};
+
 /**
  * A Production is a rewriting rule from a predecessor to a successor.
  *
@@ -67,6 +96,19 @@ class Production {
     }
 
     /**
+     * Does this production match the edge?
+     *
+     * @param {Module} edge - the edge to match against this production
+     * @returns {Boolean} True if this production matches the edge
+     */
+    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = []) {
+        if (this.isConditional() && !conditionHolds(this, edge)) {
+            return false;
+        }
+        return this.predecessor.matches(edge, moduleTree, pathTaken, edgeIndex, ignore);
+    }
+
+    /**
      * Follow this productions
      *
      * @param {Module} edge - the actual module to apply this production to.
@@ -80,21 +122,7 @@ class Production {
             // its successor can consist of one or more modules. Construct a map
             // of formal parameters to their current actual value (based on the
             // edge)
-
-            const formalParameters = this.predecessor.module.parameters.reduce((ps, p) => {
-                return ps.concat([p]);
-            }, []);
-
-            const parameters = {};
-            formalParameters.forEach((name) => {
-                const actualValue = edge.getValue(name);
-                if (undefined !== actualValue) {
-                    parameters[name] = actualValue;
-                } else {
-                    console.log(`Expected a value`, edge.parameters);
-                }
-            });
-            return this.successor.apply(parameters);
+            return this.successor.apply(determineParameters(this, edge));
         } else {
             return this.successor.apply();
         }

@@ -61,13 +61,13 @@ class ModuleApplication extends Module {
     }
 
     apply(parameters) {
-        const values = [];
-        for (const name of this.parameters) {
-            const expr = this.getExpression(name);
-            const actualParameters = expr.formalParameters.map((p) => parameters[p]);
-            const value = this.getExpression(name).evaluate(actualParameters);
-            values.push(value);
-        }
+        const values = this.parameters
+            .reduce(
+                (values, name) => {
+                    values.push(this.getExpression(name).evaluate(parameters));
+                    return values;
+                }, []
+            );
         return new ModuleValue(this.name, this, values);
     }
 

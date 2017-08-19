@@ -55,14 +55,15 @@ class Expression {
     /**
      * Evaluate this Expression given an optional list of actual parameters.
      *
-     * @param {Number[]|Boolean[]} [actualParameters = []] - an optional list
+     * @param {Number[]|Boolean[]} [parameters = {}] - an optional map
      * of actual parameters to apply to this Expression before evaluating the
      * Expression.
      *
      * @return {Number|Boolean|undefined} the result of the evaluating this
      * Expression.
      */
-    evaluate(actualParameters = []) {
+    evaluate(parameters = {}) {
+        const actualParameters = this.formalParameters.map((p) => parameters[p]);
         return _evaluator.get(this).apply(undefined, actualParameters);
     }
 

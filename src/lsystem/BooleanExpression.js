@@ -46,7 +46,9 @@ class BooleanExpression extends Expression {
             .stringify()
             .replace(/&&/g, " and ")
             .replace(/\|\|/g, " or ")
-            .replace(/!/g, " not ");
+            .replace(/!/g, " not ")
+            .replace(/===/g, "=")
+            .replace(/!==/g, "!=");
     }
 }
 

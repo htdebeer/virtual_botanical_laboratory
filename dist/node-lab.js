@@ -268,6 +268,35 @@ const _predecessor = new WeakMap();
 const _successor = new WeakMap();
 const _condition = new WeakMap();
 
+const determineParameters = function (production, edge) {
+    const formalParameters = production.predecessor.module.parameters.reduce((ps, p) => {
+        return ps.concat([p]);
+    }, []);
+
+    const parameters = {};
+
+    formalParameters.forEach((name) => {
+        const actualValue = edge.getValue(name);
+        if (undefined !== actualValue) {
+            parameters[name] = actualValue;
+        }
+    });
+
+    return parameters;
+};
+
+const conditionHolds = function (production, edge) {
+    if (!production.isConditional()) {
+        // No condition always holds
+        return true;
+    }
+
+    const parameters = determineParameters(production, edge);
+    const condition = production.condition;
+    const value = condition.evaluate(determineParameters(production, edge));
+    return production.condition.evaluate(determineParameters(production, edge));
+};
+
 /**
  * A Production is a rewriting rule from a predecessor to a successor.
  *
@@ -313,6 +342,19 @@ class Production {
     }
 
     /**
+     * Does this production match the edge?
+     *
+     * @param {Module} edge - the edge to match against this production
+     * @returns {Boolean} True if this production matches the edge
+     */
+    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = []) {
+        if (this.isConditional() && !conditionHolds(this, edge)) {
+            return false;
+        }
+        return this.predecessor.matches(edge, moduleTree, pathTaken, edgeIndex, ignore);
+    }
+
+    /**
      * Follow this productions
      *
      * @param {Module} edge - the actual module to apply this production to.
@@ -326,21 +368,7 @@ class Production {
             // its successor can consist of one or more modules. Construct a map
             // of formal parameters to their current actual value (based on the
             // edge)
-
-            const formalParameters = this.predecessor.module.parameters.reduce((ps, p) => {
-                return ps.concat([p]);
-            }, []);
-
-            const parameters = {};
-            formalParameters.forEach((name) => {
-                const actualValue = edge.getValue(name);
-                if (undefined !== actualValue) {
-                    parameters[name] = actualValue;
-                } else {
-                    console.log(`Expected a value`, edge.parameters);
-                }
-            });
-            return this.successor.apply(parameters);
+            return this.successor.apply(determineParameters(this, edge));
         } else {
             return this.successor.apply();
         }
@@ -418,14 +446,15 @@ class Expression {
     /**
      * Evaluate this Expression given an optional list of actual parameters.
      *
-     * @param {Number[]|Boolean[]} [actualParameters = []] - an optional list
+     * @param {Number[]|Boolean[]} [parameters = {}] - an optional map
      * of actual parameters to apply to this Expression before evaluating the
      * Expression.
      *
      * @return {Number|Boolean|undefined} the result of the evaluating this
      * Expression.
      */
-    evaluate(actualParameters = []) {
+    evaluate(parameters = {}) {
+        const actualParameters = this.formalParameters.map((p) => parameters[p]);
         return _evaluator.get(this).apply(undefined, actualParameters);
     }
 
@@ -663,13 +692,13 @@ class ModuleApplication extends Module {
     }
 
     apply(parameters) {
-        const values = [];
-        for (const name of this.parameters) {
-            const expr = this.getExpression(name);
-            const actualParameters = expr.formalParameters.map((p) => parameters[p]);
-            const value = this.getExpression(name).evaluate(actualParameters);
-            values.push(value);
-        }
+        const values = this.parameters
+            .reduce(
+                (values, name) => {
+                    values.push(this.getExpression(name).evaluate(parameters));
+                    return values;
+                }, []
+            );
         return new ModuleValue(this.name, this, values);
     }
 
@@ -1099,7 +1128,7 @@ const selectBestProduction = function (lsystem, productions) {
 const findProduction = function (lsystem, module, moduleTree, pathTaken, edgeIndex) {
     const candidates = lsystem
         .productions
-        .filter((p) => p.predecessor.matches(module, moduleTree, pathTaken, edgeIndex, lsystem.ignore));
+        .filter((p) => p.matches(module, moduleTree, pathTaken, edgeIndex, lsystem.ignore));
 
     if (0 < candidates.length) {
         return selectBestProduction(lsystem, candidates);
@@ -1531,7 +1560,9 @@ class BooleanExpression extends Expression {
             .stringify()
             .replace(/&&/g, " and ")
             .replace(/\|\|/g, " or ")
-            .replace(/!/g, " not ");
+            .replace(/!/g, " not ")
+            .replace(/===/g, "=")
+            .replace(/!==/g, "!=");
     }
 }
 
@@ -1663,6 +1694,7 @@ const parseNumExprUnit = function (parser) {
     } else if (lookAhead(parser, BRACKET_OPEN, "(")) {
         match(parser, BRACKET_OPEN, "(");
         const [expr, vars] = parseNumExpr(parser);
+        match(parser, BRACKET_CLOSE, ")");
         numExpr = `(${expr})`;
         variables = variables.concat(vars);
     }
@@ -1712,8 +1744,16 @@ const parseNumExpr = function (parser) {
 
 const parseCompExpr = function (parser) {
     const [leftExpr, leftVars] = parseNumExpr(parser);
-    const op = match(parser, OPERATOR).value;
+    
+    let op = match(parser, OPERATOR).value;
+    if (op === "=") {
+        op = "===";
+    } else if (op === "!=") {
+        op = "!==";
+    }
+        
     const [rightExpr, rightVars] = parseNumExpr(parser);
+    
     return [
         `${leftExpr} ${op} ${rightExpr}`,
         leftVars.concat(rightVars)
@@ -2735,7 +2775,8 @@ class TurtleInterpretation extends Interpretation {
         }));
         
         this.setCommand("F", new Command(function () {
-            const d = arguments.length > 0 ? arguments[0] * 200: this.d;
+//            const d = arguments.length > 0 ? arguments[0]: this.d;
+            const d = this.d;
             this.x = this.x + d * Math.cos(this.alpha);
             this.y = this.y + d * Math.sin(this.alpha);
 

@@ -58,7 +58,7 @@ const selectBestProduction = function (lsystem, productions) {
 const findProduction = function (lsystem, module, moduleTree, pathTaken, edgeIndex) {
     const candidates = lsystem
         .productions
-        .filter((p) => p.predecessor.matches(module, moduleTree, pathTaken, edgeIndex, lsystem.ignore));
+        .filter((p) => p.matches(module, moduleTree, pathTaken, edgeIndex, lsystem.ignore));
 
     if (0 < candidates.length) {
         return selectBestProduction(lsystem, candidates);

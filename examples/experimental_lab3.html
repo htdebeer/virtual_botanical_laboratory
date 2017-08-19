@@ -14,25 +14,25 @@ import {Lab} from "../../../src/Lab.js";
 
 const config = {
     lsystem: `lsystem(
-        alphabet: {F(x, t), -, +},
-        axiom: F(1, 0),
+        alphabet: {A, F(s), -, +},
+        axiom: A,
         productions: {
-            F(x, t) : t = 0 -> F(x * 0.3, 2) + F(x * ((0.3 * 0.7)^0.5), 1) - - F(x * (0.3 * 0.7) ^ 0.5, 1) + F(x * 0.7, 0),
-            F(x, t) : t > 0 -> F(x, t - 1)
+            A -> F(3) [ + A ] [ - A ],
+            F(s) -> F(s * 1.456)
         }
     )`,
     interpretation: {
         type: "canvas",
         config: {
-            x: 100,
-            y: 400,
+            x: 400,
+            y: 600,
             d: 10,
-            delta: (-86 * Math.PI)/180,
-            alpha: (0 * Math.PI)/180,
+            delta: (-45 * Math.PI)/180,
+            alpha: (270 * Math.PI)/180,
             close: false
         }
     },
-    derivationLength: 10,
+    derivationLength: 12,
     animate: true
 };
 

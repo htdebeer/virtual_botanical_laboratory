@@ -158,6 +158,7 @@ const parseNumExprUnit = function (parser) {
     } else if (lookAhead(parser, BRACKET_OPEN, "(")) {
         match(parser, BRACKET_OPEN, "(");
         const [expr, vars] = parseNumExpr(parser);
+        match(parser, BRACKET_CLOSE, ")");
         numExpr = `(${expr})`;
         variables = variables.concat(vars);
     }
@@ -207,8 +208,16 @@ const parseNumExpr = function (parser) {
 
 const parseCompExpr = function (parser) {
     const [leftExpr, leftVars] = parseNumExpr(parser);
-    const op = match(parser, OPERATOR).value;
+    
+    let op = match(parser, OPERATOR).value;
+    if (op === "=") {
+        op = "===";
+    } else if (op === "!=") {
+        op = "!==";
+    }
+        
     const [rightExpr, rightVars] = parseNumExpr(parser);
+    
     return [
         `${leftExpr} ${op} ${rightExpr}`,
         leftVars.concat(rightVars)

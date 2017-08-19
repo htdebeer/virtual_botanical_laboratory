@@ -142,7 +142,7 @@ describe('Parser', function () {
             productions: {
                 A(t) : t > 0 or (not t > 2) -> A(t+1) B B A(t-1),
                 B -> B A(0) A(10) B,
-                C(p, q): p > 5 and q < 5 -> C(p - 1, q * 2)
+                C(p, q): p > 5 and q < 5 -> C(p - 1, q * (p * 2) + 4)
             }
         )`;
         
