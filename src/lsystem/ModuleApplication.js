@@ -63,9 +63,10 @@ class ModuleApplication extends Module {
     apply(parameters) {
         const values = [];
         for (const name of this.parameters) {
-            const value = this.getExpression(name).evaluate(parameters[name]);
-            console.log("value for", name, value, this.getExpression(name).stringify());
-            values.push(this.getExpression(name).evaluate(parameters[name]));
+            const expr = this.getExpression(name);
+            const actualParameters = expr.formalParameters.map((p) => parameters[p]);
+            const value = this.getExpression(name).evaluate(actualParameters);
+            values.push(value);
         }
         return new ModuleValue(this.name, this, values);
     }

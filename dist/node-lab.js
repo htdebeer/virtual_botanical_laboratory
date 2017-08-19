@@ -340,8 +340,7 @@ class Production {
                     console.log(`Expected a value`, edge.parameters);
                 }
             });
-            console.log("parameters: ", parameters);
-            return this.successor.apply(formalParameters, parameters);
+            return this.successor.apply(parameters);
         } else {
             return this.successor.apply();
         }
@@ -359,6 +358,84 @@ class Production {
         }
         str += ` -> ${this.successor.stringify()}`;
         return str;
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _formalParameters = new WeakMap();
+const _expression = new WeakMap();
+const _evaluator = new WeakMap();
+
+/**
+ * An Expression can be evaluated to yield a value.
+ *
+ * @property {String} expression - a textual representation of this expression
+ * @property {String[]} formalParameters - a list of formal parameter names
+ */
+class Expression {
+
+    /**
+     * Create a new instance of an Expression.
+     *
+     * @param {String[]} [formalParameters = []] - an optional list of formal
+     * parameter names.
+     * @param {Boolean|Number|undefined} [expression = undefined] - an optional expression
+     * value, defaults to undefined.
+     */
+    constructor(formalParameters = [], expression = undefined) {
+        _formalParameters.set(this, formalParameters);
+        _expression.set(this, expression);
+        _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
+    }
+
+    get formalParameters() {
+        return _formalParameters.get(this);
+    }
+
+    get expression() {
+        return _expression.get(this);
+    }
+
+    /**
+     * Evaluate this Expression given an optional list of actual parameters.
+     *
+     * @param {Number[]|Boolean[]} [actualParameters = []] - an optional list
+     * of actual parameters to apply to this Expression before evaluating the
+     * Expression.
+     *
+     * @return {Number|Boolean|undefined} the result of the evaluating this
+     * Expression.
+     */
+    evaluate(actualParameters = []) {
+        return _evaluator.get(this).apply(undefined, actualParameters);
+    }
+
+    /**
+     * Create a String representation of this Expression.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        return this.expression;
     }
 }
 
@@ -479,19 +556,26 @@ class ModuleValue extends Module {
 
     constructor(name, moduleDefinition, actualParameters) {
         const formalParameters = moduleDefinition.parameters;
+
         if (formalParameters.length !== actualParameters.length) {
             throw new Error(`Number of actual parameters (${actualParameters.length}) should be equal to the number of formal parameters (${formalParameters.length}).`);
         }
+
         super(name, formalParameters);
 
         const values = {};
 
         for (let index = 0; index < formalParameters.length; index++) {
             const name = formalParameters[index];
-            values[name] = actualParameters[index].evaluate();
+            const value = actualParameters[index];
+            values[name] = value instanceof Expression ? value.evaluate() : value;
         }
 
         _values.set(this, values);
+    }
+
+    get values() {
+        return _values.get(this);
     }
 
     /**
@@ -502,7 +586,6 @@ class ModuleValue extends Module {
      * not exist.
      */
     getValue(name) {
-        console.log(Object.values(_values.get(this)), name);
         return _values.get(this)[name];
     }
 
@@ -582,9 +665,10 @@ class ModuleApplication extends Module {
     apply(parameters) {
         const values = [];
         for (const name of this.parameters) {
-            const value = this.getExpression(name).evaluate(parameters[name]);
-            console.log("value for", name, value, this.getExpression(name).stringify());
-            values.push(this.getExpression(name).evaluate(parameters[name]));
+            const expr = this.getExpression(name);
+            const actualParameters = expr.formalParameters.map((p) => parameters[p]);
+            const value = this.getExpression(name).evaluate(actualParameters);
+            values.push(value);
         }
         return new ModuleValue(this.name, this, values);
     }
@@ -649,7 +733,6 @@ class Successor extends ModuleTree {
      * @returns {Successor} This Successor with parameters applied, if any.
      */
     apply(parameters = {}) {
-        console.log(`Applying parameters '${Object.values(parameters).join(", ")}'`);
         return applyParametersToModuleTree(this, parameters);
     }
 }
@@ -886,84 +969,6 @@ class Predecessor {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const _formalParameters = new WeakMap();
-const _expression = new WeakMap();
-const _evaluator = new WeakMap();
-
-/**
- * An Expression can be evaluated to yield a value.
- *
- * @property {String} expression - a textual representation of this expression
- * @property {String[]} formalParameters - a list of formal parameter names
- */
-class Expression {
-
-    /**
-     * Create a new instance of an Expression.
-     *
-     * @param {String[]} [formalParameters = []] - an optional list of formal
-     * parameter names.
-     * @param {Boolean|Number|undefined} [expression = undefined] - an optional expression
-     * value, defaults to undefined.
-     */
-    constructor(formalParameters = [], expression = undefined) {
-        _formalParameters.set(this, formalParameters);
-        _expression.set(this, expression);
-        _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
-    }
-
-    get formalParameters() {
-        return _formalParameters.get(this);
-    }
-
-    get expression() {
-        return _expression.get(this);
-    }
-
-    /**
-     * Evaluate this Expression given an optional list of actual parameters.
-     *
-     * @param {Number[]|Boolean[]} [actualParameters = []] - an optional list
-     * of actual parameters to apply to this Expression before evaluating the
-     * Expression.
-     *
-     * @return {Number|Boolean|undefined} the result of the evaluating this
-     * Expression.
-     */
-    evaluate(actualParameters = []) {
-        return _evaluator.get(this).apply(undefined, actualParameters);
-    }
-
-    /**
-     * Create a String representation of this Expression.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        return this.expression;
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
 /**
  * A NumericalExpression, which yields a Number value when evaluated
  */
@@ -1029,7 +1034,7 @@ class IdentityProduction extends Production {
         const expressions = [];
         if (module.isParameterized()) {
             for (const name of module.parameters) {
-                expressions.push(new NumericalExpression(name, name));
+                expressions.push(new NumericalExpression([name], name));
             }
         }
         const moduleApplication = new ModuleApplication(module.name, module, expressions);
@@ -2496,7 +2501,7 @@ const renderTree = function (interpretation, moduleTree) {
             renderTree(interpretation, item);
             interpretation.exit();
         } else {
-            interpretation.execute(item.name, item.parameters);
+            interpretation.execute(item.name, Object.values(item.values));
         }
     }
 };
@@ -2730,8 +2735,9 @@ class TurtleInterpretation extends Interpretation {
         }));
         
         this.setCommand("F", new Command(function () {
-            this.x = this.x + this.d * Math.cos(this.alpha);
-            this.y = this.y + this.d * Math.sin(this.alpha);
+            const d = arguments.length > 0 ? arguments[0] * 100: this.d;
+            this.x = this.x + d * Math.cos(this.alpha);
+            this.y = this.y + d * Math.sin(this.alpha);
 
             this.lineTo(this.x, this.y);
         }));

@@ -49,7 +49,6 @@ class Successor extends ModuleTree {
      * @returns {Successor} This Successor with parameters applied, if any.
      */
     apply(parameters = {}) {
-        console.log(`Applying parameters '${Object.values(parameters).join(", ")}'`);
         return applyParametersToModuleTree(this, parameters);
     }
 }

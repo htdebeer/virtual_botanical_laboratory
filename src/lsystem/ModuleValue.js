@@ -18,6 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
+import {Expression} from "./Expression.js";
 import {Module} from './Module.js';
 
 const _values = new WeakMap();
@@ -31,19 +32,26 @@ class ModuleValue extends Module {
 
     constructor(name, moduleDefinition, actualParameters) {
         const formalParameters = moduleDefinition.parameters;
+
         if (formalParameters.length !== actualParameters.length) {
             throw new Error(`Number of actual parameters (${actualParameters.length}) should be equal to the number of formal parameters (${formalParameters.length}).`);
         }
+
         super(name, formalParameters);
 
         const values = {};
 
         for (let index = 0; index < formalParameters.length; index++) {
             const name = formalParameters[index];
-            values[name] = actualParameters[index].evaluate();
+            const value = actualParameters[index];
+            values[name] = value instanceof Expression ? value.evaluate() : value;
         }
 
         _values.set(this, values);
+    }
+
+    get values() {
+        return _values.get(this);
     }
 
     /**
@@ -54,7 +62,6 @@ class ModuleValue extends Module {
      * not exist.
      */
     getValue(name) {
-        console.log(Object.values(_values.get(this)), name);
         return _values.get(this)[name];
     }
 

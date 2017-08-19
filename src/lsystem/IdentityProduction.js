@@ -41,7 +41,7 @@ class IdentityProduction extends Production {
         const expressions = [];
         if (module.isParameterized()) {
             for (const name of module.parameters) {
-                expressions.push(new NumericalExpression(name, name));
+                expressions.push(new NumericalExpression([name], name));
             }
         }
         const moduleApplication = new ModuleApplication(module.name, module, expressions);

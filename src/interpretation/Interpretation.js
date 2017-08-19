@@ -31,7 +31,7 @@ const renderTree = function (interpretation, moduleTree) {
             renderTree(interpretation, item);
             interpretation.exit();
         } else {
-            interpretation.execute(item.name, item.parameters);
+            interpretation.execute(item.name, Object.values(item.values));
         }
     }
 };

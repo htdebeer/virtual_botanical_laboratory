@@ -94,8 +94,7 @@ class Production {
                     console.log(`Expected a value`, edge.parameters);
                 }
             });
-            console.log("parameters: ", parameters);
-            return this.successor.apply(formalParameters, parameters);
+            return this.successor.apply(parameters);
         } else {
             return this.successor.apply();
         }

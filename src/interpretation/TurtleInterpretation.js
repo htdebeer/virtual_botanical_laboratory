@@ -54,8 +54,9 @@ class TurtleInterpretation extends Interpretation {
         }));
         
         this.setCommand("F", new Command(function () {
-            this.x = this.x + this.d * Math.cos(this.alpha);
-            this.y = this.y + this.d * Math.sin(this.alpha);
+            const d = arguments.length > 0 ? arguments[0] * 250: this.d;
+            this.x = this.x + d * Math.cos(this.alpha);
+            this.y = this.y + d * Math.sin(this.alpha);
 
             this.lineTo(this.x, this.y);
         }));
