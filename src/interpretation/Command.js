@@ -53,7 +53,7 @@ class Command {
      * @param {Interpretation} interpretation - the interpretation in which this command is executed
      * @param {Array} [parameters = []] - the parameters used in this Commmand
      */
-    execute(interpretation, parameters = []) {
+    execute(interpretation, ...parameters) {
         _function.get(this).apply(interpretation, parameters);
     }
 }

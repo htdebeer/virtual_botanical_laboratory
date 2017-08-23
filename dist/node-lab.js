@@ -2505,7 +2505,7 @@ class Command {
      * @param {Interpretation} interpretation - the interpretation in which this command is executed
      * @param {Array} [parameters = []] - the parameters used in this Commmand
      */
-    execute(interpretation, parameters = []) {
+    execute(interpretation, ...parameters) {
         _function.get(this).apply(interpretation, parameters);
     }
 }
@@ -2618,7 +2618,9 @@ class Interpretation {
     }
 
     /**
-     * Register a number of properties for this interpretation.
+     * Register a number of properties for this interpretation. These
+     * registered properties are applied on initialisation and when
+     * entering/leaving a sub tree.
      *
      * @param {String} names - the names of the properties to register
      */
@@ -2819,15 +2821,11 @@ class TurtleInterpretation extends Interpretation {
         }));
         
         this.setCommand("F", new Command(function () {
-//            const d = arguments.length > 0 ? arguments[0]: this.d;
-            const d = this.d;
-            this.x = this.x + d * Math.cos(this.alpha);
-            this.y = this.y + d * Math.sin(this.alpha);
+            this.x = this.x + this.d * Math.cos(this.alpha);
+            this.y = this.y + this.d * Math.sin(this.alpha);
 
             this.lineTo(this.x, this.y);
         }));
-
-        this.alias(["Fl", "Fr", "Fa", "Fb"], "F");
 
         this.registerProperty(
             LINE_WIDTH, 

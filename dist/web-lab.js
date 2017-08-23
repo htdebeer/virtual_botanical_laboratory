@@ -2501,7 +2501,7 @@ class Command {
      * @param {Interpretation} interpretation - the interpretation in which this command is executed
      * @param {Array} [parameters = []] - the parameters used in this Commmand
      */
-    execute(interpretation, parameters = []) {
+    execute(interpretation, ...parameters) {
         _function.get(this).apply(interpretation, parameters);
     }
 }
@@ -2614,7 +2614,9 @@ class Interpretation {
     }
 
     /**
-     * Register a number of properties for this interpretation.
+     * Register a number of properties for this interpretation. These
+     * registered properties are applied on initialisation and when
+     * entering/leaving a sub tree.
      *
      * @param {String} names - the names of the properties to register
      */
@@ -2815,15 +2817,11 @@ class TurtleInterpretation extends Interpretation {
         }));
         
         this.setCommand("F", new Command(function () {
-//            const d = arguments.length > 0 ? arguments[0]: this.d;
-            const d = this.d;
-            this.x = this.x + d * Math.cos(this.alpha);
-            this.y = this.y + d * Math.sin(this.alpha);
+            this.x = this.x + this.d * Math.cos(this.alpha);
+            this.y = this.y + this.d * Math.sin(this.alpha);
 
             this.lineTo(this.x, this.y);
         }));
-
-        this.alias(["Fl", "Fr", "Fa", "Fb"], "F");
 
         this.registerProperty(
             LINE_WIDTH, 
@@ -2965,7 +2963,12 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
     }
 
     lineTo(x, y) {
-        _canvas.get(this).lineTo(x, y);
+        const canvas = _canvas.get(this);
+        canvas.save();
+        this.applyProperties();
+        canvas.lineTo(x, y);
+        canvas.restore();
+        canvas.stroke();
     }
 
     enter() {
@@ -3021,20 +3024,32 @@ const _running = new WeakMap();
 const _animate = new WeakMap();
 const _speed = new WeakMap();
 
-const createInterpretation = function (lab, interpretation = {}) {
-    if (!(interpretation instanceof Interpretation)) {
-        if ("canvas" === interpretation.type) {
+const createInterpretation = function (lab, interpretationConfig = {}) {
+    let interpretation;
+    if (!(interpretationConfig instanceof Interpretation)) {
+        if ("canvas" === interpretationConfig.type) {
             const element = document.createElement("canvas");
             element.width = SIZE;
             element.height = SIZE;
             
             _element.set(lab, element);
             
-            interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretation.config);
+            interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretationConfig.config);
         } else {
             // not implemented yet
             throw new Error("Only the canvas format has been implemented yet.");
         }
+
+        if ("commands" in interpretationConfig) {
+            Object
+                .entries(interpretationConfig["commands"])
+                .forEach((entry) => {
+                    const [name, func] = entry;
+                    interpretation.setCommand(name, new Command(func));
+                });
+        }
+    } else {
+        interpretation = interpretationConfig;
     }
 
     _interpretation.set(lab, interpretation);

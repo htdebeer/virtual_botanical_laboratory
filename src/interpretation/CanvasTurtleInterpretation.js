@@ -76,7 +76,11 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
     }
 
     lineTo(x, y) {
-        _canvas.get(this).lineTo(x, y);
+        const canvas = _canvas.get(this);
+        canvas.save();
+        this.applyProperties();
+        canvas.lineTo(x, y);
+        canvas.restore();
     }
 
     enter() {

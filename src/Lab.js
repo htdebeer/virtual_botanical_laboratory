@@ -22,6 +22,8 @@ import {LSystem} from "./lsystem/LSystem.js";
 import {Interpretation} from "./interpretation/Interpretation.js";
 import {CanvasTurtleInterpretation} from "./interpretation/CanvasTurtleInterpretation.js";
 
+import {Command} from "./interpretation/Command.js";
+
 const SIZE = 1000; // px
 const SPEED = 500; // ms
 
@@ -34,20 +36,32 @@ const _running = new WeakMap();
 const _animate = new WeakMap();
 const _speed = new WeakMap();
 
-const createInterpretation = function (lab, interpretation = {}) {
-    if (!(interpretation instanceof Interpretation)) {
-        if ("canvas" === interpretation.type) {
+const createInterpretation = function (lab, interpretationConfig = {}) {
+    let interpretation;
+    if (!(interpretationConfig instanceof Interpretation)) {
+        if ("canvas" === interpretationConfig.type) {
             const element = document.createElement("canvas");
             element.width = SIZE;
             element.height = SIZE;
             
             _element.set(lab, element);
             
-            interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretation.config);
+            interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretationConfig.config);
         } else {
             // not implemented yet
             throw new Error("Only the canvas format has been implemented yet.");
         }
+
+        if ("commands" in interpretationConfig) {
+            Object
+                .entries(interpretationConfig["commands"])
+                .forEach((entry) => {
+                    const [name, func] = entry;
+                    interpretation.setCommand(name, new Command(func))
+                });
+        }
+    } else {
+        interpretation = interpretationConfig;
     }
 
     _interpretation.set(lab, interpretation);
