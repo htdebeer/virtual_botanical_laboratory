@@ -2529,6 +2529,7 @@ class Command {
 const _commands = new WeakMap();
 const _initialState = new WeakMap();
 const _states = new WeakMap();
+const _registeredProperties = new WeakMap();
 
 const renderTree = function (interpretation, moduleTree) {
     for (const item of moduleTree) {
@@ -2546,6 +2547,8 @@ const renderTree = function (interpretation, moduleTree) {
  * An Interpretation of a LSystem
  *
  * @property {Object} state - the current state of this Interpretation.
+ * @property {Object} registeredProperties - the properties that are
+ * registered in this Interpretation.
  */
 class Interpretation {
     /**
@@ -2558,6 +2561,7 @@ class Interpretation {
         _initialState.set(this, initialState);
         _states.set(this, []);
         _commands.set(this, {});
+        _registeredProperties.set(this, new Set());
     }
 
     get state() {
@@ -2567,6 +2571,10 @@ class Interpretation {
         }
 
         return states[states.length - 1];
+    }
+
+    get registeredProperties() {
+        return _registeredProperties.get(this);
     }
 
     /**
@@ -2606,6 +2614,15 @@ class Interpretation {
     }
 
     /**
+     * Register a number of properties for this interpretation.
+     *
+     * @param {String} names - the names of the properties to register
+     */
+    registerProperty(...names) {
+        names.forEach(name => this.registeredProperties.add(name));
+    }
+
+    /**
      * Set a property of this Interpretation.
      *
      * @param {String} name - the name of the property.
@@ -2630,7 +2647,6 @@ class Interpretation {
         return (undefined === value || null === value) ? defaultValue : value;
     }
 
-
     /**
      * Set a command in this Interpretation.
      *
@@ -2639,6 +2655,26 @@ class Interpretation {
      */
     setCommand(name, command) {
         _commands.get(this)[name] = command;
+    }
+
+    /**
+     * Does this Interpretation have this property?
+     *
+     * @param {String} name - the name of the property to check if it is
+     * available in this interpretation
+     *
+     * @returns {Boolean} True if there exists a property with name in this
+     * interpretation.
+     */
+    hasProperty(name) {
+        return undefined !== this.getProperty(name);
+    }
+    
+    /**
+     * Apply all registered properties. Needs to be implemented in sub classes
+     * to take an effect.
+     */
+    applyProperties() {
     }
 
     /**
@@ -2680,6 +2716,7 @@ class Interpretation {
      */
     initialize() {
         _states.set(this, [Object.assign({}, _initialState.get(this))]);
+        this.applyProperties();
     }
 
     /**
@@ -2700,6 +2737,7 @@ class Interpretation {
     enter() {
         const currentState = Object.assign({}, this.state);
         _states.get(this).push(currentState);
+        this.applyProperties();
     }
 
     /**
@@ -2707,6 +2745,7 @@ class Interpretation {
      */
     exit() {
         _states.get(this).pop();
+        this.applyProperties();
     }
 
     /**
@@ -2751,6 +2790,11 @@ const D = 2;
 const DELTA = Math.PI / 2;
 const ALPHA = 0;
 
+const FILL_COLOR = "fill-color";
+const LINE_COLOR = "line-color";
+const LINE_WIDTH = "line-width";
+const LINE_JOIN = "line-join";
+
 class TurtleInterpretation extends Interpretation {
     constructor(initialState = {}) {
         super(initialState);
@@ -2780,12 +2824,31 @@ class TurtleInterpretation extends Interpretation {
         }));
 
         this.alias(["Fl", "Fr", "Fa", "Fb"], "F");
+
+        this.registerProperty(
+            LINE_WIDTH, 
+            LINE_COLOR,
+            LINE_JOIN,
+            FILL_COLOR
+        );
     }
 
+    /**
+     * Move the pen to (x, y) without drawing a line
+     *
+     * @param {Number} x - the x coordinate
+     * @param {Number} y - the y coordinate
+     */
     moveTo(x, y) {
         // to be implemented by a sub class 
     }
 
+    /**
+     * Move the pen to (x, y) while drawing a line
+     *
+     * @param {Number} x - the x coordinate
+     * @param {Number} y - the y coordinate
+     */
     lineTo(x, y) {
         // to be implemented by a sub class 
     }
@@ -2875,6 +2938,26 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
             canvas.closePath();
         }
         canvas.stroke();
+    }
+
+    applyProperties() {
+        const canvas = _canvas.get(this);
+        
+        if (this.hasProperty(LINE_WIDTH)) {
+            canvas.lineWidth = this.getProperty(LINE_WIDTH);
+        }
+
+        if (this.hasProperty(LINE_COLOR)) {
+            canvas.strokeStyle = this.getProperty(LINE_COLOR);
+        }
+
+        if (this.hasProperty(LINE_JOIN)) {
+            canvas.lineJoin = this.getProperty(LINE_JOIN);
+        }
+
+        if (this.hasProperty(FILL_COLOR)) {
+            canvas.fillStyle = this.getProperty(FILL_COLOR);
+        }
     }
 
     moveTo(x, y) {

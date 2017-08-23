@@ -34,6 +34,11 @@ const _d = new WeakMap();
 const _delta = new WeakMap();
 const _alpha = new WeakMap();
 
+const FILL_COLOR = "fill-color";
+const LINE_COLOR = "line-color";
+const LINE_WIDTH = "line-width";
+const LINE_JOIN = "line-join";
+
 class TurtleInterpretation extends Interpretation {
     constructor(initialState = {}) {
         super(initialState);
@@ -54,21 +59,38 @@ class TurtleInterpretation extends Interpretation {
         }));
         
         this.setCommand("F", new Command(function () {
-//            const d = arguments.length > 0 ? arguments[0]: this.d;
-            const d = this.d;
-            this.x = this.x + d * Math.cos(this.alpha);
-            this.y = this.y + d * Math.sin(this.alpha);
+            this.x = this.x + this.d * Math.cos(this.alpha);
+            this.y = this.y + this.d * Math.sin(this.alpha);
 
             this.lineTo(this.x, this.y);
         }));
 
         this.alias(["Fl", "Fr", "Fa", "Fb"], "F");
+
+        this.registerProperty(
+            LINE_WIDTH, 
+            LINE_COLOR,
+            LINE_JOIN,
+            FILL_COLOR
+        );
     }
 
+    /**
+     * Move the pen to (x, y) without drawing a line
+     *
+     * @param {Number} x - the x coordinate
+     * @param {Number} y - the y coordinate
+     */
     moveTo(x, y) {
         // to be implemented by a sub class 
     }
 
+    /**
+     * Move the pen to (x, y) while drawing a line
+     *
+     * @param {Number} x - the x coordinate
+     * @param {Number} y - the y coordinate
+     */
     lineTo(x, y) {
         // to be implemented by a sub class 
     }
@@ -116,5 +138,9 @@ class TurtleInterpretation extends Interpretation {
 }
 
 export {
-    TurtleInterpretation
+    TurtleInterpretation,
+    LINE_WIDTH,
+    LINE_COLOR,
+    LINE_JOIN,
+    FILL_COLOR
 }

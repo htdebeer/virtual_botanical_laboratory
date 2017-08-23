@@ -18,7 +18,13 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {TurtleInterpretation} from "./TurtleInterpretation.js";
+import {
+    TurtleInterpretation,
+    LINE_WIDTH,
+    LINE_COLOR,
+    LINE_JOIN,
+    FILL_COLOR
+} from "./TurtleInterpretation.js";
 
 const _canvas = new WeakMap();
 
@@ -43,6 +49,26 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
             canvas.closePath();
         }
         canvas.stroke();
+    }
+
+    applyProperties() {
+        const canvas = _canvas.get(this);
+        
+        if (this.hasProperty(LINE_WIDTH)) {
+            canvas.lineWidth = this.getProperty(LINE_WIDTH);
+        }
+
+        if (this.hasProperty(LINE_COLOR)) {
+            canvas.strokeStyle = this.getProperty(LINE_COLOR);
+        }
+
+        if (this.hasProperty(LINE_JOIN)) {
+            canvas.lineJoin = this.getProperty(LINE_JOIN);
+        }
+
+        if (this.hasProperty(FILL_COLOR)) {
+            canvas.fillStyle = this.getProperty(FILL_COLOR);
+        }
     }
 
     moveTo(x, y) {
