@@ -294,7 +294,7 @@ const bracket = function (lexer) {
 
 const delimiter = function (lexer) {
     const c = peek(lexer);
-    if ([',', ':'].includes(c)) {
+    if ([',', ':', ";"].includes(c)) {
         moveForward(lexer);
         return recognize(lexer, DELIMITER, c);
     }

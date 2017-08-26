@@ -26,6 +26,7 @@ const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
 const _productions = new WeakMap();
 const _ignore = new WeakMap();
+const _globalContext = new WeakMap();
 
 const _currentDerivation = new WeakMap();
 const _derivationLength = new WeakMap();
@@ -79,7 +80,7 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
             successor.push(derive(lsystem, edge, pathTaken, 0));
         } else {
             const production = findProduction(lsystem, edge, moduleTree, pathTaken, edgeIndex);
-            const rewrittenNode = production.follow(edge);
+            const rewrittenNode = production.follow(edge, _globalContext.get(lsystem));
 
             //console.log(edgeIndex, production.stringify());
 
@@ -156,6 +157,14 @@ const LSystem = class {
         return _ignore.get(this);
     }
 
+    get globals() {
+        return _globals.get(this);
+    }
+
+    set globals(map) {
+        _globals.set(this, map);
+    }
+
     get derivationLength() {
         return _derivationLength.get(this);
     }
@@ -182,10 +191,14 @@ const LSystem = class {
      *
      * @param {Number} [steps = 1] - the number of derivations to perform,
      * defaults to one step.
+     * @param {Object} [globalContext = {}] - the global context in which this lsystem is
+     * derived.
      *
      * @returns {Successor} the successor.
      */
-    derive(steps = 1) {
+    derive(steps = 1, globalContext = {}) {
+        _globalContext.set(this, globalContext);
+
         for (let i = 0; i < steps; i++) {
             // do a derivation
             //console.log("predecessor: ", _currentDerivation.get(this).stringify());
@@ -193,6 +206,7 @@ const LSystem = class {
             _currentDerivation.set(this, derive(this, predecessor));
             _derivationLength.set(this, this.derivationLength + 1);
         }
+
         return _currentDerivation.get(this);
     }
 

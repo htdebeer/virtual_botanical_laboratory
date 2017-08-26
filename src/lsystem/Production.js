@@ -22,12 +22,12 @@ const _predecessor = new WeakMap();
 const _successor = new WeakMap();
 const _condition = new WeakMap();
 
-const determineParameters = function (production, edge) {
+const determineParameters = function (production, edge, globalContext = {}) {
     const formalParameters = production.predecessor.module.parameters.reduce((ps, p) => {
         return ps.concat([p]);
     }, []);
 
-    const parameters = {};
+    const parameters = Object.assign({}, globalContext);
 
     formalParameters.forEach((name) => {
         const actualValue = edge.getValue(name);
@@ -112,17 +112,19 @@ class Production {
      * Follow this productions
      *
      * @param {Module} edge - the actual module to apply this production to.
+     * @param {Object} [globalContext = {}] - the globalContext in which this
+     * edge is followed.
      *
      * @returns {Successor} The successor of this Production with parameters
      * applied.
      */
-    follow(edge) {
+    follow(edge, globalContext = {}) {
         if (this.predecessor.module.isParameterized()) {
             // In each production, the predecessor is exactly one module. However,
             // its successor can consist of one or more modules. Construct a map
             // of formal parameters to their current actual value (based on the
             // edge)
-            return this.successor.apply(determineParameters(this, edge));
+            return this.successor.apply(determineParameters(this, edge, globalContext));
         } else {
             return this.successor.apply();
         }

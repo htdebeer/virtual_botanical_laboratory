@@ -1,5 +1,36 @@
 const assert = require('assert');
 const lab = require('../dist/node-lab.js');
+const parser = new lab.Parser();
+
+const parse = function (str) {
+    let strToParse = str;
+    let parsed;
+    
+    try {
+        parsed = parser.parse(strToParse);
+    } catch (e) {
+        console.log(`ERROR occurred: `, e);
+    }
+
+    console.log(str, parsed.lsystem.stringify());
+    console.log(parsed.constants);
+
+    assert.doesNotThrow(() => {
+        parsed = parser.parse(strToParse);
+        strToParse = parsed.lsystem;
+    });
+/*
+    try {
+        parser.parse(strToParse);
+    } catch (e) {
+        console.log(`ERROR occurred ls: `, e);
+    }
+
+    assert.doesNotThrow(() => {
+        parsed = parser.parse(strToParse);
+    });
+    */
+};
 
 describe('Parser', function () {
     describe('parse()', function () {
@@ -11,12 +42,7 @@ describe('Parser', function () {
             }
         )`;
 
-        it(`should match "${minimal}"`, function () {
-            const parser = new lab.Parser();
-            let lsystem;
-            assert.doesNotThrow(() => lsystem = parser.parse(minimal));
-            assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
-        });
+        it(`should match "${minimal}"`, () => parse(minimal));
 
         const simple = `lsystem (
             alphabet: {A, B, C},
@@ -28,12 +54,7 @@ describe('Parser', function () {
             }
         )`;
         
-        it(`should match "${simple}"`, function () {
-            const parser = new lab.Parser();
-            let lsystem;
-            assert.doesNotThrow(() => lsystem = parser.parse(simple));
-            assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
-        });
+        it(`should match "${simple}"`,() => parse(simple));
 
         const simpleTree = `lsystem (
             alphabet: {A, B, C},
@@ -45,12 +66,7 @@ describe('Parser', function () {
             }
         )`;
         
-        it(`should match "${simpleTree}"`, function () {
-            const parser = new lab.Parser();
-            let lsystem;
-            assert.doesNotThrow(() => lsystem = parser.parse(simpleTree));
-            assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
-        });
+        it(`should match "${simpleTree}"`, () => parse(simpleTree));
 
         const simpleStochastic = `lsystem (
             alphabet: {A, B, C},
@@ -69,12 +85,7 @@ describe('Parser', function () {
             }
         )`;
         
-        it(`should match "${simpleStochastic}"`, function () {
-            const parser = new lab.Parser();
-            let lsystem;
-            assert.doesNotThrow(() => lsystem = parser.parse(simpleStochastic));
-            assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
-        });
+        it(`should match "${simpleStochastic}"`, () => parse(simpleStochastic));
 
         const simpleStochasticTree = `lsystem (
             alphabet: {A, B, C},
@@ -93,12 +104,7 @@ describe('Parser', function () {
             }
         )`;
         
-        it(`should match "${simpleStochasticTree}"`, function () {
-            const parser = new lab.Parser();
-            let lsystem;
-            assert.doesNotThrow(() => lsystem = parser.parse(simpleStochasticTree));
-            assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
-        });
+        it(`should match "${simpleStochasticTree}"`, () => parse(simpleStochasticTree));
 
         const simpleContext = `lsystem (
             alphabet: {A, B, C},
@@ -110,12 +116,7 @@ describe('Parser', function () {
             }
         )`;
         
-        it(`should match "${simpleContext}"`, function () {
-            const parser = new lab.Parser();
-            let lsystem;
-            assert.doesNotThrow(() => lsystem = parser.parse(simpleContext));
-            assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
-        });
+        it(`should match "${simpleContext}"`, () => parse(simpleContext));
 
         const simpleParameterized = `lsystem (
             alphabet: {A(t), B, C(p, q)},
@@ -128,13 +129,7 @@ describe('Parser', function () {
             ignore: {B}
         )`;
         
-        it(`should match "${simpleParameterized}"`, function () {
-            const parser = new lab.Parser();
-            let lsystem;
-            lsystem = parser.parse(simpleParameterized);
-            assert.doesNotThrow(() => lsystem = parser.parse(simpleParameterized));
-            assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
-        });
+        it(`should match "${simpleParameterized}"`, () => parse(simpleParameterized));
 
         const simpleConditionalParameterized = `lsystem (
             alphabet: {A(t), B, C(p, q)},
@@ -146,20 +141,20 @@ describe('Parser', function () {
             }
         )`;
         
-        it(`should match "${simpleConditionalParameterized}"`, function () {
-            const parser = new lab.Parser();
-            let lsystem;
-            try {
-                lsystem = parser.parse(simpleConditionalParameterized);
-                console.log(lsystem.stringify());
-                lsystem = parser.parse(lsystem.stringify());
-            } catch (e) {
-                console.log("ERROR: ", e);
-            }
-            assert.doesNotThrow(() => lsystem = parser.parse(simpleConditionalParameterized));
-            assert.doesNotThrow(() => lsystem = parser.parse(lsystem.stringify()));
-        });
+        it(`should match "${simpleConditionalParameterized}"`, () => parse(simpleConditionalParameterized));
 
+        const minimalWithConstants = `
+        A = 3;
+        B = (A * 2) / A;
+
+        lsystem(  
+            alphabet: {A, B, C},
+            axiom: A,
+            productions: {
+            }
+        )`;
+
+        it(`should match "${minimalWithConstants}"`, () => parse(minimalWithConstants));
 
 
     });

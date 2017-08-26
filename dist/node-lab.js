@@ -268,12 +268,12 @@ const _predecessor = new WeakMap();
 const _successor = new WeakMap();
 const _condition = new WeakMap();
 
-const determineParameters = function (production, edge) {
+const determineParameters = function (production, edge, globalContext = {}) {
     const formalParameters = production.predecessor.module.parameters.reduce((ps, p) => {
         return ps.concat([p]);
     }, []);
 
-    const parameters = {};
+    const parameters = Object.assign({}, globalContext);
 
     formalParameters.forEach((name) => {
         const actualValue = edge.getValue(name);
@@ -358,17 +358,19 @@ class Production {
      * Follow this productions
      *
      * @param {Module} edge - the actual module to apply this production to.
+     * @param {Object} [globalContext = {}] - the globalContext in which this
+     * edge is followed.
      *
      * @returns {Successor} The successor of this Production with parameters
      * applied.
      */
-    follow(edge) {
+    follow(edge, globalContext = {}) {
         if (this.predecessor.module.isParameterized()) {
             // In each production, the predecessor is exactly one module. However,
             // its successor can consist of one or more modules. Construct a map
             // of formal parameters to their current actual value (based on the
             // edge)
-            return this.successor.apply(determineParameters(this, edge));
+            return this.successor.apply(determineParameters(this, edge, globalContext));
         } else {
             return this.successor.apply();
         }
@@ -1096,6 +1098,7 @@ const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
 const _productions = new WeakMap();
 const _ignore = new WeakMap();
+const _globalContext = new WeakMap();
 
 const _currentDerivation = new WeakMap();
 const _derivationLength = new WeakMap();
@@ -1149,7 +1152,7 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
             successor.push(derive(lsystem, edge, pathTaken, 0));
         } else {
             const production = findProduction(lsystem, edge, moduleTree, pathTaken, edgeIndex);
-            const rewrittenNode = production.follow(edge);
+            const rewrittenNode = production.follow(edge, _globalContext.get(lsystem));
 
             //console.log(edgeIndex, production.stringify());
 
@@ -1226,6 +1229,14 @@ const LSystem = class {
         return _ignore.get(this);
     }
 
+    get globals() {
+        return _globals.get(this);
+    }
+
+    set globals(map) {
+        _globals.set(this, map);
+    }
+
     get derivationLength() {
         return _derivationLength.get(this);
     }
@@ -1252,10 +1263,14 @@ const LSystem = class {
      *
      * @param {Number} [steps = 1] - the number of derivations to perform,
      * defaults to one step.
+     * @param {Object} [globalContext = {}] - the global context in which this lsystem is
+     * derived.
      *
      * @returns {Successor} the successor.
      */
-    derive(steps = 1) {
+    derive(steps = 1, globalContext = {}) {
+        _globalContext.set(this, globalContext);
+
         for (let i = 0; i < steps; i++) {
             // do a derivation
             //console.log("predecessor: ", _currentDerivation.get(this).stringify());
@@ -1263,6 +1278,7 @@ const LSystem = class {
             _currentDerivation.set(this, derive(this, predecessor));
             _derivationLength.set(this, this.derivationLength + 1);
         }
+
         return _currentDerivation.get(this);
     }
 
@@ -1591,6 +1607,8 @@ const _idTable = new WeakMap();
 
 // Scopes
 const MODULE = Symbol("MODULE");
+const GLOBAL = Symbol("GLOBAL");
+
 // Contexts
 const CONTEXT = Symbol("CONTEXT");
 const MODULE_NAME = Symbol("MODULE_NAME");
@@ -1606,7 +1624,7 @@ const installIdentifier = function (parser, identifierToken, scope = MODULE) {
     if (!defined(parser, name, scope)) {
         idTable.push({name, scope});
     } else {
-        throw new ParseError(`'name' at ${identifierToken.position()} is already defined.`);
+        throw new ParseError(`'${name}' at ${identifierToken.position()} is already defined.`);
     }
 };
 
@@ -2034,6 +2052,38 @@ const parseLSystem = function (parser) {
     return lsystem;
 };
 
+const parseConstant = function (parser) {
+    const constantNameToken = match(parser, IDENTIFIER);
+    const name = constantNameToken.value;
+
+    installIdentifier(parser, constantNameToken, GLOBAL);
+    match(parser, OPERATOR, "=");
+    const value = parseActualParameter(parser);
+    match(parser, DELIMITER, ";");
+    
+    return {name, value};
+};
+
+const parse = function (parser) {
+    // Imports
+    // ToDo
+
+    // Constants
+    const constants = {};
+    while (lookAhead(parser, IDENTIFIER)) {
+        const constant = parseConstant(parser);
+        constants[constant.name] = constant.value;
+    }
+
+    // LSystem
+    const lsystem = parseLSystem(parser);
+
+    return {
+        lsystem, 
+        constants
+    };
+};
+
 /**
  * Parser for LSystem input strings
  */
@@ -2050,12 +2100,13 @@ class Parser {
      *
      * @param {String} input - the input string to parse
      *
-     * @returns {LSystem}
+     * @returns {{LSystem, Object}} An object containing the LSystem and a
+     * global constants used in that LSystem, if any.
      */
     parse(input) {
         _lexer.set(this, new Lexer(input));
         _idTable.set(this, []);
-        return parseLSystem(this);
+        return parse(this);
     }
 }
 
@@ -2351,7 +2402,7 @@ const bracket = function (lexer) {
 
 const delimiter = function (lexer) {
     const c = peek(lexer);
-    if ([',', ':'].includes(c)) {
+    if ([',', ':', ";"].includes(c)) {
         moveForward(lexer);
         return recognize(lexer, DELIMITER, c);
     }

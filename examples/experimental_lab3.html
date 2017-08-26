@@ -13,7 +13,10 @@
 import {Lab} from "../../../src/Lab.js";
 
 const config = {
-    lsystem: `lsystem(
+    lsystem: `
+        R = 1.456;
+
+        lsystem(
         alphabet: {A, F'(s), -, +},
         axiom: A,
         productions: {
@@ -40,7 +43,7 @@ const config = {
         }
     },
     derivationLength: 11,
-    animate: false
+    animate: true
 };
 
 const lab = new Lab(config);

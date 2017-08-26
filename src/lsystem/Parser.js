@@ -52,6 +52,7 @@ const _idTable = new WeakMap();
 // Scopes
 const MODULE = Symbol("MODULE");
 const PARAMETER = Symbol("PARAMETER");
+const GLOBAL = Symbol("GLOBAL");
 
 // Contexts
 const CONTEXT = Symbol("CONTEXT");
@@ -70,7 +71,7 @@ const installIdentifier = function (parser, identifierToken, scope = MODULE) {
     if (!defined(parser, name, scope)) {
         idTable.push({name, scope});
     } else {
-        throw new ParseError(`'name' at ${identifierToken.position()} is already defined.`);
+        throw new ParseError(`'${name}' at ${identifierToken.position()} is already defined.`);
     }
 };
 
@@ -500,6 +501,38 @@ const parseLSystem = function (parser) {
     match(parser, BRACKET_CLOSE, ")");
     const lsystem = new LSystem(alphabet, axiom, productions, ignore);
     return lsystem;
+};
+
+const parseConstant = function (parser) {
+    const constantNameToken = match(parser, IDENTIFIER);
+    const name = constantNameToken.value;
+
+    installIdentifier(parser, constantNameToken, GLOBAL);
+    match(parser, OPERATOR, "=");
+    const value = parseActualParameter(parser);
+    match(parser, DELIMITER, ";");
+    
+    return {name, value};
+};
+
+const parse = function (parser) {
+    // Imports
+    // ToDo
+
+    // Constants
+    const constants = {};
+    while (lookAhead(parser, IDENTIFIER)) {
+        const constant = parseConstant(parser);
+        constants[constant.name] = constant.value;
+    }
+
+    // LSystem
+    const lsystem = parseLSystem(parser);
+
+    return {
+        lsystem, 
+        constants
+    };
 }
 
 /**
@@ -518,12 +551,13 @@ class Parser {
      *
      * @param {String} input - the input string to parse
      *
-     * @returns {LSystem}
+     * @returns {{LSystem, Object}} An object containing the LSystem and a
+     * global constants used in that LSystem, if any.
      */
     parse(input) {
         _lexer.set(this, new Lexer(input));
         _idTable.set(this, []);
-        return parseLSystem(this);
+        return parse(this);
     }
 };
 

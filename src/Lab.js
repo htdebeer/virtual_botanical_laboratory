@@ -31,6 +31,7 @@ const _element = new WeakMap();
 const _lsystem = new WeakMap();
 const _interpretation = new WeakMap();
 const _description = new WeakMap();
+const _globalContext = new WeakMap();
 
 const _running = new WeakMap();
 const _animate = new WeakMap();
@@ -67,14 +68,23 @@ const createInterpretation = function (lab, interpretationConfig = {}) {
     _interpretation.set(lab, interpretation);
 };
 
-const createLSystem = function (lab, lsystem = "") {
+const createLSystemAndGlobalContext = function (lab, lsystem = "", globalContext = {}) {
+
     if (!(lsystem instanceof LSystem)) {
         // Interpret lsystem as a string to parse into an LSystem. Will
         // throw a parse error if it does not succeed
-        lsystem = LSystem.parse(lsystem);
+        const parsed = LSystem.parse(lsystem);
+        lsystem = parsed.lsystem;
+
+        const constants = parsed.constants;
+        Object.entries(constants).forEach((keyValue) => {
+            const [name, valueExpr] = keyValue;
+            globalContext[name] = valueExpr.evaluate(globalContext);
+        });
     }
 
     _lsystem.set(lab, lsystem);
+    _globalContext.set(lab, globalContext);
 };
 
 const initializeAndRun = function (lab, derivationLength = 0) {
@@ -123,8 +133,16 @@ class Lab {
     constructor(config = {}) {
         _running.set(this, false);
 
-        createInterpretation(this, config.interpretation);
-        createLSystem(this, config.lsystem);
+        createLSystemAndGlobalContext(i
+            this, 
+            config.lsystem || "", 
+            config.globalContext || {}
+        );
+        
+        createInterpretation(
+            this, 
+            config.interpretation
+        );
 
         if (config.description && "" !== config.description) {
             this.description = config.description;
@@ -203,7 +221,7 @@ class Lab {
      * perform, defaults to one step.
      */
     derive(length = 1) {
-        this.interpretation.render(this.lsystem.derive(length));
+        this.interpretation.render(this.lsystem.derive(length, _globalContext.get(this)));
     }
 
     /**
