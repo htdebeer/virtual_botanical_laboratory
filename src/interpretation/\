@@ -212,7 +212,6 @@ class Interpretation {
      */
     initialize() {
         _states.set(this, [Object.assign({}, _initialState.get(this))]);
-        this.applyProperties();
     }
 
     /**
@@ -240,8 +239,8 @@ class Interpretation {
      * Exit a sub tree.
      */
     exit() {
-        this.applyProperties();
         _states.get(this).pop();
+        this.applyProperties();
     }
 
     /**

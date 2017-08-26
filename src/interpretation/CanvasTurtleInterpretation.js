@@ -76,29 +76,29 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
     }
 
     lineTo(x, y) {
-        const canvas = _canvas.get(this);
-        canvas.save();
         this.applyProperties();
+
+        const canvas = _canvas.get(this);
         canvas.lineTo(x, y);
-        canvas.restore();
+        canvas.stroke();
     }
 
     enter() {
-        const canvas = _canvas.get(this);
-        canvas.save();
         super.enter();
-        if (this.getProperty("close", false)) {
-            canvas.beginPath();
-        }
+
+        const canvas = _canvas.get(this);
+        canvas.beginPath();
+        canvas.moveTo(this.x, this.y);
     }
 
     exit() {
+        super.exit();
+
         const canvas = _canvas.get(this);
         if (this.getProperty("close", false)) {
             canvas.closePath();
         }
-        canvas.restore();
-        super.exit();
+        canvas.stroke();
         canvas.moveTo(this.x, this.y);
     }
         

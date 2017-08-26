@@ -153,6 +153,13 @@ const isLetter = function (c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
 };
 
+const isIdentifierExtra = function (c) {
+    return [
+        "'",
+        "_"
+    ].includes(c);
+};
+
 const isKeyword = function (identifier) {
     return [
         'lsystem',
@@ -253,7 +260,7 @@ const identifier = function (lexer) {
 
     if (isLetter(peek(lexer))) {
         moveForward(lexer);
-        while (isLetter(peek(lexer)) || isDigit(peek(lexer))) {
+        while (isLetter(peek(lexer)) || isDigit(peek(lexer)) || isIdentifierExtra(peek(lexer))) {
             moveForward(lexer);
         }
 

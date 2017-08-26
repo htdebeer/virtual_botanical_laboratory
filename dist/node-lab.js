@@ -1258,7 +1258,7 @@ const LSystem = class {
     derive(steps = 1) {
         for (let i = 0; i < steps; i++) {
             // do a derivation
-            console.log("predecessor: ", _currentDerivation.get(this).stringify());
+            //console.log("predecessor: ", _currentDerivation.get(this).stringify());
             const predecessor = _currentDerivation.get(this);
             _currentDerivation.set(this, derive(this, predecessor));
             _derivationLength.set(this, this.derivationLength + 1);
@@ -2210,6 +2210,13 @@ const isLetter = function (c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
 };
 
+const isIdentifierExtra = function (c) {
+    return [
+        "'",
+        "_"
+    ].includes(c);
+};
+
 const isKeyword = function (identifier) {
     return [
         'lsystem',
@@ -2310,7 +2317,7 @@ const identifier = function (lexer) {
 
     if (isLetter(peek(lexer))) {
         moveForward(lexer);
-        while (isLetter(peek(lexer)) || isDigit(peek(lexer))) {
+        while (isLetter(peek(lexer)) || isDigit(peek(lexer)) || isIdentifierExtra(peek(lexer))) {
             moveForward(lexer);
         }
 
@@ -2750,8 +2757,8 @@ class Interpretation {
      * Exit a sub tree.
      */
     exit() {
-        _states.get(this).pop();
         this.applyProperties();
+        _states.get(this).pop();
     }
 
     /**

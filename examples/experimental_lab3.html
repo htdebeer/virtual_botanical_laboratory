@@ -14,11 +14,11 @@ import {Lab} from "../../../src/Lab.js";
 
 const config = {
     lsystem: `lsystem(
-        alphabet: {A, F1(s), -, +},
+        alphabet: {A, F'(s), -, +},
         axiom: A,
         productions: {
-            A -> F1(3) [ + A ] [ - A ],
-            F1(s) -> F1(s * 1.456)
+            A -> F'(3) [ + A ] [ - A ],
+            F'(s) -> F'(s * 1.456)
         }
     )`,
     interpretation: {
@@ -27,20 +27,20 @@ const config = {
             x: 400,
             y: 600,
             d: 2,
-            delta: (-45 * Math.PI)/180,
+            delta: (-85 * Math.PI)/180,
             alpha: (270 * Math.PI)/180,
             close: false
         },
         commands: {
-            "F1": function (s) {
-                this.setProperty("line-width", 10/s);
+            "F'": function (s) {
+                this.setProperty("line-width", s/5);
                 this.d = s * 2;
                 this.getCommand("F").execute(this, s);
             }
         }
     },
-    derivationLength: 10,
-    animate: true
+    derivationLength: 11,
+    animate: false
 };
 
 const lab = new Lab(config);

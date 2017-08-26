@@ -1219,6 +1219,13 @@ const isLetter = function (c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
 };
 
+const isIdentifierExtra = function (c) {
+    return [
+        "'",
+        "_"
+    ].includes(c);
+};
+
 const isKeyword = function (identifier) {
     return [
         'lsystem',
@@ -1319,7 +1326,7 @@ const identifier = function (lexer) {
 
     if (isLetter(peek(lexer))) {
         moveForward(lexer);
-        while (isLetter(peek(lexer)) || isDigit(peek(lexer))) {
+        while (isLetter(peek(lexer)) || isDigit(peek(lexer)) || isIdentifierExtra(peek(lexer))) {
             moveForward(lexer);
         }
 
@@ -2429,7 +2436,7 @@ const LSystem = class {
     derive(steps = 1) {
         for (let i = 0; i < steps; i++) {
             // do a derivation
-            console.log("predecessor: ", _currentDerivation.get(this).stringify());
+            //console.log("predecessor: ", _currentDerivation.get(this).stringify());
             const predecessor = _currentDerivation.get(this);
             _currentDerivation.set(this, derive(this, predecessor));
             _derivationLength.set(this, this.derivationLength + 1);
@@ -2746,8 +2753,8 @@ class Interpretation {
      * Exit a sub tree.
      */
     exit() {
-        _states.get(this).pop();
         this.applyProperties();
+        _states.get(this).pop();
     }
 
     /**
@@ -2963,30 +2970,29 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
     }
 
     lineTo(x, y) {
-        const canvas = _canvas.get(this);
-        canvas.save();
         this.applyProperties();
+
+        const canvas = _canvas.get(this);
         canvas.lineTo(x, y);
-        canvas.restore();
         canvas.stroke();
     }
 
     enter() {
-        const canvas = _canvas.get(this);
-        canvas.save();
         super.enter();
-        if (this.getProperty("close", false)) {
-            canvas.beginPath();
-        }
+
+        const canvas = _canvas.get(this);
+        canvas.beginPath();
+        canvas.moveTo(this.x, this.y);
     }
 
     exit() {
+        super.exit();
+
         const canvas = _canvas.get(this);
         if (this.getProperty("close", false)) {
             canvas.closePath();
         }
-        canvas.restore();
-        super.exit();
+        canvas.stroke();
         canvas.moveTo(this.x, this.y);
     }
         
