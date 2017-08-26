@@ -4,22 +4,20 @@ const parser = new lab.Parser();
 
 const parse = function (str) {
     let strToParse = str;
-    let parsed;
+    let lsystem;
     
     try {
-        parsed = parser.parse(strToParse);
+        lsystem = parser.parse(strToParse);
+        console.log(lsystem.stringify(), lsystem.globalContext);
     } catch (e) {
         console.log(`ERROR occurred: `, e);
     }
 
-    console.log(str, parsed.lsystem.stringify());
-    console.log(parsed.constants);
-
     assert.doesNotThrow(() => {
-        parsed = parser.parse(strToParse);
-        strToParse = parsed.lsystem;
+        lsystem = parser.parse(strToParse);
+        strToParse = lsystem.stringify();
     });
-/*
+
     try {
         parser.parse(strToParse);
     } catch (e) {
@@ -27,9 +25,8 @@ const parse = function (str) {
     }
 
     assert.doesNotThrow(() => {
-        parsed = parser.parse(strToParse);
+        lsystem = parser.parse(strToParse);
     });
-    */
 };
 
 describe('Parser', function () {

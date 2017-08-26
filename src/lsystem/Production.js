@@ -99,9 +99,16 @@ class Production {
      * Does this production match the edge?
      *
      * @param {Module} edge - the edge to match against this production
+     * @param {ModuleTree} moduleTree - the moduleTree that is being expected
+     * @param {Number} edgeIndex - the index of edge in the moduleTree
+     * @param {Module[]} [ignore = []] - a list of modules to ignore when
+     * looking at the context
+     * @param {Object} [globalContext = {}] - the globalContext in which this
+     * match should be determined.
+     *
      * @returns {Boolean} True if this production matches the edge
      */
-    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = []) {
+    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = [], globalContext = {}) {
         if (this.isConditional() && !conditionHolds(this, edge)) {
             return false;
         }

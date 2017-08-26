@@ -345,9 +345,16 @@ class Production {
      * Does this production match the edge?
      *
      * @param {Module} edge - the edge to match against this production
+     * @param {ModuleTree} moduleTree - the moduleTree that is being expected
+     * @param {Number} edgeIndex - the index of edge in the moduleTree
+     * @param {Module[]} [ignore = []] - a list of modules to ignore when
+     * looking at the context
+     * @param {Object} [globalContext = {}] - the globalContext in which this
+     * match should be determined.
+     *
      * @returns {Boolean} True if this production matches the edge
      */
-    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = []) {
+    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = [], globalContext = {}) {
         if (this.isConditional() && !conditionHolds(this, edge)) {
             return false;
         }
@@ -1107,6 +1114,17 @@ const ignore = function (lsystem, edge) {
     return 0 < lsystem.ignore.filter(m => m.equals(edge)).length;
 };
 
+const actualGlobalContext = function (lsystem) {
+    const actualContext = {};
+
+    Object.entries(lsystem.globalContext).forEach((keyValue) => {
+        const [name, valueExpr] = keyValue;
+        actualContext[name] = valueExpr.evaluate(actualContext);
+    });
+
+    return actualContext;
+};
+
 const selectBestProduction = function (lsystem, productions) {
     if (1 === productions.length) {
         return productions[0];
@@ -1131,7 +1149,7 @@ const selectBestProduction = function (lsystem, productions) {
 const findProduction = function (lsystem, module, moduleTree, pathTaken, edgeIndex) {
     const candidates = lsystem
         .productions
-        .filter((p) => p.matches(module, moduleTree, pathTaken, edgeIndex, lsystem.ignore));
+        .filter((p) => p.matches(module, moduleTree, pathTaken, edgeIndex, lsystem.ignore, actualGlobalContext(lsystem)));
 
     if (0 < candidates.length) {
         return selectBestProduction(lsystem, candidates);
@@ -1152,7 +1170,7 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
             successor.push(derive(lsystem, edge, pathTaken, 0));
         } else {
             const production = findProduction(lsystem, edge, moduleTree, pathTaken, edgeIndex);
-            const rewrittenNode = production.follow(edge, _globalContext.get(lsystem));
+            const rewrittenNode = production.follow(edge, actualGlobalContext(lsystem));
 
             //console.log(edgeIndex, production.stringify());
 
@@ -1182,6 +1200,8 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
  * LSystem
  * @property {Integer} derivationLength - the length of the derivation of this
  * LSystem
+ * @property {Object{ globalContext - the global context in which this lsystem
+ * exists. Used for constants and references to other lsystems.
  */
 const LSystem = class {
     /**
@@ -1193,6 +1213,7 @@ const LSystem = class {
      * @param {Module[]} ignore
      */
     constructor(alphabet, axiom, productions, ignore = []) {
+        _globalContext.set(this, {});
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
         _productions.set(this, productions);
@@ -1211,6 +1232,14 @@ const LSystem = class {
      */
     static parse(input) {
         return (new Parser()).parse(input);
+    }
+
+    get globalContext() {
+        return _globalContext.get(this);
+    }
+
+    set globalContext(context) {
+        _globalContext.set(this, context);
     }
 
     get alphabet() {
@@ -1248,7 +1277,18 @@ const LSystem = class {
      * @return {String}
      */
     stringify() {
-        let lsystem = `lsystem(alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
+        let lsystem = '';
+
+        // Serialize the global context, if any.
+        let constants = Object.keys(this.globalContext).map(key => `${key} = ${this.globalContext[key].stringify()}`).join(";\n");
+        if (constants.length > 0) {
+            constants += ";\n\n";
+        }
+
+        lsystem += constants;
+        
+        // Serialize the LSystem definition
+        lsystem += `lsystem(alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
 
         if (0 < this.ignore.length) {
             lsystem += `, ignore: {${this.ignore.map(m => m.stringify()).join(", ")}}`;
@@ -1263,14 +1303,10 @@ const LSystem = class {
      *
      * @param {Number} [steps = 1] - the number of derivations to perform,
      * defaults to one step.
-     * @param {Object} [globalContext = {}] - the global context in which this lsystem is
-     * derived.
      *
      * @returns {Successor} the successor.
      */
-    derive(steps = 1, globalContext = {}) {
-        _globalContext.set(this, globalContext);
-
+    derive(steps = 1) {
         for (let i = 0; i < steps; i++) {
             // do a derivation
             //console.log("predecessor: ", _currentDerivation.get(this).stringify());
@@ -2068,20 +2104,18 @@ const parse = function (parser) {
     // Imports
     // ToDo
 
+    const globalContext = {};
     // Constants
-    const constants = {};
     while (lookAhead(parser, IDENTIFIER)) {
         const constant = parseConstant(parser);
-        constants[constant.name] = constant.value;
+        globalContext[constant.name] = constant.value;
     }
 
     // LSystem
     const lsystem = parseLSystem(parser);
+    lsystem.globalContext = globalContext;
 
-    return {
-        lsystem, 
-        constants
-    };
+    return lsystem;
 };
 
 /**

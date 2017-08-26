@@ -519,20 +519,18 @@ const parse = function (parser) {
     // Imports
     // ToDo
 
+    const globalContext = {};
     // Constants
-    const constants = {};
     while (lookAhead(parser, IDENTIFIER)) {
         const constant = parseConstant(parser);
-        constants[constant.name] = constant.value;
+        globalContext[constant.name] = constant.value;
     }
 
     // LSystem
     const lsystem = parseLSystem(parser);
+    lsystem.globalContext = globalContext;
 
-    return {
-        lsystem, 
-        constants
-    };
+    return lsystem;
 }
 
 /**
