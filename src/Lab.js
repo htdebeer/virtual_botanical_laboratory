@@ -86,11 +86,11 @@ const initializeAndRun = function (lab, derivationLength = 0) {
 };
 
 const animateDeriving = function (lab, steps, currentStep) {
-    if (lab.running && currentStep < steps) {
+    if (_running.get(lab) && currentStep < steps) {
         setTimeout(() => {
-            lab.derive();
+            lab.interpretation.render(lab.derive());
             animateDeriving(lab, steps, currentStep + 1)
-        }, lab.speed);
+        }, _speed.get(lab));
     } else {
         _running.set(lab, false);
     }
@@ -119,6 +119,13 @@ const setupAnimation = function (lab, animate = false) {
  * Use this class to build an application on top of.
  *
  * Each Lab has a valid LSystem and a corresponding Interpretation. 
+ *
+ * @property {HTMLElement} element
+ * @property {Interpretation} interpretation
+ * @property {LSystem} lsystem
+ * @property {String} description
+ * @property {Boolean|Number} animate - control the animation of the
+ * Interpretation
  */
 class Lab {
     constructor(config = {}) {
@@ -165,10 +172,6 @@ class Lab {
         _description.set(this, description);
     }
 
-    get running() {
-        return _running.get(this);
-    }
-
     get animate() {
         return _animate.get(this);
     }
@@ -177,35 +180,41 @@ class Lab {
         setupAnimation(this, animate);
     }
         
-    get speed() {
-        return _speed.get(this);
-    }
-
-
     // actions
     // control rendering
+
+    /** 
+     * Run this Lab by deriving this Lab's lsystem's successor for steps
+     * times and interpret it.
+     *
+     * @param {Number} [steps = 0] - the number of derivations to perform.
+     */
     run(steps = 0) {
         if (this.animate) {
             _running.set(this, true);
             animateDeriving(this, steps, 0);
         } else {
-            this.derive(steps);
+            this.interpretation.render(this.derive(steps));
         }
     }
 
+    /**
+     * Stop running this Lab.
+     */
     stop() {
         _running.set(this, false);
     }
 
     /**
-     * Derive the next sequence from this Lab's LSystem and render its
-     * interpretation. 
+     * Derive the next sequence from this Lab's LSystem.
      *
      * @param {Integer} [derivationLength = 1] - the number of derivations to
      * perform, defaults to one step.
+     *
+     * @returns {ModuleTree} successor
      */
     derive(length = 1) {
-        this.interpretation.render(this.lsystem.derive(length));
+        return this.lsystem.derive(length);
     }
 
     /**
@@ -216,41 +225,39 @@ class Lab {
         this.lsystem.reset(); 
     }
 
-    // Properties
-    setProperty(name, value) {}
-    getProperty(name) {}
-    getAllProperties() {}
-
-    // Commands
-    setCommand(name, command) {}
-    getCommand(name) {}
-    getAllCommands() {}
-
     // New/open/save
     new() {}
     open(file) {}
     save(file) {}
 
     //Export
-    toPNG() {}
-    toSVG() {}
-    toHTML() {}
-    
-    // Information
-    about() {
-        
-        return `The virtual botanical library is a free software project to
-        explore the ideas in the book Prusinkiewicz and Lindenmayer (1990) The
-        algorithmic beauty of plants. You can find the project at
-        https://github.com/htdebeer/virtual_botanical_laboratory.`;
 
+    /**
+     * Export the current interpretation to a PNG file.
+     *
+     * @returns {PNG} an PNG file
+     */
+    toPNG() {
+        
     }
 
-    help() {
+    /**
+     * Export the current interpretation to a SVG file.
+     *
+     * @returns {SVG} an SVG file
+     */
+    toSVG() {
+        // Before implementing this, the SVGTurtleInterpretation has to be
+        // completed first.
+    }
 
-        return `There is no help at the moment; the project is still under
-        heavy development.`;
-
+    /**
+     * Export the current Lab to a self-contained HTML file that can be run
+     * elsewhere and off-line.
+     *
+     * @return {HTML} a HTML file
+     */
+    toHTML() {
     }
 }
 
