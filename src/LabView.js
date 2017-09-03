@@ -23,11 +23,12 @@ import {Lab} from "./Lab.js";
 
 const _lab = new WeakMap();
 const _parentElement = new WeakMap();
+const _config = new WeakMap();
 
 /**
  * A user interface for a Lab.
  *
- * @property {Lab} lab.
+ * @property {Lab} lab
  */
 class LabView {
 
@@ -41,6 +42,8 @@ class LabView {
      * LabView.
      */
     constructor(parentElementOrSelector, config = {}) {
+        // TODO: It is probably a good idea to validate the config first, though.
+        _config.set(this, Object.create(null, config));
     }
 
     get lab() {
@@ -53,7 +56,18 @@ class LabView {
 
     // Control the lab view
 
-    configure(config = {}) {
+    set(sectionName, key, value) {
+        let section = _config.get(this)[sectionName];
+        if (undefined === section) {
+            section = Object.create(null);
+            _config.get(this)[sectionName] = section;
+        }
+        section.add(key = value;
+    }
+
+    get(sectionName, key) {
+        const section = _config.get(this)[sectionName];
+        return undefined === section ? section[key] : undefined;
     }
 
     // File and export actions
@@ -73,12 +87,20 @@ class LabView {
     // Control a lab actions
 
     run() {
+        const steps = this.config.steps || 1;
+        this.lab.run(steps);
+    }
+
+    step() {
+        this.lab.run(1);
     }
 
     stop() {
+        this.lab.stop();
     }
 
     reset() {
+        this.lab.reset();
     }
 
     // Documentation and information actions
