@@ -120,10 +120,9 @@ const setupAnimation = function (lab, animate = false) {
  *
  * Each Lab has a valid LSystem and a corresponding Interpretation. 
  *
- * @property {HTMLElement} element
- * @property {Interpretation} interpretation
- * @property {LSystem} lsystem
- * @property {String} description
+ * @property {HTMLElement} element with the interpretation of the lsystem
+ * @property {Interpretation} interpretation of the lsystem
+ * @property {LSystem} lsystem being interpreted
  * @property {Boolean|Number} animate - control the animation of the
  * Interpretation
  */
@@ -132,13 +131,7 @@ class Lab {
         _running.set(this, false);
 
         createLSystem(this, config.lsystem || "");
-        
         createInterpretation(this, config.interpretation);
-
-        if (config.description && "" !== config.description) {
-            this.description = config.description;
-        }
-
         setupAnimation(this, config.animate);
 
         initializeAndRun(this, config.derivationLength);
@@ -162,14 +155,6 @@ class Lab {
 
     get lsystem() {
         return _lsystem.get(this);
-    }
-
-    get description() {
-        return _description.get(this);
-    }
-
-    set description(description) {
-        _description.set(this, description);
     }
 
     get animate() {
@@ -223,41 +208,6 @@ class Lab {
     reset() {
         this.interpretation.reset();
         this.lsystem.reset(); 
-    }
-
-    // New/open/save
-    new() {}
-    open(file) {}
-    save(file) {}
-
-    //Export
-
-    /**
-     * Export the current interpretation to a PNG file.
-     *
-     * @returns {PNG} an PNG file
-     */
-    toPNG() {
-        
-    }
-
-    /**
-     * Export the current interpretation to a SVG file.
-     *
-     * @returns {SVG} an SVG file
-     */
-    toSVG() {
-        // Before implementing this, the SVGTurtleInterpretation has to be
-        // completed first.
-    }
-
-    /**
-     * Export the current Lab to a self-contained HTML file that can be run
-     * elsewhere and off-line.
-     *
-     * @return {HTML} a HTML file
-     */
-    toHTML() {
     }
 }
 
