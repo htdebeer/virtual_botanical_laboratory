@@ -62,7 +62,7 @@ class LabView {
             section = Object.create(null);
             _config.get(this)[sectionName] = section;
         }
-        section.add(key = value;
+        section[key] = value;
     }
 
     get(sectionName, key) {
@@ -95,20 +95,12 @@ class LabView {
         this.lab.run(1);
     }
 
-    stop() {
+    pause() {
         this.lab.stop();
     }
 
     reset() {
         this.lab.reset();
-    }
-
-    // Documentation and information actions
-
-    help() {
-    }
-
-    about() {
     }
 
 }

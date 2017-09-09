@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            .lab-view {
+                font-size: 12pt;
+            }
+
+            .lab-view .tab-group {
+                position: relative;
+                min-height: 200px;
+                height: 600px;
+                clear: both;
+                margin: 1px;
+                padding: 0;
+                
+                background: Chartreuse;
+                border: 1px solid dimgray;
+                padding-top: 10px;
+            }
+
+            .lab-view .tab {
+                list-style: none;
+                float: left;
+                height: 100%;
+            }
+
+            .lab-view .tab.right {
+                float: right;
+            }
+
+            .lab-view .tab > label {
+                padding: 10px;
+                left: 1px;
+            }
+
+            .lab-view .tab > label:hover {
+                background: GreenYellow;
+            }
+
+            .lab-view .tab > input[type="radio"] {
+                display: none;
+            }
+
+            .lab-view .tab .contents {
+                position: absolute;
+                top: 38px;
+                left: 0;
+                background: white;
+                right: 0;
+                bottom: 0;
+                padding: 5px;
+                padding-bottom: 10px;
+                border-top: 1px solid dimgray;
+                overflow: auto;
+            }
+
+            .lab-view .tab > input[type=radio]:checked ~ label {
+                background: dimgray;
+                color: white;
+                border-bottom: 1px white;
+                z-index: 2;
+            }
+
+            .lab-view .tab > input[type=radio]:checked ~ label ~ .contents {
+                z-index: 1;
+            }
+
+            .lab-view .tab > .contents h1 {
+                font-size: 16pt;
+                margin-top: 10px;
+            }
+
+            .lab-view .tab > .contents h2 {
+                font-size: 14pt;
+            }
+
+            .lab-view .tab .actions {
+                margin: 0;
+                padding: 0;
+                position: sticky;
+                left: 0px;
+                top: 0px;
+            }
+
+            .lab-view .tab .actions li {
+                list-style: none;
+                float: left;
+            }
+
+            .lab-view .tab .actions button {
+                padding: 0px;
+                margin: 1px;
+                color: black;
+            }
+
+            .lab-view .tab .actions .spacer {
+                padding-left: 5px;
+                color: transparent;
+            }
+
+            .lab-view .editor {
+                width: 100%;
+                height: 90%;
+            }
+
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>Experimental Virtual Botanical Lab</h1>
+        </header>
+        <div class="lab-view" data-width="600" data-height="500">
+            <ul class="tab-group">
+                <li class="tab" data-section="view">
+                    <input  id="labview-view" type="radio" name="sections" checked="checked" />
+                    <label 
+                        for="labview-view" 
+                        title="View interpreted L-System"
+                        >
+                        ♣
+                    </label>
+                    <div class="contents">
+                        <ul class="actions">
+                            <li><button data-action="create" type="button"
+                                    title="Create a new L-System">★</button></li>
+                            <li><button data-action="open" type="button"
+                                    title="Open a L-System from the file
+                                    system">▲</button></li>
+                            <li><button data-action="save" type="button"
+                                    title="Save this L-System to your file
+                                    system">▼</button></li>
+                            <li class="spacer">|</li>
+                            <li><button data-action="exportToPng"
+                                    type="button" title="Export this
+                                    interpretation to PNG">▼ PNG</button></li>
+                            <!--<li><button data-action="exportToSvg"
+                                    type="button">▼ SVG</button></li>-->
+                            <!--<li><button data-action="exportToHtml"
+                                    type="button">▼ HTML</button></li>-->
+                            <li class="spacer">|</li>
+                            <li><button data-action="run" type="button"
+                                    title="Run the interpretation">▶️</button></li>
+                            <li><button data-action="pause" type="button"
+                                    title="Pause the interpretation">⏸</button></li>
+                            <li><button data-action="step" type="button"
+                                    title="Derive and interpret the next
+                                    successor">1</button></li>
+                            <li><button data-action="reset" type="button"
+                                    title="Reset the interpretation">⏮</button></li>
+                        </ul>
+                        <div class="canvas"></div>
+                    </div>
+                </li>
+                <li class="tab" data-section="lsystem">
+                    <input  id="labview-lsystem" type="radio" name="sections" />
+                    <label 
+                        for="labview-lsystem" 
+                        title="L-System definition"
+                        >
+                        L-System
+                    </label>
+                    <div class="contents">
+                        <h1>L-System definition</h1>
+                        <textarea name="labview-lsystem-editor" class="editor"></textarea>
+                    </div>
+                </li>
+                <li class="tab" data-section="interpretation">
+                    <input  id="labview-interpretation" type="radio" name="sections" />
+                    <label 
+                        for="labview-interpretation"
+                        title="Configure interpretation"
+                        >
+                        Interpretation
+                    </label>
+                    <div class="contents">
+                        <h1>Configure interpretation</h1>
+                        <h2>Global options</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Property</th>
+                                    <th>Value</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <select
+                                            name="interpretation-properties"
+                                            >
+                                            <option value="placeholder">
+                                                Add property
+                                            </option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="text" />
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h2>Commands</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Command</th>
+                                    <th>Definition</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <select
+                                            name="interpretation-commands"
+                                            >
+                                            <option value="placeholder">
+                                                Add command
+                                            </option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <textarea></textarea>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </li>
+                <li class="tab right" data-section="help">
+                    <input  id="labview-help" type="radio" name="sections" />
+                    <label 
+                        for="labview-help"
+                        title="Show help about the virtual botanical laboratory"
+                        >
+                        ?
+                    </label>
+                    <div class="contents">
+                        <h1>Help</h1>
+                    </div>
+                </li>
+                <li class="tab right" data-section="about">
+                    <input  id="labview-about" type="radio" name="sections" />
+                    <label 
+                        for="labview-about"
+                        title="About virtual botanical laboratory"
+                        >
+                        i
+                    </label>
+                    <div class="contents">
+                        <h1>About</h1>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div id="lab">
+        </div>
+        <script type="module">
+import {Lab} from "../../../src/Lab.js";
+import {LabView} from "../../../src/LabView.js";
+
+const config = {
+    lsystem: `lsystem(
+        alphabet: {F, O, I, -, +},
+        axiom: F I F I F I,
+        productions: {
+            O < O > O -> I,
+            O < O > I -> I [ - F I F I ],
+            O < I > O -> I,
+            O < I > I -> I,
+            I < O > O -> O,
+            I < O > I -> I F I,
+            I < I > O -> I,
+            I < I > I -> O,
+            + -> -,
+            - -> +
+        },
+        ignore: {+, -, F}
+    )`,
+    interpretation: {
+        type: "canvas",
+        config: {
+            x: 400,
+            y: 800,
+            d: 10,
+            delta: (-22.5 * Math.PI)/180,
+            alpha: (270 * Math.PI)/180,
+            close: false
+        }
+    },
+    derivationLength: 30,
+    animate: true
+};
+
+const lab = new Lab(config);
+const labElement = document.querySelector(
+    ".lab-view .tab[data-section='view'] .contents .canvas"
+);
+labElement.appendChild(lab.element);
+
+// For testing/experimenting purposes, the lab is added to the global scope so
+// you can access it from the web browser JavaScript console via the `lab`
+// variable.
+window.lab = lab;
+        </script>
+    </body>
+</html>
