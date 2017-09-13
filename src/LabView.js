@@ -19,11 +19,43 @@
  * 
  */
 import {Lab} from "./Lab.js";
-
+import LABVIEW_TEMPLATE from "./labview/template.js";
 
 const _lab = new WeakMap();
 const _parentElement = new WeakMap();
 const _config = new WeakMap();
+
+const createView = function (labview, parentElementOrSelector) {
+    const template = document.createElement("div");
+    template.classList.add("lab-view");
+    template.innerHTML = LABVIEW_TEMPLATE;
+
+    let elt;
+    if (parentElementOrSelector instanceof Node) {
+        elt = parentElementOrSelector;
+    } else {
+        elt = document.querySelector(parentElementOrSelector);
+    }
+    elt.append(template);
+    return elt;
+}
+
+const viewElt = function (labview) {
+};
+
+const lsystemView = function (labview) {
+};
+
+const interpretationView = function (labview) {
+};
+
+const helpView = function (labview) {
+};
+
+const aboutView = function (labview) {
+};
+
+
 
 /**
  * A user interface for a Lab.
@@ -43,7 +75,11 @@ class LabView {
      */
     constructor(parentElementOrSelector, config = {}) {
         // TODO: It is probably a good idea to validate the config first, though.
-        _config.set(this, Object.create(null, config));
+        _config.set(this, Object.create(null, {}));
+        Object.assign(_config.get(this), config);
+
+
+        _parentElement.set(this, createView(this, parentElementOrSelector));
     }
 
     get lab() {

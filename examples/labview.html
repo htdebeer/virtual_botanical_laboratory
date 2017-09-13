@@ -262,7 +262,6 @@
         </div>
         <script type="module">
 import {Lab} from "../../../src/Lab.js";
-import {LabView} from "../../../src/LabView.js";
 
 const config = {
     lsystem: `lsystem(
@@ -270,10 +269,10 @@ const config = {
         axiom: F I F I F I,
         productions: {
             O < O > O -> I,
-            O < O > I -> I [ - F I F I ],
+            O < O > I -> I [ + F F I ],
             O < I > O -> I,
             O < I > I -> I,
-            I < O > O -> O,
+            I < O > O -> O F [ - I ],
             I < O > I -> I F I,
             I < I > O -> I,
             I < I > I -> O,
