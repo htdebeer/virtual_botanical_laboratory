@@ -43,7 +43,7 @@
                 display: none;
             }
 
-            .lab-view .tab .contents {
+            .lab-view .tab .view {
                 position: absolute;
                 top: 38px;
                 left: 0;
@@ -63,16 +63,16 @@
                 z-index: 2;
             }
 
-            .lab-view .tab > input[type=radio]:checked ~ label ~ .contents {
+            .lab-view .tab > input[type=radio]:checked ~ label ~ .view {
                 z-index: 1;
             }
 
-            .lab-view .tab > .contents h1 {
+            .lab-view .tab > .view h1 {
                 font-size: 16pt;
                 margin-top: 10px;
             }
 
-            .lab-view .tab > .contents h2 {
+            .lab-view .tab > .view h2 {
                 font-size: 14pt;
             }
 
@@ -121,7 +121,7 @@
                         >
                         ♣
                     </label>
-                    <div class="contents">
+                    <div class="view">
                         <ul class="actions">
                             <li><button data-action="create" type="button"
                                     title="Create a new L-System">★</button></li>
@@ -161,7 +161,7 @@
                         >
                         L-System
                     </label>
-                    <div class="contents">
+                    <div class="view">
                         <h1>L-System definition</h1>
                         <textarea name="labview-lsystem-editor" class="editor"></textarea>
                     </div>
@@ -174,7 +174,7 @@
                         >
                         Interpretation
                     </label>
-                    <div class="contents">
+                    <div class="view">
                         <h1>Configure interpretation</h1>
                         <h2>Global options</h2>
                         <table>
@@ -240,7 +240,7 @@
                         >
                         ?
                     </label>
-                    <div class="contents">
+                    <div class="view">
                         <h1>Help</h1>
                     </div>
                 </li>
@@ -252,7 +252,7 @@
                         >
                         i
                     </label>
-                    <div class="contents">
+                    <div class="view">
                         <h1>About</h1>
                     </div>
                 </li>

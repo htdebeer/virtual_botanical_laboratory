@@ -21,15 +21,35 @@
 
 import {View} from "./View.js";
 
+
+const _canvas = new WeakMap();
+const _actionGroups = new WeakMap();
+
+
 /**
  * View represents a tab in the LabView.
  *
+ * @property {HTMLCanvasElement} canvas
  */
 class RenderView extends View {
 
     constructor(elt, config = {}) {
-        super(elt, config);
+        super(elt, 'render', config);
     }
+
+    get canvas() {
+        return _canvas.get(this);
+    }
+
+    set canvas(canvasElement) {
+        if (this.element.contains(this.canvas)) {
+            this.element.removeChild(this.canvas);
+        }
+        _canvas.set(this, canvasElement);
+        this.element.appendChild(this.canvas);
+    }
+
+
 };
 
 export {

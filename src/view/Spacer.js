@@ -19,16 +19,14 @@
  * 
  */
 
-/**
- * View represents a tab in the LabView.
- *
- */
-class View {
+import {Action} from "./Action.js";
 
-    constructor(elt, config = {}) {
+class Spacer extends Action {
+    constructor() {
+        super("", "|", "", () => false, false);
     }
 };
 
 export {
-    View
+    Spacer
 };

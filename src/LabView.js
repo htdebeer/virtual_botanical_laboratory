@@ -19,16 +19,123 @@
  * 
  */
 import {Lab} from "./Lab.js";
-import LABVIEW_TEMPLATE from "./labview/template.js";
+import STYLE from "./view/style.js";
+import {RenderView} from "./view/RenderView.js";
+import {Action} from "./view/Action.js";
+import {Spacer} from "./view/Spacer.js";
 
 const _lab = new WeakMap();
 const _parentElement = new WeakMap();
+const _element = new WeakMap();
 const _config = new WeakMap();
 
-const createView = function (labview, parentElementOrSelector) {
+const _tabs = new WeakMap();
+
+
+const tab = function (labview, name) {
+    const tabs = _tabs.get(labview);
+    if (undefined !== tabs && tabs.hasOwnProperty(name)) {
+        return tabs[name];
+    } else {
+        return undefined;
+    }
+};
+
+const generateId = function () {
+    let randomId;
+    do {
+        randomId = Math.random().toString(16).slice(2);
+    } while (null !== document.getElementById(randomId))
+
+    return randomId;
+};
+
+const createTab = function (labview, name, text, tooltip, checked = false, right = false) {
+    const tab = document.createElement("li");
+    tab.classList.add("tab");
+    if (right) {
+        tab.classList.add("right");
+    }
+    tab.dataset.section = name;
+
+    const id = generateId();
+    const input = document.createElement("input");
+    input.setAttribute("type", "radio");
+    input.setAttribute("name", "tabs");
+    input.setAttribute("id", id);
+    if (checked) {
+        input.setAttribute("checked", "checked");
+    }
+    tab.appendChild(input);
+
+    const label = document.createElement("label");
+    label.setAttribute("for", id);
+    label.setAttribute("title", tooltip);
+    label.innerHTML = text;
+    tab.appendChild(label);
+
+    return tab;
+};
+
+const setupTabs = function (labview, element, tabConfig) {
+    const tabsElement = document.createElement("ul")
+    tabsElement.classList.add("tabs");
+    element.appendChild(tabsElement)
+
+    const tabs = {};
+
+    // General 'render' tab to view and control L-System
+    const renderTabElement = createTab(labview, "render", "♣", "View interpreted L-System", true);
+    tabsElement.appendChild(renderTabElement);
+    const renderTab = tabs['render'] = new RenderView(renderTabElement, {});
+
+    //renderTab.addAction(new Action("create", "★", "Create a new L-System.", () => labview.create()));
+    //renderTab.addAction(new Action("open", "▲", "Open a L-System from your computer.", () => labview.open()));
+    //renderTab.addAction(new Action("save", "▼", "Save this L-System to your computer.", () => labview.save()));
+    //renderTab.addAction(new Spacer());
+    //renderTab.addAction(new Action("exportToPng", "▼ PNG", "Export this L-System to a PNG file.", () => labview.exportToPng()));
+    renderTab.addAction(new Spacer());
+    renderTab.addAction(new Action("run", "▶️", "Run this L-System.", () => labview.run()));
+    renderTab.addAction(new Action("pause", "⏸", "Pause this L-System.", () => labview.pause()));
+    renderTab.addAction(new Action("step", "1", "Derive the next succesor of this L-System.", () => labview.step()));
+    renderTab.addAction(new Action("reset", "⏮", "Reset this L-System.", () => labview.reset()));
+
+    // L-System tab to edit L-System definition
+    const lsystemTabElement = createTab(labview, "lsystem", "L-System", "Edit L-System");
+    tabsElement.appendChild(lsystemTabElement);
+    tabs['lsystem'] = new RenderView(lsystemTabElement, {
+        header: "L-System definition"
+    });
+    tabs['lsystem'].addAction(new Action("update", "update", "Update this L-System.", () => labview.update(), false));
+    
+    // Interpretation tab to change properties in the interpretation
+    const interpretationTabElement = createTab(labview, "interpretation", "Interpretation", "Edit interpretation");
+    tabsElement.appendChild(interpretationTabElement);
+    tabs['interpretation'] = new RenderView(interpretationTabElement, {
+        header: "Configure interpretation"
+    });
+    tabs['interpretation'].addAction(new Action("update", "update", "Update this L-System.", () => labview.update(), false));
+    
+    // About tab with information about the virtual_botanical_lab
+    const aboutTabElement = createTab(labview, "about", "i", "About", false, true);
+    tabsElement.appendChild(aboutTabElement);
+    tabs['about'] = new RenderView(aboutTabElement, {});
+    
+    // Help tab with a manual for the virtual_botanical_lab
+    const helpTabElement = createTab(labview, "help", "?", "help", false, true);
+    tabsElement.appendChild(helpTabElement);
+    tabs['help'] = new RenderView(helpTabElement, {});
+
+    _tabs.set(labview, tabs);
+};
+
+const createLabView = function (labview, parentElementOrSelector, config) {
+    const style = document.createElement("style");
+    style.textContent = STYLE;
+    document.head.appendChild(style);
+
     const template = document.createElement("div");
     template.classList.add("lab-view");
-    template.innerHTML = LABVIEW_TEMPLATE;
 
     let elt;
     if (parentElementOrSelector instanceof Node) {
@@ -36,26 +143,13 @@ const createView = function (labview, parentElementOrSelector) {
     } else {
         elt = document.querySelector(parentElementOrSelector);
     }
+
     elt.append(template);
+
+    setupTabs(labview, template, config);
+
     return elt;
 }
-
-const viewElt = function (labview) {
-};
-
-const lsystemView = function (labview) {
-};
-
-const interpretationView = function (labview) {
-};
-
-const helpView = function (labview) {
-};
-
-const aboutView = function (labview) {
-};
-
-
 
 /**
  * A user interface for a Lab.
@@ -78,8 +172,8 @@ class LabView {
         _config.set(this, Object.create(null, {}));
         Object.assign(_config.get(this), config);
 
-
-        _parentElement.set(this, createView(this, parentElementOrSelector));
+        createLabView(this, parentElementOrSelector, config);
+        this.lab = new Lab(config);
     }
 
     get lab() {
@@ -88,6 +182,7 @@ class LabView {
 
     set lab(newLab) {
         _lab.set(this, newLab);
+        tab(this, 'render').canvas = this.lab.element;
     }
 
     // Control the lab view
@@ -109,34 +204,48 @@ class LabView {
     // File and export actions
 
     create() {
+        if (undefined !== this.lab) {
+        }
     }
 
     save() {
+        if (undefined !== this.lab) {
+        }
     }
 
     open() {
     }
 
     exportToPNG() {
+        if (undefined !== this.lab) {
+        }
     }
 
     // Control a lab actions
 
     run() {
-        const steps = this.config.steps || 1;
-        this.lab.run(steps);
+        if (undefined !== this.lab) {
+            const steps = _config.get(this).steps || 1;
+            this.lab.run(steps);
+        }
     }
 
     step() {
-        this.lab.run(1);
+        if (undefined !== this.lab) {
+            this.lab.run(1);
+        }
     }
 
     pause() {
-        this.lab.stop();
+        if (undefined !== this.lab) {
+            this.lab.stop();
+        }
     }
 
     reset() {
-        this.lab.reset();
+        if (undefined !== this.lab) {
+            this.lab.reset();
+        }
     }
 
 }
