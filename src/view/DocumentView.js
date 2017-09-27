@@ -18,21 +18,48 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-
 import {View} from "./View.js";
 
+const _contents = new WeakMap();
+
 /**
- * View represents a tab in the LabView.
+ * DocumentView represents a tab with textual contents only.
  *
+ * @property {String} contents, a HTML String detailing the contents of this
+ * DocumentView.
  */
 class DocumentView extends View {
 
-    constructor(elt, config = {}) {
-        super(elt, config);
+    /**
+     * Create a new DocumentView.
+     *
+     * @param {HTMLElement} elt
+     * @param {String} name
+     * @param {Object} config. If config contains a String property
+     * 'contents', that is used as this DocumentView's contents.
+     */
+    constructor(elt, name, config = {}) {
+        super(elt, name, config);
+        this.contents = config.contents || "";
     }
+
+    get contents() {
+        return _contents.get(this);
+    }
+
+    set contents(str) {
+        let contentsEl = this.element.querySelector(".document-contents");
+        if (null === contentsEl) {
+            contentsEl = document.createElement("div");
+            contentsEl.classList.add("document-contents");
+            this.element.appendChild(contentsEl);
+        }
+        contentsEl.innerHTML = str;
+        _contents.set(this, str);
+    };
+
 };
 
 export {
     DocumentView
 };
-

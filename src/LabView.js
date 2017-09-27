@@ -20,7 +20,10 @@
  */
 import {Lab} from "./Lab.js";
 import STYLE from "./view/style.js";
+import ABOUT from "./view/about.js";
+import HELP from "./view/help.js";
 import {RenderView} from "./view/RenderView.js";
+import {DocumentView} from "./view/DocumentView.js";
 import {Action} from "./view/Action.js";
 import {Spacer} from "./view/Spacer.js";
 
@@ -119,12 +122,18 @@ const setupTabs = function (labview, element, tabConfig) {
     // About tab with information about the virtual_botanical_lab
     const aboutTabElement = createTab(labview, "about", "i", "About", false, true);
     tabsElement.appendChild(aboutTabElement);
-    tabs['about'] = new RenderView(aboutTabElement, {});
+    tabs['about'] = new DocumentView(aboutTabElement, "about", {
+        header: "About",
+        contents: ABOUT
+    });
     
     // Help tab with a manual for the virtual_botanical_lab
     const helpTabElement = createTab(labview, "help", "?", "help", false, true);
     tabsElement.appendChild(helpTabElement);
-    tabs['help'] = new RenderView(helpTabElement, {});
+    tabs['help'] = new DocumentView(helpTabElement, "help", {
+        header: "Help",
+        contents: HELP
+    });
 
     _tabs.set(labview, tabs);
 };
