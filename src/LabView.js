@@ -19,11 +19,17 @@
  * 
  */
 import {Lab} from "./Lab.js";
+import {LSystem} from "./lsystem/LSystem.js";
+
 import STYLE from "./view/style.js";
 import ABOUT from "./view/about.js";
 import HELP from "./view/help.js";
+
 import {RenderView} from "./view/RenderView.js";
 import {DocumentView} from "./view/DocumentView.js";
+import {LSystemView} from "./view/LSystemView.js";
+import {InterpretationView} from "./view/InterpretationView.js";
+
 import {Action} from "./view/Action.js";
 import {Spacer} from "./view/Spacer.js";
 
@@ -33,6 +39,8 @@ const _element = new WeakMap();
 const _config = new WeakMap();
 
 const _tabs = new WeakMap();
+
+const _paused = new WeakMap();
 
 
 const tab = function (labview, name) {
@@ -80,6 +88,26 @@ const createTab = function (labview, name, text, tooltip, checked = false, right
     return tab;
 };
 
+const updateLSystem = function (labview, lsystemTab) {
+    const lsystemString = lsystemTab.lsystem;
+    console.log(lsystemString);
+    // If the lsystem has been changed, try to parse it and update lsystem
+    if (lsystemTab.originalLSystem !== lsystemString) {
+        try {
+            const lsystem = LSystem.parse(lsystemTab.lsystem);
+            labview.reset();
+            labview.lab.lsystem = lsystem;
+            lsystemTab.originalLSystem = lsystemString;
+            lsystemTab.showMessage("LSystem parsed and updated successfully.", "info", 2000);
+        } catch (e) {
+            lsystemTab.showMessage(`Error parsing LSystem: "${e}"`, "error");
+        }
+    }
+};
+
+const updateInterpretation = function (labview) {
+};
+
 const setupTabs = function (labview, element, tabConfig) {
     const tabsElement = document.createElement("ul")
     tabsElement.classList.add("tabs");
@@ -106,18 +134,18 @@ const setupTabs = function (labview, element, tabConfig) {
     // L-System tab to edit L-System definition
     const lsystemTabElement = createTab(labview, "lsystem", "L-System", "Edit L-System");
     tabsElement.appendChild(lsystemTabElement);
-    tabs['lsystem'] = new RenderView(lsystemTabElement, {
+    tabs['lsystem'] = new LSystemView(lsystemTabElement, tabConfig.lsystem, {
         header: "L-System definition"
     });
-    tabs['lsystem'].addAction(new Action("update", "update", "Update this L-System.", () => labview.update(), false));
+    tabs['lsystem'].addAction(new Action("update", "update", "Update this L-System.", () => updateLSystem(labview, tabs['lsystem'])));
     
     // Interpretation tab to change properties in the interpretation
     const interpretationTabElement = createTab(labview, "interpretation", "Interpretation", "Edit interpretation");
     tabsElement.appendChild(interpretationTabElement);
-    tabs['interpretation'] = new RenderView(interpretationTabElement, {
+    tabs['interpretation'] = new InterpretationView(interpretationTabElement, tabConfig.interpretation, {
         header: "Configure interpretation"
     });
-    tabs['interpretation'].addAction(new Action("update", "update", "Update this L-System.", () => labview.update(), false));
+    tabs['interpretation'].addAction(new Action("update", "update", "Update this L-System.", () => updateInterpretation(labview), false));
     
     // About tab with information about the virtual_botanical_lab
     const aboutTabElement = createTab(labview, "about", "i", "About", false, true);
@@ -183,6 +211,7 @@ class LabView {
 
         createLabView(this, parentElementOrSelector, config);
         this.lab = new Lab(config);
+        _paused.set(this, false);
     }
 
     get lab() {
@@ -234,8 +263,12 @@ class LabView {
 
     run() {
         if (undefined !== this.lab) {
-            const steps = _config.get(this).steps || 1;
+            const derivationLength = _config.get(this).derivationLength || 1;
+
+            const steps = derivationLength - this.lab.lsystem.derivationLength;
             this.lab.run(steps);
+
+            _paused.set(this, false);
         }
     }
 
@@ -248,12 +281,18 @@ class LabView {
     pause() {
         if (undefined !== this.lab) {
             this.lab.stop();
+            _paused.set(this, true);
         }
+    }
+
+    isPaused() {
+        return true === _paused.get(this);
     }
 
     reset() {
         if (undefined !== this.lab) {
             this.lab.reset();
+            _paused.set(this, false);
         }
     }
 

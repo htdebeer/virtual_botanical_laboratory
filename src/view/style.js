@@ -116,8 +116,32 @@ export default `
     color: transparent;
 }
 
-.lab-view .editor {
+.lab-view .tab .contents .messages p {
+    border: 1px solid dimgray;
+    padding: 1ex;
+    margin: 1ex;
+}
+
+.messages .error {
+    border-color: crimson;
+    background-color: lightsalmon;
+}
+
+.messages .info {
+    border-color: slateblue;
+    background-color: lavender;
+}
+
+.lab-view .lsystem {
     width: 100%;
     height: 90%;
 }
+
+.lab-view pre {
+    clear: left;
+    padding: 1ex;
+    overflow-x: auto;
+    background-color: #f9f9f9;
+}
+
 `;

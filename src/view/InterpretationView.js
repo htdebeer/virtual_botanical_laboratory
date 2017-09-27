@@ -18,7 +18,6 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-
 import {View} from "./View.js";
 
 /**
@@ -27,8 +26,8 @@ import {View} from "./View.js";
  */
 class InterpretationView extends View {
 
-    constructor(elt, config = {}) {
-        super(elt, config);
+    constructor(elt, interpretation, config = {}) {
+        super(elt, "interpretation", config);
     }
 };
 

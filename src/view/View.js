@@ -39,7 +39,7 @@ const createAction = function (view, action) {
         button.setAttribute("title", action.tooltip);
         button.innerHTML = action.icon;
 
-        if (action.isEnabled()) {
+        if (!action.isEnabled()) {
             button.setAttribute("disabled", "disabled");
         }
 
@@ -64,6 +64,11 @@ const createView = function (view, name, header, parentElt) {
         headerElt.innerHTML = header;
         contents.appendChild(headerElt);
     }
+    
+    const messagePane = document.createElement("div");
+    messagePane.classList.add("messages");
+    messagePane.style.display = "none";
+    contents.appendChild(messagePane);
 
     const actionBar = document.createElement("ul");
     actionBar.classList.add("actions");
@@ -88,6 +93,24 @@ class View {
 
     get element() {
         return _element.get(this);
+    }
+
+    showMessage(message, type = "info", timeout = false) {
+        const messagePane = this.element.querySelector("div.messages");
+        if (null !== messagePane) {
+            messagePane.innerHTML = `<p class="${type}">${message}</p>`;
+            messagePane.style.display = "block";
+            if (Number.isInteger(timeout)) {
+                setTimeout(() => this.hideMessage(), parseInt(timeout));
+            }
+        }
+    }
+
+    hideMessage() {
+        const messagePane = this.element.querySelector("div.messages");
+        if (null !== messagePane) {
+            messagePane.style.display = "none";
+        }
     }
 
     /**
