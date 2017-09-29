@@ -20,6 +20,9 @@
  */
 import {View} from "./View.js";
 
+
+const TAB = 9;
+const INDENT = '  ';
 const _originalLSystem = new WeakMap();
 
 /**
@@ -44,24 +47,41 @@ class LSystemView extends View {
     }
 
     get lsystem() {
-        let pre = this.element.querySelector("pre");
-        if (null === pre) {
+        let textarea = this.element.querySelector("textarea");
+        if (null === textarea) {
             return "";
         } else {
-            return pre.textContent.replace("<br>", "\n");
+            return textarea.value
         }
     }
 
     set lsystem(str) {
-        let pre = this.element.querySelector("pre");
+        let textarea = this.element.querySelector("textarea");
 
-        if (null === pre) {
-            pre = document.createElement("pre");
-            pre.contentEditable = true;
-            this.element.appendChild(pre);
+        if (null === textarea) {
+            const editorElement = document.createElement("div");
+            editorElement.classList.add("editor");
+            textarea = document.createElement("textarea");
+
+            // allow for tab key
+            textarea.addEventListener("keydown", (event) => {
+                console.log("tab",event.which, event);
+                if (TAB === event.which) {
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    textarea.value = 
+                        `${textarea.value.substr(0, start)}${INDENT}${textarea.value.substr(end)}`;
+                    textarea.selectionStart = textarea.selectionEnd = start + INDENT.length;
+                    event.preventDefault();
+                    return false;
+                }
+            });
+
+            editorElement.appendChild(textarea);
+            this.element.appendChild(editorElement);
         }
 
-        pre.innerHTML = str.split("\n").join("<br>");
+        textarea.value = str;
     }
 };
 

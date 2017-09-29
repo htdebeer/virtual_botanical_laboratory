@@ -21,6 +21,7 @@
 export default `
 .lab-view {
     font-size: 12pt;
+    font-family: Helvetica, Arial, sans-serif;
 }
 
 .lab-view .tabs {
@@ -31,7 +32,7 @@ export default `
     margin: 1px;
     padding: 0;
     
-    background: Chartreuse;
+    background: #F5F5F5;
     border: 1px solid dimgray;
     padding-top: 10px;
 }
@@ -52,7 +53,7 @@ export default `
 }
 
 .lab-view .tab > label:hover {
-    background: GreenYellow;
+    background: #E5E5E5;
 }
 
 .lab-view .tab > input[type="radio"] {
@@ -142,6 +143,16 @@ export default `
     padding: 1ex;
     overflow-x: auto;
     background-color: #f9f9f9;
+}
+
+.lab-view [data-section="lsystem"] .editor {
+    width: 100%;
+    height: 85%;
+}
+
+.lab-view [data-section="lsystem"] textarea {
+    width: 100%;
+    height: 100%;
 }
 
 `;
