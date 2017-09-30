@@ -34,7 +34,6 @@ export default `
     
     background: #F5F5F5;
     border: 1px solid dimgray;
-    padding-top: 10px;
 }
 
 .lab-view .tab {
@@ -48,7 +47,7 @@ export default `
 }
 
 .lab-view .tab > label {
-    padding: 10px;
+    padding: 0px 10px 4px 10px;
     left: 1px;
 }
 
@@ -62,7 +61,7 @@ export default `
 
 .lab-view .tab .contents {
     position: absolute;
-    top: 38px;
+    top: 26px;
     left: 0;
     background: white;
     right: 0;
@@ -153,6 +152,7 @@ export default `
 .lab-view [data-section="lsystem"] textarea {
     width: 100%;
     height: 100%;
+    font-size: larger;
 }
 
 `;
