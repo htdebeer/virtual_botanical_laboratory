@@ -146,13 +146,40 @@ export default `
 
 .lab-view [data-section="lsystem"] .editor {
     width: 100%;
-    height: 85%;
+    height: 83%;
+    clear: left;
+    padding-top: 1ex;
 }
 
 .lab-view [data-section="lsystem"] textarea {
-    width: 100%;
+    width: 99%;
     height: 100%;
     font-size: larger;
+}
+
+.lab-view [data-section="interpretation"] .property-editor {
+    clear: left;
+    padding-top: 1ex;
+}
+
+.lab-view .property-editor table {
+    border-collapse: collapse;
+}
+
+.lab-view .property-editor th {
+    text-align: left;
+}
+
+.lab-view .property-editor th, .lab-view .property-editor td {
+    padding: 0.5ex;
+}
+
+.lab-view .property-editor td.value {
+    width: 100%;
+}
+
+.lab-view .property-editor textarea {
+    width: 100%;
 }
 
 `;

@@ -39,25 +39,20 @@ const _speed = new WeakMap();
 const createInterpretation = function (lab, interpretationConfig = {}) {
     let interpretation;
     if (!(interpretationConfig instanceof Interpretation)) {
-        if ("canvas" === interpretationConfig.type) {
-            const element = document.createElement("canvas");
-            element.width = SIZE;
-            element.height = SIZE;
-            
-            _element.set(lab, element);
-            
-            interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretationConfig.config);
-        } else {
-            // not implemented yet
-            throw new Error("Only the canvas format has been implemented yet.");
-        }
+        const element = document.createElement("canvas");
+        element.width = SIZE;
+        element.height = SIZE;
+
+        _element.set(lab, element);
+
+        interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretationConfig.config);
 
         if ("commands" in interpretationConfig) {
             Object
                 .entries(interpretationConfig["commands"])
                 .forEach((entry) => {
                     const [name, func] = entry;
-                    interpretation.setCommand(name, new Command(func))
+                    interpretation.setCommand(name, new Command(func));
                 });
         }
     } else {
@@ -89,7 +84,7 @@ const animateDeriving = function (lab, steps, currentStep) {
     if (_running.get(lab) && currentStep < steps) {
         setTimeout(() => {
             lab.interpretation.render(lab.derive());
-            animateDeriving(lab, steps, currentStep + 1)
+            animateDeriving(lab, steps, currentStep + 1);
         }, _speed.get(lab));
     } else {
         _running.set(lab, false);
@@ -112,7 +107,7 @@ const setupAnimation = function (lab, animate = false) {
         _animate.set(lab, false);
         _speed.set(lab, undefined);
     }
-}
+};
 
 /**
  * Lab is the public API to interact with an lsystem and its interpretation.
@@ -213,4 +208,4 @@ class Lab {
 
 export {
     Lab
-}
+};

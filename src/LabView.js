@@ -34,8 +34,6 @@ import {Action} from "./view/Action.js";
 import {Spacer} from "./view/Spacer.js";
 
 const _lab = new WeakMap();
-const _parentElement = new WeakMap();
-const _element = new WeakMap();
 const _config = new WeakMap();
 
 const _tabs = new WeakMap();
@@ -56,7 +54,7 @@ const generateId = function () {
     let randomId;
     do {
         randomId = Math.random().toString(16).slice(2);
-    } while (null !== document.getElementById(randomId))
+    } while (null !== document.getElementById(randomId));
 
     return randomId;
 };
@@ -106,19 +104,20 @@ const updateLSystem = function (labview, lsystemTab) {
 };
 
 const updateInterpretation = function (labview) {
+    console.log(labview);
 };
 
 const setupTabs = function (labview, element, tabConfig) {
-    const tabsElement = document.createElement("ul")
+    const tabsElement = document.createElement("ul");
     tabsElement.classList.add("tabs");
-    element.appendChild(tabsElement)
+    element.appendChild(tabsElement);
 
     const tabs = {};
 
-    // General 'render' tab to view and control L-System
+    // General "render" tab to view and control L-System
     const renderTabElement = createTab(labview, "render", "♣", "View interpreted L-System", true);
     tabsElement.appendChild(renderTabElement);
-    const renderTab = tabs['render'] = new RenderView(renderTabElement, {});
+    const renderTab = tabs["render"] = new RenderView(renderTabElement, {});
 
     //renderTab.addAction(new Action("create", "★", "Create a new L-System.", () => labview.create()));
     //renderTab.addAction(new Action("open", "▲", "Open a L-System from your computer.", () => labview.open()));
@@ -134,23 +133,23 @@ const setupTabs = function (labview, element, tabConfig) {
     // L-System tab to edit L-System definition
     const lsystemTabElement = createTab(labview, "lsystem", "L-System", "Edit L-System");
     tabsElement.appendChild(lsystemTabElement);
-    tabs['lsystem'] = new LSystemView(lsystemTabElement, tabConfig.lsystem, {
+    tabs["lsystem"] = new LSystemView(lsystemTabElement, tabConfig.lsystem, {
         header: "L-System definition"
     });
-    tabs['lsystem'].addAction(new Action("update", "update", "Update this L-System.", () => updateLSystem(labview, tabs['lsystem'])));
+    tabs["lsystem"].addAction(new Action("update", "update", "Update this L-System.", () => updateLSystem(labview, tabs["lsystem"])));
     
     // Interpretation tab to change properties in the interpretation
     const interpretationTabElement = createTab(labview, "interpretation", "Interpretation", "Edit interpretation");
     tabsElement.appendChild(interpretationTabElement);
-    tabs['interpretation'] = new InterpretationView(interpretationTabElement, tabConfig.interpretation, {
+    tabs["interpretation"] = new InterpretationView(interpretationTabElement, labview.lab.interpretation, tabConfig.interpretation, {
         header: "Configure interpretation"
     });
-    tabs['interpretation'].addAction(new Action("update", "update", "Update this L-System.", () => updateInterpretation(labview), false));
+    tabs["interpretation"].addAction(new Action("update", "update", "Update this L-System.", () => updateInterpretation(labview), false));
     
     // About tab with information about the virtual_botanical_lab
     const aboutTabElement = createTab(labview, "about", "i", "About", false, true);
     tabsElement.appendChild(aboutTabElement);
-    tabs['about'] = new DocumentView(aboutTabElement, "about", {
+    tabs["about"] = new DocumentView(aboutTabElement, "about", {
         header: "About",
         contents: ABOUT
     });
@@ -158,7 +157,7 @@ const setupTabs = function (labview, element, tabConfig) {
     // Help tab with a manual for the virtual_botanical_lab
     const helpTabElement = createTab(labview, "help", "?", "help", false, true);
     tabsElement.appendChild(helpTabElement);
-    tabs['help'] = new DocumentView(helpTabElement, "help", {
+    tabs["help"] = new DocumentView(helpTabElement, "help", {
         header: "Help",
         contents: HELP
     });
@@ -186,7 +185,7 @@ const createLabView = function (labview, parentElementOrSelector, config) {
     setupTabs(labview, template, config);
 
     return elt;
-}
+};
 
 /**
  * A user interface for a Lab.
@@ -208,9 +207,12 @@ class LabView {
         // TODO: It is probably a good idea to validate the config first, though.
         _config.set(this, Object.create(null, {}));
         Object.assign(_config.get(this), config);
+        _lab.set(this, new Lab(config));
 
         createLabView(this, parentElementOrSelector, config);
-        this.lab = new Lab(config);
+        
+        this.lab = this.lab;
+
         _paused.set(this, false);
     }
 
@@ -220,7 +222,7 @@ class LabView {
 
     set lab(newLab) {
         _lab.set(this, newLab);
-        tab(this, 'render').canvas = this.lab.element;
+        tab(this, "render").canvas = this.lab.element;
     }
 
     // Control the lab view
@@ -243,11 +245,13 @@ class LabView {
 
     create() {
         if (undefined !== this.lab) {
+            console.log("create");
         }
     }
 
     save() {
         if (undefined !== this.lab) {
+            console.log("save");
         }
     }
 
@@ -256,6 +260,7 @@ class LabView {
 
     exportToPNG() {
         if (undefined !== this.lab) {
+            console.log("export png");
         }
     }
 
@@ -300,4 +305,4 @@ class LabView {
 
 export {
     LabView
-}
+};

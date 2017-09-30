@@ -19,6 +19,31 @@
  * 
  */
 import {View} from "./View.js";
+import {Command} from "../interpretation/Command.js";
+import {PropertyEditor} from "./PropertyEditor.js";
+
+const createPropertyEditor = function(view, properties, definedProperties) {
+    const propertyEditor = new PropertyEditor(properties, definedProperties, {
+        header: "Properties",
+        keyLabel: "Name",
+        valueLabel: "Value",
+        addLabel: "Add property"
+    });
+
+    view.element.appendChild(propertyEditor.element);
+};
+
+const createCommandPropertyEditor = function(view, commands, definedCommands) {
+    const commandEditor = new PropertyEditor(commands, definedCommands, {
+        header: "Commands",
+        keyLabel: "Name",
+        valueLabel: "Definition",
+        addLabel: "Add command definition"
+    });
+
+    view.element.appendChild(commandEditor.element);
+};
+
 
 /**
  * View represents a tab in the LabView.
@@ -26,10 +51,39 @@ import {View} from "./View.js";
  */
 class InterpretationView extends View {
 
-    constructor(elt, interpretation, config = {}) {
+    constructor(elt, interpretation, interpretationConfig = {}, config = {}) {
         super(elt, "interpretation", config);
+
+        const properties = interpretation.registeredProperties.map(name => {
+            return {
+                name: name,
+                type: "text",
+                default: ""
+            };
+        });
+
+        createPropertyEditor(this, properties, interpretationConfig.config);
+        
+        const commands = Object.keys(interpretation.commands).map(command => {
+            return {
+                name: command,
+                type: "textarea",
+                default: ""
+            };
+        });
+        
+        const definedCommands = {};
+
+        if (undefined !== interpretationConfig.commands) {
+            Object.keys(interpretationConfig.commands).forEach(name => {
+                const command = new Command(interpretationConfig.commands[name]);
+                definedCommands[name] = command.toString();
+            });
+        }
+
+        createCommandPropertyEditor(this, commands, definedCommands);
     }
-};
+}
 
 export {
     InterpretationView

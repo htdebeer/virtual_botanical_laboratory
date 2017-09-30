@@ -106,4 +106,4 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
 
 export {
     CanvasTurtleInterpretation
-}
+};

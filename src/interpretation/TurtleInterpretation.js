@@ -66,6 +66,12 @@ class TurtleInterpretation extends Interpretation {
         }));
 
         this.registerProperty(
+            "x",
+            "y",
+            "d",
+            "alpha",
+            "delta",
+            "close",
             LINE_WIDTH, 
             LINE_COLOR,
             LINE_JOIN,
@@ -141,4 +147,4 @@ export {
     LINE_COLOR,
     LINE_JOIN,
     FILL_COLOR
-}
+};

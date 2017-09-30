@@ -55,7 +55,7 @@ class Interpretation {
         _initialState.set(this, initialState);
         _states.set(this, []);
         _commands.set(this, {});
-        _registeredProperties.set(this, new Set());
+        _registeredProperties.set(this, []);
     }
 
     get state() {
@@ -69,6 +69,10 @@ class Interpretation {
 
     get registeredProperties() {
         return _registeredProperties.get(this);
+    }
+
+    get commands() {
+        return _commands.get(this);
     }
 
     /**
@@ -88,7 +92,7 @@ class Interpretation {
      * parameters to apply when the command is executed.
      */
     execute(name, parameters = []) {
-        const command = _commands.get(this)[name];
+        const command = this.commands[name];
 
         if (undefined === command) {
             // By default commands that are unknown are ignored, only those
@@ -115,7 +119,7 @@ class Interpretation {
      * @param {String} names - the names of the properties to register
      */
     registerProperty(...names) {
-        names.forEach(name => this.registeredProperties.add(name));
+        names.forEach(name => this.registeredProperties.push(name));
     }
 
     /**
@@ -139,7 +143,7 @@ class Interpretation {
      * @returns {Object} the value of the property.
      */
     getProperty(name, defaultValue = 0) {
-        const value = this.state[name]
+        const value = this.state[name];
         return (undefined === value || null === value) ? defaultValue : value;
     }
 
@@ -150,7 +154,7 @@ class Interpretation {
      * @param {Command} command - the command.
      */
     setCommand(name, command) {
-        _commands.get(this)[name] = command;
+        this.commands[name] = command;
     }
 
     /**
@@ -185,7 +189,7 @@ class Interpretation {
         }
 
         for(const alias of aliasNames) {
-            _commands.get(this)[alias] = commandName;
+            this.commands[alias] = commandName;
         }
     }
 
@@ -196,15 +200,15 @@ class Interpretation {
      * @returns {Command|undefined}
      */
     getCommand(name) {
-        const command = _commands.get(this)[name];
+        const command = this.commands[name];
 
         if (command instanceof Command) {
             return command;
         } else if ("string" === typeof command) {
-            return getCommand(command);
+            return this.getCommand(command);
         } else {
             return undefined;
-        };
+        }
     }
 
     /**
@@ -261,4 +265,4 @@ class Interpretation {
 
 export {
     Interpretation
-}
+};

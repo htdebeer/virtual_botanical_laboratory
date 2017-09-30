@@ -56,8 +56,12 @@ class Command {
     execute(interpretation, ...parameters) {
         _function.get(this).apply(interpretation, parameters);
     }
+
+    toString() {
+        return _function.get(this).toString().split("\n").slice(1, -1).map(l => l.trim()).join("\n");
+    }
 }
 
 export {
     Command
-}
+};
