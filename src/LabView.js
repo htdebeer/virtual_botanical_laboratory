@@ -88,7 +88,6 @@ const createTab = function (labview, name, text, tooltip, checked = false, right
 
 const updateLSystem = function (labview, lsystemTab) {
     const lsystemString = lsystemTab.lsystem;
-    console.log(lsystemString);
     // If the lsystem has been changed, try to parse it and update lsystem
     if (lsystemTab.originalLSystem !== lsystemString) {
         try {
@@ -103,8 +102,43 @@ const updateLSystem = function (labview, lsystemTab) {
     }
 };
 
-const updateInterpretation = function (labview) {
-    console.log(labview);
+const updateInterpretation = function (labview, interpretationTab) {
+    const properties = interpretationTab.properties;
+    const commands = interpretationTab.commands;
+
+    const changed = true; // TODO determine if interpretation specification has changed
+
+    if (changed) {
+        // update interpretation
+        try {
+
+            const config = {};
+            Object.entries(properties).forEach(([key, value]) => {
+                const registeredProperty = labview.lab.interpretation.getRegisteredProperty(key);
+                const converter = registeredProperty["converter"] || function (v) { return v.toString();};
+                config[key] = converter.call(null, value);
+            });
+
+            Object.entries(commands).forEach(([key, value]) => {
+                labview.lab.interpretation.setCommand(key, value);
+            });
+
+            const interpretationConfig = {
+                config,
+                commands
+            };
+
+            console.log(interpretationConfig);
+
+            labview.reset();
+            labview.lab.interpretation = interpretationConfig;
+            labview.lab = labview.lab;
+            interpretationTab.showMessage("Interpretation updated successfully..", "info", 2000);
+        } catch (e) {
+            console.log(e);
+            interpretationTab.showMessage(`Error updating interpretation: "${e}"`, "error");
+        }
+    }
 };
 
 const setupTabs = function (labview, element, tabConfig) {
@@ -136,7 +170,14 @@ const setupTabs = function (labview, element, tabConfig) {
     tabs["lsystem"] = new LSystemView(lsystemTabElement, tabConfig.lsystem, {
         header: "L-System definition"
     });
-    tabs["lsystem"].addAction(new Action("update", "update", "Update this L-System.", () => updateLSystem(labview, tabs["lsystem"])));
+    tabs["lsystem"].addAction(
+        new Action(
+            "update", 
+            "update", 
+            "Update this L-System.", 
+            () => updateLSystem(labview, tabs["lsystem"])
+        )
+    );
     
     // Interpretation tab to change properties in the interpretation
     const interpretationTabElement = createTab(labview, "interpretation", "Interpretation", "Edit interpretation");
@@ -144,7 +185,14 @@ const setupTabs = function (labview, element, tabConfig) {
     tabs["interpretation"] = new InterpretationView(interpretationTabElement, labview.lab.interpretation, tabConfig.interpretation, {
         header: "Configure interpretation"
     });
-    tabs["interpretation"].addAction(new Action("update", "update", "Update this L-System.", () => updateInterpretation(labview), false));
+    tabs["interpretation"].addAction(
+        new Action(
+            "update", 
+            "update", 
+            "Update this L-System.", 
+            () => updateInterpretation(labview, tabs["interpretation"])
+        )
+    );
     
     // About tab with information about the virtual_botanical_lab
     const aboutTabElement = createTab(labview, "about", "i", "About", false, true);

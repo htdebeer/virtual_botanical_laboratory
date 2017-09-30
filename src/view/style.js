@@ -162,6 +162,12 @@ export default `
     padding-top: 1ex;
 }
 
+.lab-view .interpretation-contents {
+    overflow-y: auto;
+    height: 83%;
+    clear: left;
+}
+
 .lab-view .property-editor table {
     border-collapse: collapse;
 }

@@ -20,6 +20,28 @@
  */
 import {Command} from "./Command.js";
 
+
+const property = function (name, type, defaultValue, convert) {
+    return {
+        "name": name,
+        "type": type,
+        "default": defaultValue,
+        "converter": convert
+    };
+};
+
+const number = function (name, defaultValue = 0) {
+    return property(name, "text", defaultValue, (n) => parseFloat(n));
+};
+
+const bool = function (name, defaultValue = false) {
+    return property(name, "text", defaultValue, (b) => "true" === b ? true : false);
+};
+
+const string = function (name, defaultValue = "") {
+    return property(name, "text", defaultValue, (s) => s);
+};
+
 const _commands = new WeakMap();
 const _initialState = new WeakMap();
 const _states = new WeakMap();
@@ -118,8 +140,18 @@ class Interpretation {
      *
      * @param {String} names - the names of the properties to register
      */
-    registerProperty(...names) {
-        names.forEach(name => this.registeredProperties.push(name));
+    registerProperty(...properties) {
+        properties.forEach(p => this.registeredProperties.push(p));
+    }
+
+    /**
+     * Get a registered property by name
+     *
+     * @param {String} name  - the name of the registered property to get.
+     * @returns {Object}
+     */
+    getRegisteredProperty(name) {
+        return this.registeredProperties.find((p) => name === p.name);
     }
 
     /**
@@ -131,7 +163,7 @@ class Interpretation {
     setProperty(name, value) {
         this.state[name] = value;
     }
-
+    
     /**
      * Get a property of this Interpretation. If no such property exists, or
      * if its value is undefined or null, return the defaultValue.
@@ -264,5 +296,9 @@ class Interpretation {
 }
 
 export {
-    Interpretation
+    Interpretation,
+    number,
+    bool,
+    string,
+    property
 };

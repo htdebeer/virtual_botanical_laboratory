@@ -22,6 +22,9 @@ import {View} from "./View.js";
 import {Command} from "../interpretation/Command.js";
 import {PropertyEditor} from "./PropertyEditor.js";
 
+const _propertyEditor = new WeakMap();
+const _commandEditor = new WeakMap();
+
 const createPropertyEditor = function(view, properties, definedProperties) {
     const propertyEditor = new PropertyEditor(properties, definedProperties, {
         header: "Properties",
@@ -30,7 +33,8 @@ const createPropertyEditor = function(view, properties, definedProperties) {
         addLabel: "Add property"
     });
 
-    view.element.appendChild(propertyEditor.element);
+    _propertyEditor.set(view, propertyEditor);
+    return propertyEditor;
 };
 
 const createCommandPropertyEditor = function(view, commands, definedCommands) {
@@ -41,7 +45,8 @@ const createCommandPropertyEditor = function(view, commands, definedCommands) {
         addLabel: "Add command definition"
     });
 
-    view.element.appendChild(commandEditor.element);
+    _commandEditor.set(view, commandEditor);
+    return commandEditor;
 };
 
 
@@ -54,21 +59,19 @@ class InterpretationView extends View {
     constructor(elt, interpretation, interpretationConfig = {}, config = {}) {
         super(elt, "interpretation", config);
 
-        const properties = interpretation.registeredProperties.map(name => {
-            return {
-                name: name,
-                type: "text",
-                default: ""
-            };
-        });
+        const container = document.createElement("div");
+        container.classList.add("interpretation-contents");
 
-        createPropertyEditor(this, properties, interpretationConfig.config);
+        const properties = interpretation.registeredProperties;
+
+        container.appendChild(createPropertyEditor(this, properties, interpretationConfig.config).element);
         
         const commands = Object.keys(interpretation.commands).map(command => {
             return {
                 name: command,
                 type: "textarea",
-                default: ""
+                default: "",
+                converter: (s) => s
             };
         });
         
@@ -81,7 +84,16 @@ class InterpretationView extends View {
             });
         }
 
-        createCommandPropertyEditor(this, commands, definedCommands);
+        container.appendChild(createCommandPropertyEditor(this, commands, definedCommands).element);
+        this.element.appendChild(container);
+    }
+
+    get properties() {
+        return _propertyEditor.get(this).propertyValues;
+    }
+
+    get commands() {
+        return _commandEditor.get(this).propertyValues;
     }
 }
 

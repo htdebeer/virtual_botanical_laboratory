@@ -24,6 +24,7 @@ const ROWS = 10;
 const _element = new WeakMap();
 const _propertySpecifications = new WeakMap();
 const _properties = new WeakMap();
+const _propertyElements = new WeakMap();
 
 const _addSelect = new WeakMap();
 const _propertyTable = new WeakMap();
@@ -73,8 +74,10 @@ const createRow = function (editor, propertyName) {
     }
        
     if (undefined === propertyValue) {
-       propertyValue = "";
+        propertyValue = "";
     }
+
+    editor.setProperty(propertyName, propertyValue);
 
     const row = document.createElement("tr");
     const keyCell = document.createElement("th");
@@ -90,9 +93,14 @@ const createRow = function (editor, propertyName) {
     } else {
         valueEditor = document.createElement("input");
         valueEditor.setAttribute("type", propertySpecification.type);
+
+        if ("number" === propertySpecification.type) {
+            valueEditor.setAttribute("step", "any");
+        }
     }
     valueEditor.value = propertyValue;
     valueCell.appendChild(valueEditor);
+    _propertyElements.get(editor)[propertyName] = valueEditor;
     row.appendChild(valueCell);
 
     const deleteCell = document.createElement("td");
@@ -127,7 +135,8 @@ const createAddRow = function (editor, addLabel) {
     select.addEventListener("change", () => {
         if (1 <= select.selectedIndex) {
             const selectedOption = select.options[select.selectedIndex];
-            _propertyTable.get(editor).insertBefore(createRow(editor, selectedOption.value), row); 
+            const name = selectedOption.value;
+            _propertyTable.get(editor).insertBefore(createRow(editor, name), row); 
             select.removeChild(selectedOption);
         }
 
@@ -181,6 +190,7 @@ class PropertyEditor {
     constructor(propertySpecifications, properties = {}, config = {}) {
         _propertySpecifications.set(this, propertySpecifications);
         _properties.set(this, properties);
+        _propertyElements.set(this, {});
 
         createPropertyEditor(this, config);
     }
@@ -195,6 +205,14 @@ class PropertyEditor {
 
     get properties() {
         return _properties.get(this);
+    }
+
+    get propertyValues() {
+        const props = {};
+        Object.keys(_properties.get(this)).forEach((name) => {
+            props[name] = _propertyElements.get(this)[name].value;
+        });
+        return props;
     }
 
     hasProperty(name) {

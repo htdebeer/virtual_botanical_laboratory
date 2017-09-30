@@ -18,7 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {Interpretation} from "./Interpretation.js";
+import {Interpretation, number, bool, string} from "./Interpretation.js";
 import {Command} from "./Command.js";
 
 // Default values
@@ -27,12 +27,6 @@ const Y = 0;
 const D = 2;
 const DELTA = Math.PI / 2;
 const ALPHA = 0;
-
-const _x = new WeakMap();
-const _y = new WeakMap();
-const _d = new WeakMap();
-const _delta = new WeakMap();
-const _alpha = new WeakMap();
 
 const FILL_COLOR = "fill-color";
 const LINE_COLOR = "line-color";
@@ -66,16 +60,16 @@ class TurtleInterpretation extends Interpretation {
         }));
 
         this.registerProperty(
-            "x",
-            "y",
-            "d",
-            "alpha",
-            "delta",
-            "close",
-            LINE_WIDTH, 
-            LINE_COLOR,
-            LINE_JOIN,
-            FILL_COLOR
+            number("x"),
+            number("y"),
+            number("d"),
+            number("alpha"),
+            number("delta"),
+            bool("close"),
+            number(LINE_WIDTH), 
+            string(LINE_COLOR),
+            string(LINE_JOIN),
+            string(FILL_COLOR)
         );
     }
 
@@ -87,6 +81,7 @@ class TurtleInterpretation extends Interpretation {
      */
     moveTo(x, y) {
         // to be implemented by a sub class 
+        console.log(x, y);
     }
 
     /**
@@ -97,6 +92,7 @@ class TurtleInterpretation extends Interpretation {
      */
     lineTo(x, y) {
         // to be implemented by a sub class 
+        console.log(x, y);
     }
 
     get x() {
@@ -146,5 +142,5 @@ export {
     LINE_WIDTH,
     LINE_COLOR,
     LINE_JOIN,
-    FILL_COLOR
+    FILL_COLOR,
 };

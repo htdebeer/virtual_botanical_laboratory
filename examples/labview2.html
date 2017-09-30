@@ -33,18 +33,13 @@ new LabView("#lab", {
     interpretation: {
         config: {
             x: 400,
-            y: 800,
+            y: 400,
             d: 10,
             delta: (-22.5 * Math.PI)/180,
             alpha: (270 * Math.PI)/180,
             close: false
         },
         commands: {
-            "F'": function (s) {
-                this.setProperty("line-width", s/5);
-                this.d = s * 2;
-                this.getCommand("F").execute(this, s);
-            }
         }
     },
     derivationLength: 10,
