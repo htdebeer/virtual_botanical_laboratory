@@ -179,14 +179,6 @@ const LSystem = class {
         return _ignore.get(this);
     }
 
-    get globals() {
-        return _globals.get(this);
-    }
-
-    set globals(map) {
-        _globals.set(this, map);
-    }
-
     get derivationLength() {
         return _derivationLength.get(this);
     }
@@ -198,7 +190,7 @@ const LSystem = class {
      * @return {String}
      */
     stringify() {
-        let lsystem = '';
+        let lsystem = "";
 
         // Serialize the global context, if any.
         let constants = Object.keys(this.globalContext).map(key => `${key} = ${this.globalContext[key].stringify()}`).join(";\n");
@@ -214,7 +206,7 @@ const LSystem = class {
         if (0 < this.ignore.length) {
             lsystem += `, ignore: {${this.ignore.map(m => m.stringify()).join(", ")}}`;
         }
-        lsystem += `)`;
+        lsystem += ")";
         return lsystem;
     }
 

@@ -30,6 +30,8 @@ import {DocumentView} from "./view/DocumentView.js";
 import {LSystemView} from "./view/LSystemView.js";
 import {InterpretationView} from "./view/InterpretationView.js";
 
+import {Command} from "./interpretation/Command.js";
+
 import {Action} from "./view/Action.js";
 import {Spacer} from "./view/Spacer.js";
 
@@ -119,19 +121,33 @@ const updateInterpretation = function (labview, interpretationTab) {
                 config[key] = converter.call(null, value);
             });
 
-            Object.entries(commands).forEach(([key, value]) => {
-                labview.lab.interpretation.setCommand(key, value);
-            });
-
             const interpretationConfig = {
-                config,
-                commands
+                "config": config,
+                "commands": {}
             };
-
-            console.log(interpretationConfig);
 
             labview.reset();
             labview.lab.interpretation = interpretationConfig;
+
+            Object.entries(commands).forEach(([key, func]) => {
+                if (undefined !== func && "" !== func) {
+                    const modules = labview.lab.lsystem.alphabet.moduleDefinitions;
+                    let parameters = [];
+                    if (undefined !== modules) {
+                        parameters = modules.find((md) => key === md.name);
+                        if (undefined !== parameters) {
+                            parameters = parameters.parameters;
+                        } else {
+                            parameters = [];
+                        }
+                    }
+
+                    const command = new Command(parameters, func);
+                    labview.lab.interpretation.setCommand(key, command);
+                }
+            });
+            
+
             labview.lab = labview.lab;
             interpretationTab.showMessage("Interpretation updated successfully..", "info", 2000);
         } catch (e) {

@@ -22,6 +22,8 @@ const _moduleDefinitions = new WeakMap();
 
 /**
  * The Alphabet of an LSystem. The modules in an Alphabet are unique.
+ *
+ * @property {ModuleDefinition[]} moduleDefinitions
  */
 class Alphabet {
 
@@ -35,6 +37,10 @@ class Alphabet {
         for (const module of modules) {
             this.add(module);
         }
+    }
+
+    get moduleDefinitions() {
+        return _moduleDefinitions.get(this);
     }
 
     /**
@@ -58,7 +64,7 @@ class Alphabet {
      * @returns {Boolean} True if this Alphabet contains this module.
      */
     has(module) {
-       return undefined !== this.get(module);
+        return undefined !== this.get(module);
     }
 
     /**
@@ -68,7 +74,7 @@ class Alphabet {
      * @returns {Module|undefined} the module
      */
     get(module) {
-       const found = _moduleDefinitions
+        const found = _moduleDefinitions
             .get(this)
             .filter(
                 (m) => 
@@ -91,4 +97,4 @@ class Alphabet {
 
 export {
     Alphabet
-}
+};

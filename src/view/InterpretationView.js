@@ -42,7 +42,8 @@ const createCommandPropertyEditor = function(view, commands, definedCommands) {
         header: "Commands",
         keyLabel: "Name",
         valueLabel: "Definition",
-        addLabel: "Add command definition"
+        addLabel: "Add command definition",
+        editable: false
     });
 
     _commandEditor.set(view, commandEditor);
@@ -76,6 +77,11 @@ class InterpretationView extends View {
         });
         
         const definedCommands = {};
+
+        Object.keys(interpretation.commands).forEach(name => {
+            const command = interpretation.commands[name];
+            definedCommands[name] = command.toString();
+        });
 
         if (undefined !== interpretationConfig.commands) {
             Object.keys(interpretationConfig.commands).forEach(name => {

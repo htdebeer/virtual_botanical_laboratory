@@ -154,7 +154,6 @@ export default `
 .lab-view [data-section="lsystem"] textarea {
     width: 99%;
     height: 100%;
-    font-size: larger;
 }
 
 .lab-view [data-section="interpretation"] .property-editor {

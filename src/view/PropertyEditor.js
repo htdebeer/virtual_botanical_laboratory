@@ -26,6 +26,8 @@ const _propertySpecifications = new WeakMap();
 const _properties = new WeakMap();
 const _propertyElements = new WeakMap();
 
+const _editable = new WeakMap();
+
 const _addSelect = new WeakMap();
 const _propertyTable = new WeakMap();
 
@@ -103,19 +105,23 @@ const createRow = function (editor, propertyName) {
     _propertyElements.get(editor)[propertyName] = valueEditor;
     row.appendChild(valueCell);
 
-    const deleteCell = document.createElement("td");
-    const deleteButton = document.createElement("button");
-    deleteButton.classList.add("action");
-    deleteButton.classList.add("delete");
-    deleteButton.setAttribute("type", "button");
-    deleteButton.textContent = "×";
-    deleteButton.addEventListener("click", () => {
-        editor.deleteProperty(propertyName);
-        row.parentNode.removeChild(row);
-        _addSelect.get(editor).appendChild(createOption(propertyName));
-    });
-    deleteCell.appendChild(deleteButton);
-    row.appendChild(deleteCell);
+    if (editor.editable) {
+        const deleteCell = document.createElement("td");
+        const deleteButton = document.createElement("button");
+        deleteButton.classList.add("action");
+        deleteButton.classList.add("delete");
+        deleteButton.setAttribute("type", "button");
+        deleteButton.textContent = "×";
+        deleteButton.addEventListener("click", () => {
+            editor.deleteProperty(propertyName);
+            row.parentNode.removeChild(row);
+            _addSelect.get(editor).appendChild(createOption(propertyName));
+        });
+        deleteCell.appendChild(deleteButton);
+        row.appendChild(deleteCell);
+    } else {
+        row.appendChild(document.createElement("td"));
+    }
 
     return row;
 };
@@ -156,7 +162,10 @@ const createTableBody = function (editor, config = {}) {
     Object.keys(editor.properties).forEach(property => {
         tableBody.appendChild(createRow(editor, property));
     });
-    tableBody.appendChild(createAddRow(editor, config.addLabel || "Add property…"));
+
+    if (editor.editable) {
+        tableBody.appendChild(createAddRow(editor, config.addLabel || "Add property…"));
+    }
 
     _propertyTable.set(editor, tableBody);
 
@@ -185,6 +194,13 @@ const createPropertyEditor = function (editor, config) {
  * A PropertyEditor is an editor for key-value pairs, for a finite set of
  * keys.
  *
+ * @property {HTMLElement} element - this PropertyEditor's HTML element
+ * @property {Boolean} editable - is this PropertyEditor editable
+ * @property {Object} properties - the properties that are set
+ * @property {Object} propertySpecifications - the specifications of all
+ * properties to edit
+ * @property {String[]} propertyValues - the values of the set properties
+ *
  */
 class PropertyEditor {
     constructor(propertySpecifications, properties = {}, config = {}) {
@@ -192,11 +208,17 @@ class PropertyEditor {
         _properties.set(this, properties);
         _propertyElements.set(this, {});
 
+        _editable.set(this, undefined === config.editable ? true : (true === config.editable) );
+
         createPropertyEditor(this, config);
     }
 
     get element() {
         return _element.get(this);
+    }
+
+    get editable() {
+        return true === _editable.get(this);
     }
 
     get propertySpecifications() {

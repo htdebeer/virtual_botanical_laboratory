@@ -65,6 +65,10 @@ const renderTree = function (interpretation, moduleTree) {
  * @property {Object} state - the current state of this Interpretation.
  * @property {Object} registeredProperties - the properties that are
  * registered in this Interpretation.
+ * @property {Object} properties - the properties that have been set in this
+ * Interpretation
+ * @property {Object} commands - the commands that have been defined in this
+ * Interpretation.
  */
 class Interpretation {
     /**
@@ -91,6 +95,10 @@ class Interpretation {
 
     get registeredProperties() {
         return _registeredProperties.get(this);
+    }
+
+    get properties() {
+        return this.state();
     }
 
     get commands() {
@@ -187,6 +195,17 @@ class Interpretation {
      */
     setCommand(name, command) {
         this.commands[name] = command;
+    }
+
+    /**
+     * Does this Interpretation have defined a command?
+     *
+     * @param {String} name - the name of the command to check
+     * @returns {Boolean} True if there exist a command with name in this
+     * Interpretation
+     */
+    hasCommand(name) {
+        return undefined !== this.getCommand(name);
     }
 
     /**

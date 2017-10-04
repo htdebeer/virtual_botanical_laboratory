@@ -2600,6 +2600,10 @@ class Command {
     execute(interpretation, ...parameters) {
         _function.get(this).apply(interpretation, parameters);
     }
+
+    toString() {
+        return _function.get(this).toString().split("\n").slice(1, -1).map(l => l.trim()).join("\n");
+    }
 }
 
 /*
@@ -2622,6 +2626,27 @@ class Command {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+const property = function (name, type, defaultValue, convert) {
+    return {
+        "name": name,
+        "type": type,
+        "default": defaultValue,
+        "converter": convert
+    };
+};
+
+const number$1 = function (name, defaultValue = 0) {
+    return property(name, "text", defaultValue, (n) => parseFloat(n));
+};
+
+const bool = function (name, defaultValue = false) {
+    return property(name, "text", defaultValue, (b) => "true" === b ? true : false);
+};
+
+const string = function (name, defaultValue = "") {
+    return property(name, "text", defaultValue, (s) => s);
+};
+
 const _commands = new WeakMap();
 const _initialState = new WeakMap();
 const _states = new WeakMap();
@@ -2657,7 +2682,7 @@ class Interpretation {
         _initialState.set(this, initialState);
         _states.set(this, []);
         _commands.set(this, {});
-        _registeredProperties.set(this, new Set());
+        _registeredProperties.set(this, []);
     }
 
     get state() {
@@ -2671,6 +2696,10 @@ class Interpretation {
 
     get registeredProperties() {
         return _registeredProperties.get(this);
+    }
+
+    get commands() {
+        return _commands.get(this);
     }
 
     /**
@@ -2690,7 +2719,7 @@ class Interpretation {
      * parameters to apply when the command is executed.
      */
     execute(name, parameters = []) {
-        const command = _commands.get(this)[name];
+        const command = this.commands[name];
 
         if (undefined === command) {
             // By default commands that are unknown are ignored, only those
@@ -2716,8 +2745,18 @@ class Interpretation {
      *
      * @param {String} names - the names of the properties to register
      */
-    registerProperty(...names) {
-        names.forEach(name => this.registeredProperties.add(name));
+    registerProperty(...properties) {
+        properties.forEach(p => this.registeredProperties.push(p));
+    }
+
+    /**
+     * Get a registered property by name
+     *
+     * @param {String} name  - the name of the registered property to get.
+     * @returns {Object}
+     */
+    getRegisteredProperty(name) {
+        return this.registeredProperties.find((p) => name === p.name);
     }
 
     /**
@@ -2729,7 +2768,7 @@ class Interpretation {
     setProperty(name, value) {
         this.state[name] = value;
     }
-
+    
     /**
      * Get a property of this Interpretation. If no such property exists, or
      * if its value is undefined or null, return the defaultValue.
@@ -2752,7 +2791,7 @@ class Interpretation {
      * @param {Command} command - the command.
      */
     setCommand(name, command) {
-        _commands.get(this)[name] = command;
+        this.commands[name] = command;
     }
 
     /**
@@ -2787,7 +2826,7 @@ class Interpretation {
         }
 
         for(const alias of aliasNames) {
-            _commands.get(this)[alias] = commandName;
+            this.commands[alias] = commandName;
         }
     }
 
@@ -2798,12 +2837,12 @@ class Interpretation {
      * @returns {Command|undefined}
      */
     getCommand(name) {
-        const command = _commands.get(this)[name];
+        const command = this.commands[name];
 
         if (command instanceof Command) {
             return command;
         } else if ("string" === typeof command) {
-            return getCommand(command);
+            return this.getCommand(command);
         } else {
             return undefined;
         }
@@ -2920,10 +2959,16 @@ class TurtleInterpretation extends Interpretation {
         }));
 
         this.registerProperty(
-            LINE_WIDTH, 
-            LINE_COLOR,
-            LINE_JOIN,
-            FILL_COLOR
+            number$1("x"),
+            number$1("y"),
+            number$1("d"),
+            number$1("alpha"),
+            number$1("delta"),
+            bool("close"),
+            number$1(LINE_WIDTH), 
+            string(LINE_COLOR),
+            string(LINE_JOIN),
+            string(FILL_COLOR)
         );
     }
 
@@ -2935,6 +2980,7 @@ class TurtleInterpretation extends Interpretation {
      */
     moveTo(x, y) {
         // to be implemented by a sub class 
+        console.log(x, y);
     }
 
     /**
@@ -2945,6 +2991,7 @@ class TurtleInterpretation extends Interpretation {
      */
     lineTo(x, y) {
         // to be implemented by a sub class 
+        console.log(x, y);
     }
 
     get x() {

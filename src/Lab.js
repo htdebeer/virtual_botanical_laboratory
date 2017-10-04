@@ -30,7 +30,6 @@ const SPEED = 500; // ms
 const _element = new WeakMap();
 const _lsystem = new WeakMap();
 const _interpretation = new WeakMap();
-const _description = new WeakMap();
 
 const _running = new WeakMap();
 const _animate = new WeakMap();
@@ -47,14 +46,33 @@ const createInterpretation = function (lab, interpretationConfig = {}) {
 
         interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretationConfig.config);
 
+        // Get all possible commands and their definitions, if any.
+        const availableCommands = {};
+        lab
+            .lsystem
+            .alphabet
+            .moduleDefinitions
+            .forEach((md) => {
+                if (!interpretation.hasCommand(md.name)) {
+                    availableCommands[md.name] = undefined;
+                }
+            });
+       
+        // Commands can be (re)defined in a configuration of an Interpretation 
         if ("commands" in interpretationConfig) {
             Object
                 .entries(interpretationConfig["commands"])
                 .forEach((entry) => {
                     const [name, func] = entry;
-                    interpretation.setCommand(name, new Command(func));
+                    availableCommands[name] = func;
                 });
         }
+
+        Object.keys(availableCommands)
+            .forEach((entry) => {
+                const [name, func] = entry;
+                interpretation.setCommand(name, new Command(func));
+            });
     } else {
         interpretation = interpretationConfig;
     }

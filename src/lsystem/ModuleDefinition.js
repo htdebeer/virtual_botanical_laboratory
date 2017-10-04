@@ -18,7 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {Module} from './Module.js';
+import {Module} from "./Module.js";
 
 /**
  * A ModuleDefinition defines a module in an alphabet.
@@ -44,7 +44,7 @@ class ModuleDefinition extends Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${this.parameters.join(',')})`;
+            return `${this.name}(${this.parameters.join(",")})`;
         } else {
             return this.name;
         }
@@ -53,4 +53,4 @@ class ModuleDefinition extends Module {
 
 export {
     ModuleDefinition
-}
+};
