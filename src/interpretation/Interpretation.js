@@ -82,6 +82,11 @@ class Interpretation {
         _states.set(this, []);
         _commands.set(this, {});
         _registeredProperties.set(this, []);
+
+        this.registerProperty(
+            bool("animate"),
+            number("derivationLength")
+        );
     }
 
     get state() {

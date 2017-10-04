@@ -18,7 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {Lab} from "./Lab.js";
+import {Lab, getProperty} from "./Lab.js";
 import {LSystem} from "./lsystem/LSystem.js";
 
 import STYLE from "./view/style.js";
@@ -126,8 +126,14 @@ const updateInterpretation = function (labview, interpretationTab) {
                 "commands": {}
             };
 
+            const lsystem = labview.lab.lsystem.stringify();
+
             labview.reset();
-            labview.lab.interpretation = interpretationConfig;
+
+            labview.lab = new Lab({
+                "lsystem": lsystem,
+                "interpretation": interpretationConfig
+            });
 
             Object.entries(commands).forEach(([key, func]) => {
                 if (undefined !== func && "" !== func) {
@@ -146,9 +152,8 @@ const updateInterpretation = function (labview, interpretationTab) {
                     labview.lab.interpretation.setCommand(key, command);
                 }
             });
-            
 
-            labview.lab = labview.lab;
+            //labview.lab = labview.lab;
             interpretationTab.showMessage("Interpretation updated successfully..", "info", 2000);
         } catch (e) {
             console.log(e);
@@ -332,7 +337,7 @@ class LabView {
 
     run() {
         if (undefined !== this.lab) {
-            const derivationLength = _config.get(this).derivationLength || 1;
+            const derivationLength = getProperty(_config.get(this), "interpretation.config.derivationLength", 0);
 
             const steps = derivationLength - this.lab.lsystem.derivationLength;
             this.lab.run(steps);

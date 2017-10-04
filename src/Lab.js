@@ -127,6 +127,17 @@ const setupAnimation = function (lab, animate = false) {
     }
 };
 
+const getProperty = function(map, path, defaultValue) {
+    path.split(".").forEach((name) => {
+        if (undefined != map[name]) {
+            map = map[name];
+        } else {
+            return defaultValue;
+        }
+    });
+    return undefined !== map ? map : defaultValue;
+};
+
 /**
  * Lab is the public API to interact with an lsystem and its interpretation.
  * Use this class to build an application on top of.
@@ -145,9 +156,12 @@ class Lab {
 
         createLSystem(this, config.lsystem || "");
         createInterpretation(this, config.interpretation);
-        setupAnimation(this, config.animate);
 
-        initializeAndRun(this, config.derivationLength);
+        const animate = getProperty(config, "interpretation.config.animate", false);
+        setupAnimation(this, animate);
+
+        const derivationLength = getProperty(config, "interpretation.config.derivationLength", 0);
+        initializeAndRun(this, derivationLength);
     }
 
     get element() {
@@ -225,5 +239,6 @@ class Lab {
 }
 
 export {
-    Lab
+    Lab,
+    getProperty
 };
