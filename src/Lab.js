@@ -24,7 +24,8 @@ import {CanvasTurtleInterpretation} from "./interpretation/CanvasTurtleInterpret
 
 import {Command} from "./interpretation/Command.js";
 
-const SIZE = 1000; // px
+const DEFAULT_WIDTH = 800;// px
+const DEFAULT_HEIGHT = 600;// px
 const SPEED = 500; // ms
 
 const _element = new WeakMap();
@@ -35,12 +36,23 @@ const _running = new WeakMap();
 const _animate = new WeakMap();
 const _speed = new WeakMap();
 
+const getProperty = function(map, path, defaultValue) {
+    path.split(".").forEach((name) => {
+        if (undefined != map[name]) {
+            map = map[name];
+        } else {
+            return defaultValue;
+        }
+    });
+    return undefined !== map ? map : defaultValue;
+};
+
 const createInterpretation = function (lab, interpretationConfig = {}) {
     let interpretation;
     if (!(interpretationConfig instanceof Interpretation)) {
         const element = document.createElement("canvas");
-        element.width = SIZE;
-        element.height = SIZE;
+        element.width = getProperty(interpretationConfig, "config.width", DEFAULT_WIDTH);
+        element.height = getProperty(interpretationConfig, "config.height", DEFAULT_HEIGHT);
 
         _element.set(lab, element);
 
@@ -125,17 +137,6 @@ const setupAnimation = function (lab, animate = false) {
         _animate.set(lab, false);
         _speed.set(lab, undefined);
     }
-};
-
-const getProperty = function(map, path, defaultValue) {
-    path.split(".").forEach((name) => {
-        if (undefined != map[name]) {
-            map = map[name];
-        } else {
-            return defaultValue;
-        }
-    });
-    return undefined !== map ? map : defaultValue;
 };
 
 /**

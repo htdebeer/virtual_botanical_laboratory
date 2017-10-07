@@ -62,6 +62,8 @@ class TurtleInterpretation extends Interpretation {
         this.registerProperty(
             number("x"),
             number("y"),
+            number("width"),
+            number("height"),
             number("d"),
             number("alpha"),
             number("delta"),

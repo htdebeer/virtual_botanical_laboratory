@@ -556,7 +556,7 @@ class Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(',')})`;
+            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(",")})`;
         } else {
             return this.name;
         }
@@ -1258,14 +1258,6 @@ const LSystem = class {
         return _ignore.get(this);
     }
 
-    get globals() {
-        return _globals.get(this);
-    }
-
-    set globals(map) {
-        _globals.set(this, map);
-    }
-
     get derivationLength() {
         return _derivationLength.get(this);
     }
@@ -1277,7 +1269,7 @@ const LSystem = class {
      * @return {String}
      */
     stringify() {
-        let lsystem = '';
+        let lsystem = "";
 
         // Serialize the global context, if any.
         let constants = Object.keys(this.globalContext).map(key => `${key} = ${this.globalContext[key].stringify()}`).join(";\n");
@@ -1293,7 +1285,7 @@ const LSystem = class {
         if (0 < this.ignore.length) {
             lsystem += `, ignore: {${this.ignore.map(m => m.stringify()).join(", ")}}`;
         }
-        lsystem += `)`;
+        lsystem += ")";
         return lsystem;
     }
 
@@ -1371,7 +1363,7 @@ class ModuleDefinition extends Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${this.parameters.join(',')})`;
+            return `${this.name}(${this.parameters.join(",")})`;
         } else {
             return this.name;
         }
@@ -1402,6 +1394,8 @@ const _moduleDefinitions = new WeakMap();
 
 /**
  * The Alphabet of an LSystem. The modules in an Alphabet are unique.
+ *
+ * @property {ModuleDefinition[]} moduleDefinitions
  */
 class Alphabet {
 
@@ -1415,6 +1409,10 @@ class Alphabet {
         for (const module of modules) {
             this.add(module);
         }
+    }
+
+    get moduleDefinitions() {
+        return _moduleDefinitions.get(this);
     }
 
     /**
@@ -1438,7 +1436,7 @@ class Alphabet {
      * @returns {Boolean} True if this Alphabet contains this module.
      */
     has(module) {
-       return undefined !== this.get(module);
+        return undefined !== this.get(module);
     }
 
     /**
@@ -1448,7 +1446,7 @@ class Alphabet {
      * @returns {Module|undefined} the module
      */
     get(module) {
-       const found = _moduleDefinitions
+        const found = _moduleDefinitions
             .get(this)
             .filter(
                 (m) => 
@@ -2670,6 +2668,10 @@ const renderTree = function (interpretation, moduleTree) {
  * @property {Object} state - the current state of this Interpretation.
  * @property {Object} registeredProperties - the properties that are
  * registered in this Interpretation.
+ * @property {Object} properties - the properties that have been set in this
+ * Interpretation
+ * @property {Object} commands - the commands that have been defined in this
+ * Interpretation.
  */
 class Interpretation {
     /**
@@ -2683,6 +2685,11 @@ class Interpretation {
         _states.set(this, []);
         _commands.set(this, {});
         _registeredProperties.set(this, []);
+
+        this.registerProperty(
+            bool("animate"),
+            number$1("derivationLength")
+        );
     }
 
     get state() {
@@ -2696,6 +2703,10 @@ class Interpretation {
 
     get registeredProperties() {
         return _registeredProperties.get(this);
+    }
+
+    get properties() {
+        return this.state();
     }
 
     get commands() {
@@ -2792,6 +2803,17 @@ class Interpretation {
      */
     setCommand(name, command) {
         this.commands[name] = command;
+    }
+
+    /**
+     * Does this Interpretation have defined a command?
+     *
+     * @param {String} name - the name of the command to check
+     * @returns {Boolean} True if there exist a command with name in this
+     * Interpretation
+     */
+    hasCommand(name) {
+        return undefined !== this.getCommand(name);
     }
 
     /**

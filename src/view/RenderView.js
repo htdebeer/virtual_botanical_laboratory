@@ -23,8 +23,6 @@ import {View} from "./View.js";
 
 
 const _canvas = new WeakMap();
-const _actionGroups = new WeakMap();
-
 
 /**
  * View represents a tab in the LabView.
@@ -34,7 +32,7 @@ const _actionGroups = new WeakMap();
 class RenderView extends View {
 
     constructor(elt, config = {}) {
-        super(elt, 'render', config);
+        super(elt, "render", config);
     }
 
     get canvas() {
@@ -49,8 +47,7 @@ class RenderView extends View {
         this.element.appendChild(this.canvas);
     }
 
-
-};
+}
 
 export {
     RenderView

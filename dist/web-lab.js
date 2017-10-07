@@ -449,7 +449,7 @@ class Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(',')})`;
+            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(",")})`;
         } else {
             return this.name;
         }
@@ -1519,7 +1519,7 @@ class ModuleDefinition extends Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${this.parameters.join(',')})`;
+            return `${this.name}(${this.parameters.join(",")})`;
         } else {
             return this.name;
         }
@@ -1550,6 +1550,8 @@ const _moduleDefinitions = new WeakMap();
 
 /**
  * The Alphabet of an LSystem. The modules in an Alphabet are unique.
+ *
+ * @property {ModuleDefinition[]} moduleDefinitions
  */
 class Alphabet {
 
@@ -1563,6 +1565,10 @@ class Alphabet {
         for (const module of modules) {
             this.add(module);
         }
+    }
+
+    get moduleDefinitions() {
+        return _moduleDefinitions.get(this);
     }
 
     /**
@@ -1586,7 +1592,7 @@ class Alphabet {
      * @returns {Boolean} True if this Alphabet contains this module.
      */
     has(module) {
-       return undefined !== this.get(module);
+        return undefined !== this.get(module);
     }
 
     /**
@@ -1596,7 +1602,7 @@ class Alphabet {
      * @returns {Module|undefined} the module
      */
     get(module) {
-       const found = _moduleDefinitions
+        const found = _moduleDefinitions
             .get(this)
             .filter(
                 (m) => 
@@ -2469,14 +2475,6 @@ const LSystem = class {
         return _ignore.get(this);
     }
 
-    get globals() {
-        return _globals.get(this);
-    }
-
-    set globals(map) {
-        _globals.set(this, map);
-    }
-
     get derivationLength() {
         return _derivationLength.get(this);
     }
@@ -2488,7 +2486,7 @@ const LSystem = class {
      * @return {String}
      */
     stringify() {
-        let lsystem = '';
+        let lsystem = "";
 
         // Serialize the global context, if any.
         let constants = Object.keys(this.globalContext).map(key => `${key} = ${this.globalContext[key].stringify()}`).join(";\n");
@@ -2504,7 +2502,7 @@ const LSystem = class {
         if (0 < this.ignore.length) {
             lsystem += `, ignore: {${this.ignore.map(m => m.stringify()).join(", ")}}`;
         }
-        lsystem += `)`;
+        lsystem += ")";
         return lsystem;
     }
 
@@ -2666,6 +2664,10 @@ const renderTree = function (interpretation, moduleTree) {
  * @property {Object} state - the current state of this Interpretation.
  * @property {Object} registeredProperties - the properties that are
  * registered in this Interpretation.
+ * @property {Object} properties - the properties that have been set in this
+ * Interpretation
+ * @property {Object} commands - the commands that have been defined in this
+ * Interpretation.
  */
 class Interpretation {
     /**
@@ -2679,6 +2681,11 @@ class Interpretation {
         _states.set(this, []);
         _commands.set(this, {});
         _registeredProperties.set(this, []);
+
+        this.registerProperty(
+            bool("animate"),
+            number$1("derivationLength")
+        );
     }
 
     get state() {
@@ -2692,6 +2699,10 @@ class Interpretation {
 
     get registeredProperties() {
         return _registeredProperties.get(this);
+    }
+
+    get properties() {
+        return this.state();
     }
 
     get commands() {
@@ -2788,6 +2799,17 @@ class Interpretation {
      */
     setCommand(name, command) {
         this.commands[name] = command;
+    }
+
+    /**
+     * Does this Interpretation have defined a command?
+     *
+     * @param {String} name - the name of the command to check
+     * @returns {Boolean} True if there exist a command with name in this
+     * Interpretation
+     */
+    hasCommand(name) {
+        return undefined !== this.getCommand(name);
     }
 
     /**
@@ -3156,6 +3178,7 @@ const SPEED = 500; // ms
 const _element = new WeakMap();
 const _lsystem = new WeakMap();
 const _interpretation = new WeakMap();
+
 const _running = new WeakMap();
 const _animate = new WeakMap();
 const _speed = new WeakMap();
@@ -3171,14 +3194,33 @@ const createInterpretation = function (lab, interpretationConfig = {}) {
 
         interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretationConfig.config);
 
+        // Get all possible commands and their definitions, if any.
+        const availableCommands = {};
+        lab
+            .lsystem
+            .alphabet
+            .moduleDefinitions
+            .forEach((md) => {
+                if (!interpretation.hasCommand(md.name)) {
+                    availableCommands[md.name] = undefined;
+                }
+            });
+       
+        // Commands can be (re)defined in a configuration of an Interpretation 
         if ("commands" in interpretationConfig) {
             Object
                 .entries(interpretationConfig["commands"])
                 .forEach((entry) => {
                     const [name, func] = entry;
-                    interpretation.setCommand(name, new Command(func));
+                    availableCommands[name] = func;
                 });
         }
+
+        Object.keys(availableCommands)
+            .forEach((entry) => {
+                const [name, func] = entry;
+                interpretation.setCommand(name, new Command(func));
+            });
     } else {
         interpretation = interpretationConfig;
     }
@@ -3233,6 +3275,17 @@ const setupAnimation = function (lab, animate = false) {
     }
 };
 
+const getProperty = function(map, path, defaultValue) {
+    path.split(".").forEach((name) => {
+        if (undefined != map[name]) {
+            map = map[name];
+        } else {
+            return defaultValue;
+        }
+    });
+    return undefined !== map ? map : defaultValue;
+};
+
 /**
  * Lab is the public API to interact with an lsystem and its interpretation.
  * Use this class to build an application on top of.
@@ -3251,9 +3304,12 @@ class Lab {
 
         createLSystem(this, config.lsystem || "");
         createInterpretation(this, config.interpretation);
-        setupAnimation(this, config.animate);
 
-        initializeAndRun(this, config.derivationLength);
+        const animate = getProperty(config, "interpretation.config.animate", false);
+        setupAnimation(this, animate);
+
+        const derivationLength = getProperty(config, "interpretation.config.derivationLength", 0);
+        initializeAndRun(this, derivationLength);
     }
 
     get element() {
