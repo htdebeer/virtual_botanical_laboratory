@@ -37,7 +37,7 @@ const determineParameters = function (production, edge, globalContext = {}) {
     });
 
     return parameters;
-}
+};
 
 const conditionHolds = function (production, edge) {
     if (!production.isConditional()) {
@@ -45,9 +45,6 @@ const conditionHolds = function (production, edge) {
         return true;
     }
 
-    const parameters = determineParameters(production, edge);
-    const condition = production.condition;
-    const value = condition.evaluate(determineParameters(production, edge));
     return production.condition.evaluate(determineParameters(production, edge));
 };
 
@@ -103,12 +100,10 @@ class Production {
      * @param {Number} edgeIndex - the index of edge in the moduleTree
      * @param {Module[]} [ignore = []] - a list of modules to ignore when
      * looking at the context
-     * @param {Object} [globalContext = {}] - the globalContext in which this
-     * match should be determined.
      *
      * @returns {Boolean} True if this production matches the edge
      */
-    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = [], globalContext = {}) {
+    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = []) {
         if (this.isConditional() && !conditionHolds(this, edge)) {
             return false;
         }
@@ -154,4 +149,4 @@ class Production {
 
 export {
     Production
-}
+};

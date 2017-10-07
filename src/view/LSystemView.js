@@ -22,7 +22,7 @@ import {View} from "./View.js";
 
 
 const TAB = 9;
-const INDENT = '  ';
+const INDENT = "  ";
 const _originalLSystem = new WeakMap();
 
 /**
@@ -51,7 +51,7 @@ class LSystemView extends View {
         if (null === textarea) {
             return "";
         } else {
-            return textarea.value
+            return textarea.value;
         }
     }
 
@@ -65,7 +65,6 @@ class LSystemView extends View {
 
             // allow for tab key
             textarea.addEventListener("keydown", (event) => {
-                console.log("tab",event.which, event);
                 if (TAB === event.which) {
                     const start = textarea.selectionStart;
                     const end = textarea.selectionEnd;
@@ -83,7 +82,7 @@ class LSystemView extends View {
 
         textarea.value = str;
     }
-};
+}
 
 export {
     LSystemView

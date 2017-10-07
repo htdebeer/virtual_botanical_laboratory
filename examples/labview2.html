@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8">
+        <script src="/dist/virtual_botanical_laboratory.js"></script>
     </head>
     <body>
         <header>
@@ -9,12 +10,10 @@
         </header>
         <div id="lab">
         </div>
-        <script type="module">
-import {LabView} from "../../../src/LabView.js";
-
-new LabView("#lab", {
+        <script>
+new virtual_botanical_laboratory.LabView("#lab", {
     name: "Simple tree",
-    description: "Some longeer text",
+    description: "Simple growing tree.",
     lsystem: `lsystem(
         alphabet: {F, O, I, -, +},
         axiom: F I F I F I,

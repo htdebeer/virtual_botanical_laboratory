@@ -184,9 +184,6 @@ const conditionHolds = function (production, edge) {
         return true;
     }
 
-    const parameters = determineParameters(production, edge);
-    const condition = production.condition;
-    const value = condition.evaluate(determineParameters(production, edge));
     return production.condition.evaluate(determineParameters(production, edge));
 };
 
@@ -242,12 +239,10 @@ class Production {
      * @param {Number} edgeIndex - the index of edge in the moduleTree
      * @param {Module[]} [ignore = []] - a list of modules to ignore when
      * looking at the context
-     * @param {Object} [globalContext = {}] - the globalContext in which this
-     * match should be determined.
      *
      * @returns {Boolean} True if this production matches the edge
      */
-    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = [], globalContext = {}) {
+    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = []) {
         if (this.isConditional() && !conditionHolds(this, edge)) {
             return false;
         }
@@ -2641,6 +2636,10 @@ const string = function (name, defaultValue = "") {
     return property(name, "text", defaultValue, (s) => s);
 };
 
+const color = function (name, defaultValue = "black") {
+    return property(name, "color", defaultValue, (s) => s);
+};
+
 const _commands = new WeakMap();
 const _initialState = new WeakMap();
 const _states = new WeakMap();
@@ -2753,7 +2752,9 @@ class Interpretation {
      * @param {String} names - the names of the properties to register
      */
     registerProperty(...properties) {
-        properties.forEach(p => this.registeredProperties.push(p));
+        properties.forEach(p => {
+            this.registeredProperties.push(p);
+        });
     }
 
     /**
@@ -2977,16 +2978,18 @@ class TurtleInterpretation extends Interpretation {
         }));
 
         this.registerProperty(
-            number$1("x"),
-            number$1("y"),
-            number$1("d"),
-            number$1("alpha"),
-            number$1("delta"),
-            bool("close"),
+            number$1("x", 100),
+            number$1("y", 200),
+            number$1("width", 600),
+            number$1("height", 400),
+            number$1("d", 10),
+            number$1("alpha", 90),
+            number$1("delta", 1),
+            bool("close", false),
             number$1(LINE_WIDTH), 
-            string(LINE_COLOR),
+            color(LINE_COLOR),
             string(LINE_JOIN),
-            string(FILL_COLOR)
+            color(FILL_COLOR)
         );
     }
 
@@ -3082,72 +3085,73 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
         _canvas.set(this, canvas);
     }
 
+    get canvas() {
+        return _canvas.get(this);
+    }
+
+    get canvasElement() {
+        return this.canvas.canvas;
+    }
+
     initialize() {
         super.initialize();
-        const canvas = _canvas.get(this);
-        canvas.clearRect(0, 0, canvas.canvas.width, canvas.canvas.height);
-        canvas.beginPath();
-        canvas.moveTo(this.x, this.y);
+        this.canvas.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+        this.canvas.beginPath();
+        this.canvas.moveTo(this.x, this.y);
     }
 
     finalize() {
         super.finalize();
-        const canvas = _canvas.get(this);
         if (this.getProperty("close", false)) {
-            canvas.closePath();
+            this.canvas.closePath();
         }
-        canvas.stroke();
+        this.canvas.stroke();
     }
 
     applyProperties() {
-        const canvas = _canvas.get(this);
-        
         if (this.hasProperty(LINE_WIDTH)) {
-            canvas.lineWidth = this.getProperty(LINE_WIDTH);
+            this.canvas.lineWidth = this.getProperty(LINE_WIDTH);
         }
 
         if (this.hasProperty(LINE_COLOR)) {
-            canvas.strokeStyle = this.getProperty(LINE_COLOR);
+            this.canvas.strokeStyle = this.getProperty(LINE_COLOR);
         }
 
         if (this.hasProperty(LINE_JOIN)) {
-            canvas.lineJoin = this.getProperty(LINE_JOIN);
+            this.canvas.lineJoin = this.getProperty(LINE_JOIN);
         }
 
         if (this.hasProperty(FILL_COLOR)) {
-            canvas.fillStyle = this.getProperty(FILL_COLOR);
+            this.canvas.fillStyle = this.getProperty(FILL_COLOR);
         }
     }
 
     moveTo(x, y) {
-        _canvas.get(this).moveTo(x, y);
+        this.canvas.moveTo(x, y);
     }
 
     lineTo(x, y) {
         this.applyProperties();
 
-        const canvas = _canvas.get(this);
-        canvas.lineTo(x, y);
-        canvas.stroke();
+        this.canvas.lineTo(x, y);
+        this.canvas.stroke();
     }
 
     enter() {
         super.enter();
 
-        const canvas = _canvas.get(this);
-        canvas.beginPath();
-        canvas.moveTo(this.x, this.y);
+        this.canvas.beginPath();
+        this.canvas.moveTo(this.x, this.y);
     }
 
     exit() {
         super.exit();
 
-        const canvas = _canvas.get(this);
         if (this.getProperty("close", false)) {
-            canvas.closePath();
+            this.canvas.closePath();
         }
-        canvas.stroke();
-        canvas.moveTo(this.x, this.y);
+        this.canvas.stroke();
+        this.canvas.moveTo(this.x, this.y);
     }
         
 }
@@ -3172,7 +3176,8 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const SIZE = 1000; // px
+const DEFAULT_WIDTH = 800;// px
+const DEFAULT_HEIGHT = 600;// px
 const SPEED = 500; // ms
 
 const _element = new WeakMap();
@@ -3183,12 +3188,29 @@ const _running = new WeakMap();
 const _animate = new WeakMap();
 const _speed = new WeakMap();
 
+const getProperty = function(map, path, defaultValue) {
+    const levels = path.split(".");
+    let level = 0;
+    while (level < levels.length) {
+        const name = levels[level];
+        if (undefined !== map[name]) {
+            map = map[name];
+        } else {
+            return defaultValue;
+        }
+
+        level++;
+    }
+
+    return undefined !== map ? map : defaultValue;
+};
+
 const createInterpretation = function (lab, interpretationConfig = {}) {
     let interpretation;
     if (!(interpretationConfig instanceof Interpretation)) {
         const element = document.createElement("canvas");
-        element.width = SIZE;
-        element.height = SIZE;
+        element.width = getProperty(interpretationConfig, "config.width", DEFAULT_WIDTH);
+        element.height = getProperty(interpretationConfig, "config.height", DEFAULT_HEIGHT);
 
         _element.set(lab, element);
 
@@ -3273,17 +3295,6 @@ const setupAnimation = function (lab, animate = false) {
         _animate.set(lab, false);
         _speed.set(lab, undefined);
     }
-};
-
-const getProperty = function(map, path, defaultValue) {
-    path.split(".").forEach((name) => {
-        if (undefined != map[name]) {
-            map = map[name];
-        } else {
-            return defaultValue;
-        }
-    });
-    return undefined !== map ? map : defaultValue;
 };
 
 /**
@@ -3406,6 +3417,1601 @@ class Lab {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+var STYLE = `
+.lab-view {
+    font-size: 12pt;
+    font-family: Helvetica, Arial, sans-serif;
+}
 
-export { LexicalError, ParseError, LSystem, Interpretation, TurtleInterpretation, CanvasTurtleInterpretation, Lab };
-//# sourceMappingURL=web-lab.js.map
+.lab-view .tabs {
+    position: relative;
+    min-height: 200px;
+    height: 600px;
+    clear: both;
+    margin: 1px;
+    padding: 0;
+    
+    background: #F5F5F5;
+    border: 1px solid dimgray;
+}
+
+.lab-view .tab {
+    list-style: none;
+    float: left;
+    height: 100%;
+}
+
+.lab-view .tab.right {
+    float: right;
+}
+
+.lab-view .tab > label {
+    padding: 0px 10px 4px 10px;
+    left: 1px;
+}
+
+.lab-view .tab > label:hover {
+    background: #E5E5E5;
+}
+
+.lab-view .tab > input[type="radio"] {
+    display: none;
+}
+
+.lab-view .tab .contents {
+    position: absolute;
+    top: 26px;
+    left: 0;
+    background: white;
+    right: 0;
+    bottom: 0;
+    padding: 5px;
+    padding-bottom: 10px;
+    border-top: 1px solid dimgray;
+    overflow: auto;
+}
+
+.lab-view .tab > input[type=radio]:checked ~ label {
+    background: dimgray;
+    color: white;
+    border-bottom: 1px white;
+    z-index: 2;
+}
+
+.lab-view .tab > input[type=radio]:checked ~ label ~ .contents {
+    z-index: 1;
+}
+
+.lab-view .tab > .contents h1 {
+    font-size: 16pt;
+    margin-top: 10px;
+}
+
+.lab-view .tab > .contents h2 {
+    font-size: 14pt;
+}
+
+.lab-view .tab .actions {
+    margin: 0;
+    padding: 0;
+    position: sticky;
+    left: 0px;
+    top: 0px;
+}
+
+.lab-view .tab .actions li {
+    list-style: none;
+    float: left;
+}
+
+.lab-view .tab .actions button {
+    padding: 0px;
+    margin: 1px;
+    color: black;
+}
+
+.lab-view .tab .actions .spacer {
+    padding-left: 5px;
+    color: transparent;
+}
+
+.lab-view .tab .contents .messages p {
+    border: 1px solid dimgray;
+    padding: 1ex;
+    margin: 1ex;
+}
+
+.messages .error {
+    border-color: crimson;
+    background-color: lightsalmon;
+}
+
+.messages .info {
+    border-color: slateblue;
+    background-color: lavender;
+}
+
+.lab-view .lsystem {
+    width: 100%;
+    height: 90%;
+}
+
+.lab-view pre {
+    clear: left;
+    padding: 1ex;
+    overflow-x: auto;
+    background-color: #f9f9f9;
+}
+
+.lab-view [data-section="lsystem"] .editor {
+    width: 100%;
+    height: 83%;
+    clear: left;
+    padding-top: 1ex;
+}
+
+.lab-view [data-section="lsystem"] textarea {
+    width: 99%;
+    height: 100%;
+}
+
+.lab-view [data-section="interpretation"] .property-editor {
+    clear: left;
+    padding-top: 1ex;
+}
+
+.lab-view .interpretation-contents {
+    overflow-y: auto;
+    height: 83%;
+    clear: left;
+}
+
+.lab-view .property-editor table {
+    border-collapse: collapse;
+}
+
+.lab-view .property-editor th {
+    text-align: left;
+}
+
+.lab-view .property-editor th, .lab-view .property-editor td {
+    padding: 0.5ex;
+}
+
+.lab-view .property-editor td.value {
+    width: 100%;
+}
+
+.lab-view .property-editor textarea {
+    width: 100%;
+}
+
+`;
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+var ABOUT = `
+<p>
+    virtual_botanical_laboratory © 2017 Huub de Beer &lt;<a href="mailto:Huub@heerdebeer.org">Huub@heerdebeer.org</a>&gt;.
+</p>
+<p>
+ virtual_botanical_laboratory is free software: you can redistribute it
+ and/or modify it under the terms of the GNU General Public License as
+ published by the Free Software Foundation, either version 3 of the License,
+ or (at your option) any later version.
+</p>
+<p>
+ virtual_botanical_laboratory is distributed in the hope that it will be
+ useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ Public License for more details.
+</p>
+<p>
+ You should have received a copy of the GNU General Public License along
+ with virtual_botanical_laboratory.  If not, see
+ &lt;<a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>&gt;.
+</p>
+`;
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+var HELP = `
+<p>
+    To do ...
+</p>
+`;
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+var EXPORT_HTML_TEMPLATE = `
+    <head>
+        <meta charset="utf-8">
+        <title>Virtual Botanical Laboratory—__NAME__</title>
+        <script src="__SOURCE_URL__"></script>
+        <style>
+            figcaption {
+                font-style: italic;
+            }
+
+            figcaption .generator {
+                font-size: smaller;
+            }
+        </style>
+    <body>
+        <figure>
+            <figcaption>
+                __DESCRIPTION__<br>
+                <span class="generator">Generated by <a href="_https://github.com/htdebeer/virtual_botanical_laboratory">virtual_botanical_laboratory</a></span>
+            </figcaption>
+        </figure>
+        <script>
+            new virtual_botanical_laboratory.LabView(document.querySelector("figure"), __CONFIGURATION__);
+        </script>`;
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+var EMPTY_CONFIGURATION = `{
+    "name": "New Laboratory",
+    "description": "New Laboratory. See '?' for help.",
+    "lsystem": "lsystem(alphabet: {F}, axiom: F, productions: {F -> F F})",
+    "interpretation": {
+        "config": {
+            "derivationLength": 1,
+            "y": 50
+        }
+    }
+}`;
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+const _name$2 = new WeakMap();
+const _icon = new WeakMap();
+const _tooltip = new WeakMap();
+const _callback = new WeakMap();
+
+const _enabled = new WeakMap();
+
+const _element$2 = new WeakMap();
+
+/**
+ * Action
+ *
+ * @property {String} name
+ * @property {String} icon
+ * @property {String} tooltip
+ * @property {Boolean} enabled
+ */
+class Action {
+    constructor(name, icon, tooltip, callback, enabled = true) {
+        _name$2.set(this, name);
+        _icon.set(this, icon);
+        _tooltip.set(this, tooltip);
+        _callback.set(this, callback);
+        _enabled.set(this, enabled);
+    }
+
+    get name() {
+        return _name$2.get(this);
+    }
+
+    get icon() {
+        return _icon.get(this);
+    }
+
+    get tooltip() {
+        return _tooltip.get(this);
+    }
+
+    isEnabled() {
+        return true === _enabled.get(this);
+    }
+
+    enable() {
+        _enabled.set(this, true);
+    }
+
+    disable() {
+        _enabled.set(this, false);
+    }
+
+    execute() {
+        _callback.get(this).call(null);
+    }
+
+    set element(elt) {
+        _element$2.set(this, elt);
+    }
+
+    get element() {
+        return _element$2.get(this);
+    }
+
+
+
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+class Spacer extends Action {
+    constructor() {
+        super("", "|", "", () => false, false);
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _config$1 = new WeakMap();
+const _element$1 = new WeakMap();
+
+const _actions = new WeakMap();
+const _actionBar = new WeakMap();
+
+const createAction = function (view, action) {
+    const element = document.createElement("li");
+
+    if (action instanceof Spacer) {
+        element.classList.add("spacer");
+        element.innerHTML = action.icon;
+    } else {
+        const button = document.createElement("button");
+        button.dataset.action = action.name;
+        button.setAttribute("type", "button");
+        button.setAttribute("title", action.tooltip);
+        button.innerHTML = action.icon;
+
+        if (!action.isEnabled()) {
+            button.setAttribute("disabled", "disabled");
+        }
+
+        button.addEventListener("click", () => action.execute());
+
+        element.appendChild(button);
+    }
+    
+    _actionBar.get(view).appendChild(element);
+    action.element = element;
+    _actions.get(view).push(action);
+};
+
+const createView = function (view, name, header, parentElt) {
+    const contents = document.createElement("div");
+    contents.classList.add("contents");
+    contents.dataset.name = name;
+    parentElt.appendChild(contents);
+
+    if (header) {
+        const headerElt = document.createElement("h1");
+        headerElt.innerHTML = header;
+        contents.appendChild(headerElt);
+    }
+    
+    const messagePane = document.createElement("div");
+    messagePane.classList.add("messages");
+    messagePane.style.display = "none";
+    contents.appendChild(messagePane);
+
+    const actionBar = document.createElement("ul");
+    actionBar.classList.add("actions");
+    contents.appendChild(actionBar);
+    _actionBar.set(view, actionBar);
+
+    _element$1.set(view, contents);
+};
+
+/**
+ * View represents a tab in the LabView.
+ *
+ * @property {HTMLElement} element
+ */
+class View {
+
+    constructor(parentElt, name, config = {}) {
+        _actions.set(this, []);
+        createView(this, name, config.header, parentElt);
+        this.configure(config);
+    }
+
+    get element() {
+        return _element$1.get(this);
+    }
+
+    showMessage(message, type = "info", timeout = false) {
+        const messagePane = this.element.querySelector("div.messages");
+        if (null !== messagePane) {
+            messagePane.innerHTML = `<p class="${type}">${message}</p>`;
+            messagePane.style.display = "block";
+            if (Number.isInteger(timeout)) {
+                setTimeout(() => this.hideMessage(), parseInt(timeout));
+            }
+        }
+    }
+
+    hideMessage() {
+        const messagePane = this.element.querySelector("div.messages");
+        if (null !== messagePane) {
+            messagePane.style.display = "none";
+        }
+    }
+
+    /**
+     * Get action by name
+     * 
+     * @param {String} name - the name of the action to get.
+     * @return {Action} the action or undefined if it cannot be found
+     */
+    action(name) {
+        const foundActions = _actions.get(this).filter((a) => a.name === name);
+        if (0 < foundActions.length) {
+            return foundActions[0];
+        } else {
+            return undefined;
+        }
+    }
+
+    addAction(action) {
+        createAction(this, action);
+    }
+
+    removeAction(name) {
+        const action = this.action(name);
+        if (undefined !== action) {
+            _actionBar.get(this).removeChild(action.element);
+            const actionIndex = _actions.get(this).indexOf(action);
+            _actions.get(this).splice(actionIndex, 1);
+        }
+    }
+
+    configure(config = {}) {
+        _config$1.set(this, config);
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+const _canvas$1 = new WeakMap();
+
+/**
+ * View represents a tab in the LabView.
+ *
+ * @property {HTMLCanvasElement} canvas
+ */
+class RenderView extends View {
+
+    constructor(elt, config = {}) {
+        super(elt, "render", config);
+    }
+
+    get canvas() {
+        return _canvas$1.get(this);
+    }
+
+    set canvas(canvasElement) {
+        if (this.element.contains(this.canvas)) {
+            this.element.removeChild(this.canvas);
+        }
+        _canvas$1.set(this, canvasElement);
+        this.element.appendChild(this.canvas);
+    }
+
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _contents = new WeakMap();
+
+/**
+ * DocumentView represents a tab with textual contents only.
+ *
+ * @property {String} contents, a HTML String detailing the contents of this
+ * DocumentView.
+ */
+class DocumentView extends View {
+
+    /**
+     * Create a new DocumentView.
+     *
+     * @param {HTMLElement} elt
+     * @param {String} name
+     * @param {Object} config. If config contains a String property
+     * 'contents', that is used as this DocumentView's contents.
+     */
+    constructor(elt, name, config = {}) {
+        super(elt, name, config);
+        this.contents = config.contents || "";
+    }
+
+    get contents() {
+        return _contents.get(this);
+    }
+
+    set contents(str) {
+        let contentsEl = this.element.querySelector(".document-contents");
+        if (null === contentsEl) {
+            contentsEl = document.createElement("div");
+            contentsEl.classList.add("document-contents");
+            this.element.appendChild(contentsEl);
+        }
+        contentsEl.innerHTML = str;
+        _contents.set(this, str);
+    };
+
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const TAB = 9;
+const INDENT = "  ";
+const _originalLSystem = new WeakMap();
+
+/**
+ * View represents a tab in the LabView.
+ *
+ * @property {String} lsystem
+ */
+class LSystemView extends View {
+
+    constructor(elt, lsystem, config = {}) {
+        super(elt, "lsystem", config);
+        _originalLSystem.set(this, lsystem);
+        this.lsystem = lsystem;
+    }
+
+    get originalLSystem() {
+        return _originalLSystem.get(this);
+    }
+
+    set originalLSystem(lsystem) {
+        _originalLSystem.set(this, lsystem);
+    }
+
+    get lsystem() {
+        let textarea = this.element.querySelector("textarea");
+        if (null === textarea) {
+            return "";
+        } else {
+            return textarea.value;
+        }
+    }
+
+    set lsystem(str) {
+        let textarea = this.element.querySelector("textarea");
+
+        if (null === textarea) {
+            const editorElement = document.createElement("div");
+            editorElement.classList.add("editor");
+            textarea = document.createElement("textarea");
+
+            // allow for tab key
+            textarea.addEventListener("keydown", (event) => {
+                if (TAB === event.which) {
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    textarea.value = 
+                        `${textarea.value.substr(0, start)}${INDENT}${textarea.value.substr(end)}`;
+                    textarea.selectionStart = textarea.selectionEnd = start + INDENT.length;
+                    event.preventDefault();
+                    return false;
+                }
+            });
+
+            editorElement.appendChild(textarea);
+            this.element.appendChild(editorElement);
+        }
+
+        textarea.value = str;
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+const ROWS = 10;
+
+const _element$3 = new WeakMap();
+const _propertySpecifications = new WeakMap();
+const _properties = new WeakMap();
+const _propertyElements = new WeakMap();
+
+const _editable = new WeakMap();
+
+const _addSelect = new WeakMap();
+const _propertyTable = new WeakMap();
+
+const restOfProperties = function (editor) {
+    return editor
+        .propertySpecifications
+        .filter(p => {
+            return !editor.hasProperty(p.name);
+        })
+    ;
+};
+
+const createTableHead = function (keyLabel = "key", valueLabel = "value") {
+    const tableHead = document.createElement("thead");
+    
+    const headRow = document.createElement("tr");
+
+    const keyHeadCell = document.createElement("th");
+    keyHeadCell.textContent = keyLabel;
+    
+    const valueHeadCell = document.createElement("th");
+    valueHeadCell.textContent = valueLabel;
+    
+    headRow.appendChild(keyHeadCell);
+    headRow.appendChild(valueHeadCell);
+    headRow.appendChild(document.createElement("th"));
+    
+    tableHead.appendChild(headRow);
+
+    return tableHead;
+};
+
+const createOption = function (name) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    return option;
+};
+
+const createRow = function (editor, propertyName) {
+    const propertySpecification = editor.getPropertySpecification(propertyName);
+    let propertyValue = editor.getProperty(propertyName);
+       
+    if (undefined === propertyValue) {
+        propertyValue = propertySpecification.default;
+    }
+       
+    if (undefined === propertyValue) {
+        propertyValue = "";
+    }
+
+    editor.setProperty(propertyName, propertyValue);
+
+    const row = document.createElement("tr");
+    const keyCell = document.createElement("th");
+    keyCell.textContent = propertyName;
+    row.appendChild(keyCell);
+
+    const valueCell = document.createElement("td");
+    valueCell.classList.add("value");
+    let valueEditor;
+    if ("textarea" === propertySpecification.type) {
+        valueEditor = document.createElement("textarea");
+        valueEditor.setAttribute("rows", ROWS);
+    } else {
+        valueEditor = document.createElement("input");
+        valueEditor.setAttribute("type", propertySpecification.type);
+
+        if ("number" === propertySpecification.type) {
+            valueEditor.setAttribute("step", "any");
+        }
+    }
+    valueEditor.value = propertyValue;
+    valueCell.appendChild(valueEditor);
+    _propertyElements.get(editor)[propertyName] = valueEditor;
+    row.appendChild(valueCell);
+
+    if (editor.editable) {
+        const deleteCell = document.createElement("td");
+        const deleteButton = document.createElement("button");
+        deleteButton.classList.add("action");
+        deleteButton.classList.add("delete");
+        deleteButton.setAttribute("type", "button");
+        deleteButton.textContent = "×";
+        deleteButton.addEventListener("click", () => {
+            editor.deleteProperty(propertyName);
+            row.parentNode.removeChild(row);
+            _addSelect.get(editor).appendChild(createOption(propertyName));
+        });
+        deleteCell.appendChild(deleteButton);
+        row.appendChild(deleteCell);
+    } else {
+        row.appendChild(document.createElement("td"));
+    }
+
+    return row;
+};
+
+const createAddRow = function (editor, addLabel) {
+    const row = document.createElement("tr");
+    const addCell = document.createElement("td");
+    addCell.setAttribute("colspan", 3);
+    const select = document.createElement("select");
+    
+    const label = document.createElement("option");
+    label.textContent = addLabel;
+    select.appendChild(label);
+
+    restOfProperties(editor).forEach((p) => select.appendChild(createOption(p.name)));
+
+    select.addEventListener("change", () => {
+        if (1 <= select.selectedIndex) {
+            const selectedOption = select.options[select.selectedIndex];
+            const name = selectedOption.value;
+            _propertyTable.get(editor).insertBefore(createRow(editor, name), row); 
+            select.removeChild(selectedOption);
+        }
+
+        select.selectedIndex = 0;
+    });
+
+    _addSelect.set(editor, select);
+
+    addCell.appendChild(select);
+
+    row.appendChild(addCell);
+    return row;
+};
+
+const createTableBody = function (editor, config = {}) {
+    const tableBody = document.createElement("tbody");
+    Object.keys(editor.properties).forEach(property => {
+        tableBody.appendChild(createRow(editor, property));
+    });
+
+    if (editor.editable) {
+        tableBody.appendChild(createAddRow(editor, config.addLabel || "Add property…"));
+    }
+
+    _propertyTable.set(editor, tableBody);
+
+    return tableBody;
+};
+
+const createPropertyEditor$1 = function (editor, config) {
+    const editorElement = document.createElement("div");
+    editorElement.classList.add("property-editor");
+
+    if (undefined !== config.header) {
+        const header = document.createElement("h2");
+        header.textContent = config.header;
+        editorElement.appendChild(header);
+    }
+
+    const table = document.createElement("table");
+    table.appendChild(createTableHead(config.keyLabel, config.valueLabel));
+    table.appendChild(createTableBody(editor, config));
+    editorElement.appendChild(table);
+    
+    _element$3.set(editor, editorElement);
+};
+
+/**
+ * A PropertyEditor is an editor for key-value pairs, for a finite set of
+ * keys.
+ *
+ * @property {HTMLElement} element - this PropertyEditor's HTML element
+ * @property {Boolean} editable - is this PropertyEditor editable
+ * @property {Object} properties - the properties that are set
+ * @property {Object} propertySpecifications - the specifications of all
+ * properties to edit
+ * @property {String[]} propertyValues - the values of the set properties
+ *
+ */
+class PropertyEditor {
+    constructor(propertySpecifications, properties = {}, config = {}) {
+        _propertySpecifications.set(this, propertySpecifications);
+        _properties.set(this, properties);
+        _propertyElements.set(this, {});
+
+        _editable.set(this, undefined === config.editable ? true : (true === config.editable) );
+
+        createPropertyEditor$1(this, config);
+    }
+
+    get element() {
+        return _element$3.get(this);
+    }
+
+    get editable() {
+        return true === _editable.get(this);
+    }
+
+    get propertySpecifications() {
+        return _propertySpecifications.get(this);
+    }
+
+    get properties() {
+        return _properties.get(this);
+    }
+
+    get propertyValues() {
+        const props = {};
+        Object.keys(_properties.get(this)).forEach((name) => {
+            props[name] = _propertyElements.get(this)[name].value;
+        });
+        return props;
+    }
+
+    hasProperty(name) {
+        return name in this.properties;
+    }
+
+    getProperty(name) {
+        return _properties.get(this)[name];
+    }
+
+    setProperty(name, value) {
+        if (this.isAllowedProperty(name)) {
+            this.properties[name] = value;
+            // update editor
+        } else {
+            console.error(`Setting property '${name}' is not allowed. Expected property to be one of {${this.propertySpecifications.map(p => p.name).join(", ")}}.`);
+        }
+    }
+
+    deleteProperty(name) {
+        if (this.hasProperty(name)) {
+            delete this.properties[name];
+        }
+    }
+
+    getPropertySpecification(name) {
+        return this.propertySpecifications.find((p) => name === p.name);
+    }
+
+    isAllowedProperty(name) {
+        return undefined !== this.getPropertySpecification(name);
+    }
+
+
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _propertyEditor = new WeakMap();
+const _commandEditor = new WeakMap();
+
+const createPropertyEditor = function(view, properties, definedProperties) {
+    const propertyEditor = new PropertyEditor(properties, definedProperties, {
+        header: "Properties",
+        keyLabel: "Name",
+        valueLabel: "Value",
+        addLabel: "Add property"
+    });
+
+    _propertyEditor.set(view, propertyEditor);
+    return propertyEditor;
+};
+
+const createCommandPropertyEditor = function(view, commands, definedCommands) {
+    const commandEditor = new PropertyEditor(commands, definedCommands, {
+        header: "Commands",
+        keyLabel: "Name",
+        valueLabel: "Definition",
+        addLabel: "Add command definition",
+        editable: false
+    });
+
+    _commandEditor.set(view, commandEditor);
+    return commandEditor;
+};
+
+
+/**
+ * View represents a tab in the LabView.
+ *
+ */
+class InterpretationView extends View {
+
+    constructor(elt, interpretation, interpretationConfig = {}, config = {}) {
+        super(elt, "interpretation", config);
+
+        const container = document.createElement("div");
+        container.classList.add("interpretation-contents");
+
+        const properties = interpretation.registeredProperties;
+
+        container.appendChild(createPropertyEditor(this, properties, interpretationConfig.config).element);
+        
+        const commands = Object.keys(interpretation.commands).map(command => {
+            return {
+                name: command,
+                type: "textarea",
+                default: "",
+                converter: (s) => s
+            };
+        });
+        
+        const definedCommands = {};
+
+        Object.keys(interpretation.commands).forEach(name => {
+            const command = interpretation.commands[name];
+            definedCommands[name] = command.toString();
+        });
+
+        if (undefined !== interpretationConfig.commands) {
+            Object.keys(interpretationConfig.commands).forEach(name => {
+                const command = new Command(interpretationConfig.commands[name]);
+                definedCommands[name] = command.toString();
+            });
+        }
+
+        container.appendChild(createCommandPropertyEditor(this, commands, definedCommands).element);
+        this.element.appendChild(container);
+    }
+
+    get properties() {
+        return _propertyEditor.get(this).propertyValues;
+    }
+
+    get commands() {
+        return _commandEditor.get(this).propertyValues;
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _lab = new WeakMap();
+const _config = new WeakMap();
+
+const _tabs = new WeakMap();
+
+const _paused = new WeakMap();
+
+const saveAs = function (labView, extension, dataURI) {
+    const name = labView.name.replace(/[ \t\n\r]+/g, "_");
+
+    const a = document.createElement("a");
+    a.download = `${name}.${extension}`,
+    a.href = dataURI;
+    document.body.appendChild(a);
+    a.addEventListener("click", () => document.body.removeChild(a));
+    a.click();
+};
+
+const scriptURL = function () {
+    // Get the source code by URL; assuming the script is loaded
+    // by a path ending in 'virtual_botanical_laboratory.js'.
+    const scripts = Array.from(document.querySelectorAll("script"));
+    const labScript = scripts.filter((s) => s.src.endsWith("virtual_botanical_laboratory.js"));
+    return labScript[0].src;
+};
+
+const tab = function (labview, name) {
+    const tabs = _tabs.get(labview);
+    if (undefined !== tabs && tabs.hasOwnProperty(name)) {
+        return tabs[name];
+    } else {
+        return undefined;
+    }
+};
+
+const generateId = function () {
+    let randomId;
+    do {
+        randomId = Math.random().toString(16).slice(2);
+    } while (null !== document.getElementById(randomId));
+
+    return randomId;
+};
+
+const createTab = function (labview, name, text, tooltip, checked = false, right = false) {
+    const tab = document.createElement("li");
+    tab.classList.add("tab");
+    if (right) {
+        tab.classList.add("right");
+    }
+    tab.dataset.section = name;
+
+    const id = generateId();
+    const input = document.createElement("input");
+    input.setAttribute("type", "radio");
+    input.setAttribute("name", "tabs");
+    input.setAttribute("id", id);
+    if (checked) {
+        input.setAttribute("checked", "checked");
+    }
+    tab.appendChild(input);
+
+    const label = document.createElement("label");
+    label.setAttribute("for", id);
+    label.setAttribute("title", tooltip);
+    label.innerHTML = text;
+    tab.appendChild(label);
+
+    return tab;
+};
+
+const updateLSystem = function (labview, lsystemTab) {
+    const lsystemString = lsystemTab.lsystem;
+    // If the lsystem has been changed, try to parse it and update lsystem
+    if (lsystemTab.originalLSystem !== lsystemString) {
+        try {
+            const lsystem = LSystem.parse(lsystemTab.lsystem);
+            labview.reset();
+            labview.lab.lsystem = lsystem;
+            lsystemTab.originalLSystem = lsystemString;
+            lsystemTab.showMessage("LSystem parsed and updated successfully.", "info", 2000);
+            _config.get(labview)["lsystem"] = lsystemString;
+        } catch (e) {
+            lsystemTab.showMessage(`Error parsing LSystem: "${e}"`, "error");
+        }
+    }
+};
+
+const updateInterpretation = function (labview, interpretationTab) {
+    const properties = interpretationTab.properties;
+    const commands = interpretationTab.commands;
+
+    const changed = true; // TODO determine if interpretation specification has changed
+
+    if (changed) {
+        // update interpretation
+        try {
+
+            const config = {};
+            Object.entries(properties).forEach(([key, value]) => {
+                const registeredProperty = labview.lab.interpretation.getRegisteredProperty(key);
+                const converter = registeredProperty["converter"] || function (v) { return v.toString();};
+                config[key] = converter.call(null, value);
+            });
+
+            const interpretationConfig = {
+                "config": config,
+                "commands": {}
+            };
+
+            _config.get(labview)["interpretation"] = interpretationConfig;
+
+            const lsystem = labview.lab.lsystem.stringify();
+
+            labview.reset();
+
+            labview.lab = new Lab({
+                "lsystem": lsystem,
+                "interpretation": interpretationConfig
+            });
+
+            Object.entries(commands).forEach(([key, func]) => {
+                if (undefined !== func && "" !== func) {
+                    const modules = labview.lab.lsystem.alphabet.moduleDefinitions;
+                    let parameters = [];
+                    if (undefined !== modules) {
+                        parameters = modules.find((md) => key === md.name);
+                        if (undefined !== parameters) {
+                            parameters = parameters.parameters;
+                        } else {
+                            parameters = [];
+                        }
+                    }
+
+                    const command = new Command(parameters, func);
+                    labview.lab.interpretation.setCommand(key, command);
+                }
+            });
+
+            //labview.lab = labview.lab;
+            interpretationTab.showMessage("Interpretation updated successfully..", "info", 2000);
+        } catch (e) {
+            console.log(e);
+            interpretationTab.showMessage(`Error updating interpretation: "${e}"`, "error");
+        }
+    }
+};
+
+const setupTabs = function (labview, element, tabConfig) {
+    const tabsElement = document.createElement("ul");
+    tabsElement.classList.add("tabs");
+    element.appendChild(tabsElement);
+
+    const tabs = {};
+
+    // General "render" tab to view and control L-System
+    const renderTabElement = createTab(labview, "render", "♣", "View interpreted L-System", true);
+    tabsElement.appendChild(renderTabElement);
+    const renderTab = tabs["render"] = new RenderView(renderTabElement, {});
+
+    renderTab.addAction(new Action("create", "★", "Create a new L-System.", () => labview.create()));
+    renderTab.addAction(new Action("exportToHtml", "▼ HTML", "Save this L-System to a HTML file.", () => labview.exportToHTML()));
+    renderTab.addAction(new Action("exportToPng", "▼ PNG", "Export this L-System to a PNG file.", () => labview.exportToPNG()));
+
+    renderTab.addAction(new Spacer());
+
+    renderTab.addAction(new Action("run", "▶️", "Run this L-System.", () => labview.run()));
+    renderTab.addAction(new Action("pause", "⏸", "Pause this L-System.", () => labview.pause()));
+    renderTab.addAction(new Action("step", "1", "Derive the next succesor of this L-System.", () => labview.step()));
+    renderTab.addAction(new Action("reset", "⏮", "Reset this L-System.", () => labview.reset()));
+
+    // L-System tab to edit L-System definition
+    const lsystemTabElement = createTab(labview, "lsystem", "L-System", "Edit L-System");
+    tabsElement.appendChild(lsystemTabElement);
+    tabs["lsystem"] = new LSystemView(lsystemTabElement, tabConfig.lsystem, {
+        header: "L-System definition"
+    });
+    tabs["lsystem"].addAction(
+        new Action(
+            "update", 
+            "update", 
+            "Update this L-System.", 
+            () => updateLSystem(labview, tabs["lsystem"])
+        )
+    );
+    
+    // Interpretation tab to change properties in the interpretation
+    const interpretationTabElement = createTab(labview, "interpretation", "Interpretation", "Edit interpretation");
+    tabsElement.appendChild(interpretationTabElement);
+    tabs["interpretation"] = new InterpretationView(interpretationTabElement, labview.lab.interpretation, tabConfig.interpretation, {
+        header: "Configure interpretation"
+    });
+    tabs["interpretation"].addAction(
+        new Action(
+            "update", 
+            "update", 
+            "Update this L-System.", 
+            () => updateInterpretation(labview, tabs["interpretation"])
+        )
+    );
+    
+    // About tab with information about the virtual_botanical_lab
+    const aboutTabElement = createTab(labview, "about", "i", "About", false, true);
+    tabsElement.appendChild(aboutTabElement);
+    tabs["about"] = new DocumentView(aboutTabElement, "about", {
+        header: "About",
+        contents: ABOUT
+    });
+    
+    // Help tab with a manual for the virtual_botanical_lab
+    const helpTabElement = createTab(labview, "help", "?", "help", false, true);
+    tabsElement.appendChild(helpTabElement);
+    tabs["help"] = new DocumentView(helpTabElement, "help", {
+        header: "Help",
+        contents: HELP
+    });
+
+    _tabs.set(labview, tabs);
+};
+
+const createLabView = function (labview, parentElementOrSelector, config) {
+    const style = document.createElement("style");
+    style.textContent = STYLE;
+    document.head.appendChild(style);
+
+    const template = document.createElement("div");
+    template.classList.add("lab-view");
+
+    let elt;
+    if (parentElementOrSelector instanceof Node) {
+        elt = parentElementOrSelector;
+    } else {
+        elt = document.querySelector(parentElementOrSelector);
+    }
+
+    if (elt.firstChild) {
+        elt.insertBefore(template, elt.firstChild);
+    } else {
+        elt.append(template);
+    }
+
+    setupTabs(labview, template, config);
+
+    return elt;
+};
+
+/**
+ * A user interface for a Lab.
+ *
+ * @property {Lab} lab
+ */
+class LabView {
+
+    /**
+     * Create a new LabView.
+     *
+     * @param {HTMLElement|String} parentElementOrSelector - the parent
+     * element, or a selector to the parent element, to which this LabView
+     * will be appended.
+     * @param {Object} [config = {}] - the initial configuration of this
+     * LabView.
+     */
+    constructor(parentElementOrSelector, config = {}) {
+        // TODO: It is probably a good idea to validate the config first, though.
+        _config.set(this, Object.create(null, {}));
+        Object.assign(_config.get(this), config);
+        _lab.set(this, new Lab(config));
+
+        createLabView(this, parentElementOrSelector, config);
+        
+        this.lab = this.lab;
+
+        _paused.set(this, false);
+    }
+
+    get name() {
+        return getProperty(_config.get(this), "name", "virtual plant");
+    }
+
+    get description() {
+        return getProperty(_config.get(this), "description", "Plant generated by the virtual botanical laboratory.");
+    }
+
+    get configuration() {
+        return JSON.stringify({
+            "name": this.name,
+            "description": this.description,
+            "lsystem": _config.get(this)["lsystem"],
+            "interpretation": _config.get(this)["interpretation"]
+        }, null, 4);
+    }
+
+    get lab() {
+        return _lab.get(this);
+    }
+
+    set lab(newLab) {
+        _lab.set(this, newLab);
+        tab(this, "render").canvas = this.lab.element;
+    }
+
+    // Control the lab view
+
+    set(sectionName, key, value) {
+        let section = _config.get(this)[sectionName];
+        if (undefined === section) {
+            section = Object.create(null);
+            _config.get(this)[sectionName] = section;
+        }
+        section[key] = value;
+    }
+
+    get(sectionName, key) {
+        const section = _config.get(this)[sectionName];
+        return undefined === section ? section[key] : undefined;
+    }
+
+    // File and export actions
+
+    /**
+     * Create an empty Lab in a new window/tab.
+     */
+    create() {
+        const htmlCode = EXPORT_HTML_TEMPLATE
+            .replace(/__NAME__/, "New Laboratory")
+            .replace(/__SOURCE_URL__/, scriptURL())
+            .replace(/__DESCRIPTION__/, "New Laboratory. See '?' for help.")
+            .replace(/__CONFIGURATION__/, EMPTY_CONFIGURATION);
+
+        const newLabWindow = window.open();
+        newLabWindow.document.write(htmlCode);
+        newLabWindow.document.close();
+    }
+
+    /**
+     * Export the current lsystem and its configuration to a stand-alone HTML
+     * file.
+     */
+    exportToHTML() {
+        if (undefined !== this.lab) {
+            const htmlCode = EXPORT_HTML_TEMPLATE
+                .replace(/__NAME__/, this.name)
+                .replace(/__SOURCE_URL__/, scriptURL())
+                .replace(/__DESCRIPTION__/, this.description)
+                .replace(/__CONFIGURATION__/, this.configuration);
+
+            const data = new Blob([htmlCode], {type: "text/html"});
+            saveAs(this, "html", URL.createObjectURL(data));
+        }
+    }
+
+    /**
+     * Export the current interpretation to a PNG file.
+     */
+    exportToPNG() {
+        if (undefined !== this.lab) {
+            const dataURI = this.lab
+                .interpretation
+                .canvasElement
+                .toDataURL("image/png")
+                .replace(/^data:image\/[^;]/, "data:application/octet-stream");
+            
+            saveAs(this, "png", dataURI);
+        }
+    }
+
+    // Control a lab actions
+
+    run() {
+        if (undefined !== this.lab) {
+            const derivationLength = getProperty(_config.get(this), "interpretation.config.derivationLength", 0);
+
+            const steps = derivationLength - this.lab.lsystem.derivationLength;
+            this.lab.run(steps);
+
+            _paused.set(this, false);
+        }
+    }
+
+    step() {
+        if (undefined !== this.lab) {
+            this.lab.run(1);
+        }
+    }
+
+    pause() {
+        if (undefined !== this.lab) {
+            this.lab.stop();
+            _paused.set(this, true);
+        }
+    }
+
+    isPaused() {
+        return true === _paused.get(this);
+    }
+
+    reset() {
+        if (undefined !== this.lab) {
+            this.lab.reset();
+            _paused.set(this, false);
+        }
+    }
+
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+window.virtual_botanical_laboratory = window.virtual_botanical_laboratory || {
+    LexicalError,
+    ParseError,
+    LSystem,
+    Interpretation,
+    TurtleInterpretation,
+    CanvasTurtleInterpretation,
+    Lab,
+    LabView
+};
+//# sourceMappingURL=virtual_botanical_laboratory.js.map

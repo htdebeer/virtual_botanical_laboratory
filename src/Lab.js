@@ -37,13 +37,19 @@ const _animate = new WeakMap();
 const _speed = new WeakMap();
 
 const getProperty = function(map, path, defaultValue) {
-    path.split(".").forEach((name) => {
-        if (undefined != map[name]) {
+    const levels = path.split(".");
+    let level = 0;
+    while (level < levels.length) {
+        const name = levels[level];
+        if (undefined !== map[name]) {
             map = map[name];
         } else {
             return defaultValue;
         }
-    });
+
+        level++;
+    }
+
     return undefined !== map ? map : defaultValue;
 };
 

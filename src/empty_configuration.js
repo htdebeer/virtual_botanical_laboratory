@@ -18,22 +18,14 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {LexicalError} from "./lsystem/LexicalError.js";
-import {ParseError} from "./lsystem/ParseError.js";
-import {LSystem} from "./lsystem/LSystem.js";
-import {Interpretation} from "./interpretation/Interpretation.js";
-import {TurtleInterpretation} from "./interpretation/TurtleInterpretation.js";
-import {CanvasTurtleInterpretation} from "./interpretation/CanvasTurtleInterpretation.js";
-import {Lab} from "./Lab.js";
-import {LabView} from "./LabView.js";
-
-window.virtual_botanical_laboratory = window.virtual_botanical_laboratory || {
-    LexicalError,
-    ParseError,
-    LSystem,
-    Interpretation,
-    TurtleInterpretation,
-    CanvasTurtleInterpretation,
-    Lab,
-    LabView
-};
+export default `{
+    "name": "New Laboratory",
+    "description": "New Laboratory. See '?' for help.",
+    "lsystem": "lsystem(alphabet: {F}, axiom: F, productions: {F -> F F})",
+    "interpretation": {
+        "config": {
+            "derivationLength": 1,
+            "y": 50
+        }
+    }
+}`;

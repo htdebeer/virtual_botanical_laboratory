@@ -42,6 +42,10 @@ const string = function (name, defaultValue = "") {
     return property(name, "text", defaultValue, (s) => s);
 };
 
+const color = function (name, defaultValue = "black") {
+    return property(name, "color", defaultValue, (s) => s);
+};
+
 const _commands = new WeakMap();
 const _initialState = new WeakMap();
 const _states = new WeakMap();
@@ -154,7 +158,9 @@ class Interpretation {
      * @param {String} names - the names of the properties to register
      */
     registerProperty(...properties) {
-        properties.forEach(p => this.registeredProperties.push(p));
+        properties.forEach(p => {
+            this.registeredProperties.push(p)
+        });
     }
 
     /**
@@ -324,5 +330,6 @@ export {
     number,
     bool,
     string,
+    color,
     property
 };

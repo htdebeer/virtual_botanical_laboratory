@@ -18,7 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {Interpretation, number, bool, string} from "./Interpretation.js";
+import {Interpretation, number, bool, color, string} from "./Interpretation.js";
 import {Command} from "./Command.js";
 
 // Default values
@@ -60,18 +60,18 @@ class TurtleInterpretation extends Interpretation {
         }));
 
         this.registerProperty(
-            number("x"),
-            number("y"),
-            number("width"),
-            number("height"),
-            number("d"),
-            number("alpha"),
-            number("delta"),
-            bool("close"),
+            number("x", 100),
+            number("y", 200),
+            number("width", 600),
+            number("height", 400),
+            number("d", 10),
+            number("alpha", 90),
+            number("delta", 1),
+            bool("close", false),
             number(LINE_WIDTH), 
-            string(LINE_COLOR),
+            color(LINE_COLOR),
             string(LINE_JOIN),
-            string(FILL_COLOR)
+            color(FILL_COLOR)
         );
     }
 

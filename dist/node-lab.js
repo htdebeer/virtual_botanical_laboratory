@@ -291,9 +291,6 @@ const conditionHolds = function (production, edge) {
         return true;
     }
 
-    const parameters = determineParameters(production, edge);
-    const condition = production.condition;
-    const value = condition.evaluate(determineParameters(production, edge));
     return production.condition.evaluate(determineParameters(production, edge));
 };
 
@@ -349,12 +346,10 @@ class Production {
      * @param {Number} edgeIndex - the index of edge in the moduleTree
      * @param {Module[]} [ignore = []] - a list of modules to ignore when
      * looking at the context
-     * @param {Object} [globalContext = {}] - the globalContext in which this
-     * match should be determined.
      *
      * @returns {Boolean} True if this production matches the edge
      */
-    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = [], globalContext = {}) {
+    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = []) {
         if (this.isConditional() && !conditionHolds(this, edge)) {
             return false;
         }
@@ -2645,6 +2640,10 @@ const string = function (name, defaultValue = "") {
     return property(name, "text", defaultValue, (s) => s);
 };
 
+const color = function (name, defaultValue = "black") {
+    return property(name, "color", defaultValue, (s) => s);
+};
+
 const _commands = new WeakMap();
 const _initialState = new WeakMap();
 const _states = new WeakMap();
@@ -2757,7 +2756,9 @@ class Interpretation {
      * @param {String} names - the names of the properties to register
      */
     registerProperty(...properties) {
-        properties.forEach(p => this.registeredProperties.push(p));
+        properties.forEach(p => {
+            this.registeredProperties.push(p);
+        });
     }
 
     /**
@@ -2981,16 +2982,18 @@ class TurtleInterpretation extends Interpretation {
         }));
 
         this.registerProperty(
-            number$1("x"),
-            number$1("y"),
-            number$1("d"),
-            number$1("alpha"),
-            number$1("delta"),
-            bool("close"),
+            number$1("x", 100),
+            number$1("y", 200),
+            number$1("width", 600),
+            number$1("height", 400),
+            number$1("d", 10),
+            number$1("alpha", 90),
+            number$1("delta", 1),
+            bool("close", false),
             number$1(LINE_WIDTH), 
-            string(LINE_COLOR),
+            color(LINE_COLOR),
             string(LINE_JOIN),
-            string(FILL_COLOR)
+            color(FILL_COLOR)
         );
     }
 
