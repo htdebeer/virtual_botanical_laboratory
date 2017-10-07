@@ -379,7 +379,8 @@ class LabView {
      */
     exportToHTML() {
         if (undefined !== this.lab) {
-            const htmlCode = EXPORT_HTML_TEMPLATE
+            const htmlCode = "<!DOCTYPE html>\n<html>\n" + 
+                EXPORT_HTML_TEMPLATE
                 .replace(/__NAME__/, this.name)
                 .replace(/__SOURCE_URL__/, scriptURL())
                 .replace(/__DESCRIPTION__/, this.description)
