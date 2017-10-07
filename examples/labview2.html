@@ -13,6 +13,8 @@
 import {LabView} from "../../../src/LabView.js";
 
 new LabView("#lab", {
+    name: "Simple tree",
+    description: "Some longeer text",
     lsystem: `lsystem(
         alphabet: {F, O, I, -, +},
         axiom: F I F I F I,
@@ -41,7 +43,7 @@ new LabView("#lab", {
             alpha: (270 * Math.PI)/180,
             close: false,
             derivationLength: 10,
-            animate: true
+            animate: false
         },
         commands: {
         }

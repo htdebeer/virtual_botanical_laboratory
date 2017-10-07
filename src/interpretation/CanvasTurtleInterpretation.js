@@ -34,72 +34,73 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
         _canvas.set(this, canvas);
     }
 
+    get canvas() {
+        return _canvas.get(this);
+    }
+
+    get canvasElement() {
+        return this.canvas.canvas;
+    }
+
     initialize() {
         super.initialize();
-        const canvas = _canvas.get(this);
-        canvas.clearRect(0, 0, canvas.canvas.width, canvas.canvas.height);
-        canvas.beginPath();
-        canvas.moveTo(this.x, this.y);
+        this.canvas.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+        this.canvas.beginPath();
+        this.canvas.moveTo(this.x, this.y);
     }
 
     finalize() {
         super.finalize();
-        const canvas = _canvas.get(this);
         if (this.getProperty("close", false)) {
-            canvas.closePath();
+            this.canvas.closePath();
         }
-        canvas.stroke();
+        this.canvas.stroke();
     }
 
     applyProperties() {
-        const canvas = _canvas.get(this);
-        
         if (this.hasProperty(LINE_WIDTH)) {
-            canvas.lineWidth = this.getProperty(LINE_WIDTH);
+            this.canvas.lineWidth = this.getProperty(LINE_WIDTH);
         }
 
         if (this.hasProperty(LINE_COLOR)) {
-            canvas.strokeStyle = this.getProperty(LINE_COLOR);
+            this.canvas.strokeStyle = this.getProperty(LINE_COLOR);
         }
 
         if (this.hasProperty(LINE_JOIN)) {
-            canvas.lineJoin = this.getProperty(LINE_JOIN);
+            this.canvas.lineJoin = this.getProperty(LINE_JOIN);
         }
 
         if (this.hasProperty(FILL_COLOR)) {
-            canvas.fillStyle = this.getProperty(FILL_COLOR);
+            this.canvas.fillStyle = this.getProperty(FILL_COLOR);
         }
     }
 
     moveTo(x, y) {
-        _canvas.get(this).moveTo(x, y);
+        this.canvas.moveTo(x, y);
     }
 
     lineTo(x, y) {
         this.applyProperties();
 
-        const canvas = _canvas.get(this);
-        canvas.lineTo(x, y);
-        canvas.stroke();
+        this.canvas.lineTo(x, y);
+        this.canvas.stroke();
     }
 
     enter() {
         super.enter();
 
-        const canvas = _canvas.get(this);
-        canvas.beginPath();
-        canvas.moveTo(this.x, this.y);
+        this.canvas.beginPath();
+        this.canvas.moveTo(this.x, this.y);
     }
 
     exit() {
         super.exit();
 
-        const canvas = _canvas.get(this);
         if (this.getProperty("close", false)) {
-            canvas.closePath();
+            this.canvas.closePath();
         }
-        canvas.stroke();
-        canvas.moveTo(this.x, this.y);
+        this.canvas.stroke();
+        this.canvas.moveTo(this.x, this.y);
     }
         
 }

@@ -178,7 +178,7 @@ const setupTabs = function (labview, element, tabConfig) {
     //renderTab.addAction(new Action("open", "▲", "Open a L-System from your computer.", () => labview.open()));
     //renderTab.addAction(new Action("save", "▼", "Save this L-System to your computer.", () => labview.save()));
     //renderTab.addAction(new Spacer());
-    //renderTab.addAction(new Action("exportToPng", "▼ PNG", "Export this L-System to a PNG file.", () => labview.exportToPng()));
+    renderTab.addAction(new Action("exportToPng", "▼ PNG", "Export this L-System to a PNG file.", () => labview.exportToPNG()));
     renderTab.addAction(new Spacer());
     renderTab.addAction(new Action("run", "▶️", "Run this L-System.", () => labview.run()));
     renderTab.addAction(new Action("pause", "⏸", "Pause this L-System.", () => labview.pause()));
@@ -327,9 +327,22 @@ class LabView {
     open() {
     }
 
+    /**
+     * Export the current interpretation to a PNG file.
+     */
     exportToPNG() {
         if (undefined !== this.lab) {
-            console.log("export png");
+            const name = getProperty(_config.get(this), "name", "generated_plant");
+            const a = document.createElement("a");
+            a.download = name.replace(/[ \t\n\r]+/g, "_") + ".png";
+            a.href = this.lab
+                .interpretation
+                .canvasElement
+                .toDataURL("image/png")
+                .replace(/^data:image\/[^;]/, "data:application/octet-stream");
+            document.body.appendChild(a);
+            a.addEventListener("click", () => document.body.removeChild(a));
+            a.click();
         }
     }
 
