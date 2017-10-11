@@ -26,6 +26,7 @@ import {
     BRACKET_CLOSE,
     OPERATOR,
     DELIMITER,
+    STRING,
     KEYWORD
 } from "./Lexer.js";
 import {ParseError} from "./ParseError.js";
@@ -104,6 +105,12 @@ const parseList = function (parser, recognizeFunction, closingBracket = ")") {
             return list;
         }
     }
+};
+
+const parseDescription = function (parser) {
+    match(parser, KEYWORD, "description");
+    match(parser, DELIMITER, ":");
+    return match(parser, STRING).value;
 };
 
 const parseFormalParameter = function (parser) {
@@ -485,6 +492,13 @@ const parseLSystem = function (parser) {
 
     match(parser, KEYWORD, "lsystem");
     match(parser, BRACKET_OPEN, "(");
+
+    let description = "";
+    if (lookAhead(parser, KEYWORD, "description")) {
+        description = parseDescription(parser);
+        match(parser, DELIMITER, ",");
+    }
+
     const alphabet = parseAlphabet(parser);
     match(parser, DELIMITER, ",");
     const axiom = parseAxiom(parser);
@@ -497,7 +511,7 @@ const parseLSystem = function (parser) {
     }
     match(parser, BRACKET_CLOSE, ")");
 
-    const lsystem = new LSystem(name, alphabet, axiom, productions, ignore);
+    const lsystem = new LSystem(name, description, alphabet, axiom, productions, ignore);
     
     return lsystem;
 };

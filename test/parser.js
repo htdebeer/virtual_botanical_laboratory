@@ -60,6 +60,18 @@ describe("Parser", function () {
             }
         )`;
         
+        const described_minimal = `lsystem(  
+            description: "This is a minimal
+            example of an
+            LSystem",
+            alphabet: {A, B, C},
+            axiom: A,
+            productions: {
+            }
+        )`;
+
+        it(`should match "${described_minimal}"`, () => parse(described_minimal));
+        
         it(`should match "${simple}"`,() => parse(simple));
 
         const simpleTree = `lsystem (

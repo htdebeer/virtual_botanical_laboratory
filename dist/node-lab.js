@@ -1097,6 +1097,7 @@ class IdentityProduction extends Production {
  * 
  */
 const _name$1 = new WeakMap();
+const _description = new WeakMap();
 const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
 const _productions = new WeakMap();
@@ -1200,19 +1201,23 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
  * exists. Used for constants and references to other lsystems.
  *
  * @property {String} name - this LSystem's name
+ * @property {String} description - this LSystem's description
  */
 const LSystem = class {
     /**
      * Create a new instance of LSystem.
      *
+     * @param {String} name
+     * @param {String} description
      * @param {Alphabet} alphabet
      * @param {ModuleTree} axiom
      * @param {Production[]} productions
      * @param {Module[]} ignore
      */
-    constructor(name, alphabet, axiom, productions, ignore = []) {
+    constructor(name, description, alphabet, axiom, productions, ignore = []) {
         _globalContext.set(this, {});
         _name$1.set(this, name);
+        _description.set(this, description);
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
         _productions.set(this, productions);
@@ -1240,9 +1245,31 @@ const LSystem = class {
     set name(newName) {
         _name$1.set(this, newName);
     }
-
+    
+    /**
+     * Does this LSystem have a name?
+     *
+     * @returns {Boolesn} this LSystem has a non-empty name
+     */
     hasName() {
         return 0 < this.name.length;
+    }
+
+    get description() {
+        return _description.get(this) || "";
+    }
+
+    set description(newDescription) {
+        _description.set(this, newDescription);
+    }
+
+    /**
+     * Does this LSystem have a description?
+     *
+     * @returns {Boolean} this LSystem has a non-empty description
+     */
+    hasDescription() {
+        return 0 < this.description.length;
     }
 
     get globalContext() {
@@ -1295,7 +1322,12 @@ const LSystem = class {
             lsystem += `${this.name} = `;
         }
 
-        lsystem += `lsystem(alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
+        lsystem += "lsystem(";
+        if (this.hasDescription()) {
+            lsystem += `description: "${this.description}", `;
+        }
+            
+        lsystem += `alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
 
         if (0 < this.ignore.length) {
             lsystem += `, ignore: {${this.ignore.map(m => m.stringify()).join(", ")}}`;
@@ -1711,6 +1743,12 @@ const parseList = function (parser, recognizeFunction, closingBracket = ")") {
     }
 };
 
+const parseDescription = function (parser) {
+    match(parser, KEYWORD, "description");
+    match(parser, DELIMITER, ":");
+    return match(parser, STRING).value;
+};
+
 const parseFormalParameter = function (parser) {
     return match(parser, IDENTIFIER).value;
 };
@@ -2090,6 +2128,13 @@ const parseLSystem = function (parser) {
 
     match(parser, KEYWORD, "lsystem");
     match(parser, BRACKET_OPEN, "(");
+
+    let description = "";
+    if (lookAhead(parser, KEYWORD, "description")) {
+        description = parseDescription(parser);
+        match(parser, DELIMITER, ",");
+    }
+
     const alphabet = parseAlphabet(parser);
     match(parser, DELIMITER, ",");
     const axiom = parseAxiom(parser);
@@ -2102,7 +2147,7 @@ const parseLSystem = function (parser) {
     }
     match(parser, BRACKET_CLOSE, ")");
 
-    const lsystem = new LSystem(name, alphabet, axiom, productions, ignore);
+    const lsystem = new LSystem(name, description, alphabet, axiom, productions, ignore);
     
     return lsystem;
 };
@@ -2185,13 +2230,14 @@ class Parser {
  */
 // Token names
 
-const NUMBER = Symbol('NUMBER');
-const IDENTIFIER = Symbol('IDENTIFIER');
-const BRACKET_OPEN = Symbol('BRACKET_OPEN');
-const BRACKET_CLOSE = Symbol('BRACKET_CLOSE');
-const OPERATOR = Symbol('OPERATOR');
-const DELIMITER = Symbol('DELIMITER');
-const KEYWORD = Symbol('KEYWORD');
+const NUMBER = Symbol("NUMBER");
+const IDENTIFIER = Symbol("IDENTIFIER");
+const BRACKET_OPEN = Symbol("BRACKET_OPEN");
+const BRACKET_CLOSE = Symbol("BRACKET_CLOSE");
+const OPERATOR = Symbol("OPERATOR");
+const DELIMITER = Symbol("DELIMITER");
+const KEYWORD = Symbol("KEYWORD");
+const STRING = Symbol("STRING");
 
 // Private data and functions for lexer
 
@@ -2257,7 +2303,7 @@ const moveForward = function (lexer, skip = false) {
     const c = peek(lexer);
     if (c) {
         _forward.set(lexer, _forward.get(lexer) + 1);
-        if ('\n' === c) {
+        if ("\n" === c) {
             _line$1.set(lexer, line(lexer) + 1);
             _column$1.set(lexer, 0);
         } else {
@@ -2276,13 +2322,13 @@ const lexeme = function (lexer) {
     return _input.get(lexer).slice(start, end + 1);
 };
 
-const recognize  = function (lexer, tokenName, value) {
+const recognize  = function (lexer, tokenName, value, l = line(lexer), c = column(lexer) - lexeme(lexer).length) {
     const token = new Token(
         tokenName, 
         lexeme(lexer), 
         value, 
-        line(lexer), 
-        column(lexer) - lexeme(lexer).length,
+        l, 
+        c,
         _lexemeBegin$1.get(this)
     );
 
@@ -2299,19 +2345,19 @@ const position = function (lexer) {
 // Recognize patterns
 
 const isWhitespace = function (c) {
-    return [' ', '\t', '\n'].includes(c);
+    return [" ", "\t", "\n"].includes(c);
 };
 
 const isCommentStart = function (c) {
-    return '#' === c;
+    return "#" === c;
 };
 
 const isDigit = function (c) {
-    return '0' <= c && c <= '9';
+    return "0" <= c && c <= "9";
 };
 
 const isLetter = function (c) {
-    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
+    return ("a" <= c && c <= "z") || ("A" <= c && c <= "Z");
 };
 
 const isIdentifierExtra = function (c) {
@@ -2323,17 +2369,18 @@ const isIdentifierExtra = function (c) {
 
 const isKeyword = function (identifier) {
     return [
-        'lsystem',
-        'alphabet',
-        'axiom',
-        'productions',
-        'ignore',
-        'include',
-        'and',
-        'or',
-        'not',
-        'true',
-        'false'
+        "lsystem",
+        "alphabet",
+        "axiom",
+        "productions",
+        "ignore",
+        "include",
+        "and",
+        "or",
+        "not",
+        "true",
+        "false",
+        "description"
     ].includes(identifier);
 };
 
@@ -2351,6 +2398,27 @@ const isIdentifierSymbol = function (c) {
 
 // Recognize Tokens
 
+const string = function (lexer, delimiter = "\"") {
+    if (delimiter === peek(lexer)) {
+        const lineStart = line(lexer);
+        const colStart = column(lexer);
+
+        moveForward(lexer);
+        while (delimiter !== peek(lexer)) {
+            moveForward(lexer);
+        }
+        moveForward(lexer);
+
+        return recognize(
+            lexer, 
+            STRING, 
+            lexeme(lexer).slice(1, -1), 
+            lineStart, 
+            colStart
+        );
+    }
+};
+
 const skipWhitespace = function (lexer) {
     while (isWhitespace(peek(lexer))) {
         moveForward(lexer, true);
@@ -2359,7 +2427,7 @@ const skipWhitespace = function (lexer) {
 
 const skipComment = function (lexer) {
     if (isCommentStart(peek(lexer))) {
-        while ('\n' !== peek(lexer)) {
+        while ("\n" !== peek(lexer)) {
             moveForward(lexer, true);
         }
     }
@@ -2383,21 +2451,21 @@ const number = function (lexer) {
         integer(lexer);
 
         // Decimal part
-        if ('.' === peek(lexer) && isDigit(peek(lexer, 2))) {
+        if ("." === peek(lexer) && isDigit(peek(lexer, 2))) {
             moveForward(lexer);
             digits(lexer);
         }
 
         // Exponent part
-        if (['e', 'E'].includes(peek(lexer))) {
+        if (["e", "E"].includes(peek(lexer))) {
             moveForward(lexer);
 
-            if (['+', '-'].includes(peek(lexer))) {
+            if (["+", "-"].includes(peek(lexer))) {
                 moveForward(lexer);
             }
 
             if (!isDigit(peek(lexer))) {
-                throw new LexicalError(`Expected a numerical exponential part at ${position(lexer)}, got '${peek(lexer)}' instead.`);
+                throw new LexicalError(`Expected a numerical exponential part at ${position(lexer)}, got "${peek(lexer)}" instead.`);
             }
 
             digits(lexer);
@@ -2407,7 +2475,7 @@ const number = function (lexer) {
             const value = parseFloat(lexeme(lexer));
             return recognize(lexer, NUMBER, value);        
         } catch (e) {
-            throw new LexicalError(`Unable to parse '${lexeme(lexer)}' as a number at ${position(lexer)}.`);
+            throw new LexicalError(`Unable to parse "${lexeme(lexer)}" as a number at ${position(lexer)}.`);
         }
     }
 };
@@ -2435,8 +2503,8 @@ const identifier = function (lexer) {
 
 
 const bracket = function (lexer) {
-    const BRACKET_OPEN_CHARACTERS = ['(', '{', '['];
-    const BRACKET_CLOSE_CHARACTERS = [')', '}', ']'];
+    const BRACKET_OPEN_CHARACTERS = ["(", "{", "["];
+    const BRACKET_CLOSE_CHARACTERS = [")", "}", "]"];
 
     if (isContext(lexer, CONTEXT)) {
         BRACKET_OPEN_CHARACTERS.push("<");
@@ -2455,7 +2523,7 @@ const bracket = function (lexer) {
 
 const delimiter = function (lexer) {
     const c = peek(lexer);
-    if ([',', ':', ";"].includes(c)) {
+    if ([",", ":", ";"].includes(c)) {
         moveForward(lexer);
         return recognize(lexer, DELIMITER, c);
     }
@@ -2463,20 +2531,20 @@ const delimiter = function (lexer) {
 
 const operator = function (lexer) {
     const c = peek(lexer);
-    if (['-', '+', '*', '/', '^', '>', '<', '='].includes(c)) {
-        if ('-' === c) {
+    if (["-", "+", "*", "/", "^", ">", "<", "="].includes(c)) {
+        if ("-" === c) {
             moveForward(lexer);
-            if ('>' === peek(lexer)) {
+            if (">" === peek(lexer)) {
                 moveForward(lexer);
             }
-        } else if ('<' === c) {
+        } else if ("<" === c) {
             moveForward(lexer);
-            if ('=' === peek(lexer) || '>' === peek(lexer)) {
+            if ("=" === peek(lexer) || ">" === peek(lexer)) {
                 moveForward(lexer);
             }
-        } else if ('>' === c) {
+        } else if (">" === c) {
             moveForward(lexer);
-            if ('=' === peek(lexer)) {
+            if ("=" === peek(lexer)) {
                 moveForward(lexer);
             }
         } else {
@@ -2498,7 +2566,7 @@ class Lexer {
      *
      * @param {String} [input = ''] - the input string the analyse.
      */
-    constructor(input = '') {
+    constructor(input = "") {
         reset(this, input);
     }
 
@@ -2522,14 +2590,15 @@ class Lexer {
                 skipComment(this);
             } while (
                 isWhitespace(peek(this)) || isCommentStart(peek(this))
-            )
+            );
 
             const token =
                 identifier(this) ||
                 number(this) ||
                 bracket(this) ||
                 delimiter(this) ||
-                operator(this);
+                operator(this) ||
+                string(this);
 
             if (token) {
                 return token;
@@ -2662,7 +2731,7 @@ const bool = function (name, defaultValue = false) {
     return property(name, "text", defaultValue, (b) => "true" === b ? true : false);
 };
 
-const string = function (name, defaultValue = "") {
+const string$1 = function (name, defaultValue = "") {
     return property(name, "text", defaultValue, (s) => s);
 };
 
@@ -3018,7 +3087,7 @@ class TurtleInterpretation extends Interpretation {
             bool("close", false),
             number$1(LINE_WIDTH), 
             color(LINE_COLOR),
-            string(LINE_JOIN),
+            string$1(LINE_JOIN),
             color(FILL_COLOR)
         );
     }
@@ -3117,8 +3186,10 @@ exports.DELIMITER = DELIMITER;
 exports.BRACKET_OPEN = BRACKET_OPEN;
 exports.BRACKET_CLOSE = BRACKET_CLOSE;
 exports.OPERATOR = OPERATOR;
+exports.STRING = STRING;
 exports.KEYWORD = KEYWORD;
 exports.Parser = Parser;
+exports.ParseError = ParseError;
 exports.LSystem = LSystem;
 exports.Interpretation = Interpretation;
 exports.TurtleInterpretation = TurtleInterpretation;

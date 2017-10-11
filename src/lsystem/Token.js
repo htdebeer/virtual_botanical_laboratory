@@ -99,7 +99,7 @@ class Token {
     position() {
         return `(${this.line}, ${this.column})`;
     }
-};
+}
 
 
 export {
