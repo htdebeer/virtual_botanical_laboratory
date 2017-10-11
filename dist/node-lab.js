@@ -413,62 +413,31 @@ class Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const _formalParameters = new WeakMap();
-const _expression = new WeakMap();
-const _evaluator = new WeakMap();
+const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
+    const successor = new ModuleTree();
+    for (const module of moduleTree) {
+        if (module instanceof ModuleTree) {
+            successor.push(applyParametersToModuleTree(module, parameters));
+        } else {
+            successor.push(module.apply(parameters));
+        }
+    }
+    return successor;
+};
 
 /**
- * An Expression can be evaluated to yield a value.
- *
- * @property {String} expression - a textual representation of this expression
- * @property {String[]} formalParameters - a list of formal parameter names
+ * A successor in a production.
  */
-class Expression {
-
+class Successor extends ModuleTree {
     /**
-     * Create a new instance of an Expression.
+     * Apply parameters to this successor.
+     * 
+     * @param {Object[]} [parameters = {}] - the parameters to apply.
      *
-     * @param {String[]} [formalParameters = []] - an optional list of formal
-     * parameter names.
-     * @param {Boolean|Number|undefined} [expression = undefined] - an optional expression
-     * value, defaults to undefined.
+     * @returns {Successor} This Successor with parameters applied, if any.
      */
-    constructor(formalParameters = [], expression = undefined) {
-        _formalParameters.set(this, formalParameters);
-        _expression.set(this, expression);
-        _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
-    }
-
-    get formalParameters() {
-        return _formalParameters.get(this);
-    }
-
-    get expression() {
-        return _expression.get(this);
-    }
-
-    /**
-     * Evaluate this Expression given an optional list of actual parameters.
-     *
-     * @param {Number[]|Boolean[]} [parameters = {}] - an optional map
-     * of actual parameters to apply to this Expression before evaluating the
-     * Expression.
-     *
-     * @return {Number|Boolean|undefined} the result of the evaluating this
-     * Expression.
-     */
-    evaluate(parameters = {}) {
-        const actualParameters = this.formalParameters.map((p) => parameters[p]);
-        return _evaluator.get(this).apply(undefined, actualParameters);
-    }
-
-    /**
-     * Create a String representation of this Expression.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        return this.expression;
+    apply(parameters = {}) {
+        return applyParametersToModuleTree(this, parameters);
     }
 }
 
@@ -555,218 +524,6 @@ class Module {
         } else {
             return this.name;
         }
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-const _values = new WeakMap();
-
-/**
- * A ModuleValue defines an actual module in a string.
- *
- * @property {Number[]} values
- */
-class ModuleValue extends Module {
-
-    constructor(name, moduleDefinition, actualParameters) {
-        const formalParameters = moduleDefinition.parameters;
-
-        if (formalParameters.length !== actualParameters.length) {
-            throw new Error(`Number of actual parameters (${actualParameters.length}) should be equal to the number of formal parameters (${formalParameters.length}).`);
-        }
-
-        super(name, formalParameters);
-
-        const values = {};
-
-        for (let index = 0; index < formalParameters.length; index++) {
-            const name = formalParameters[index];
-            const value = actualParameters[index];
-            values[name] = value instanceof Expression ? value.evaluate() : value;
-        }
-
-        _values.set(this, values);
-    }
-
-    get values() {
-        return _values.get(this);
-    }
-
-    /**
-     * Get the value of a parameter.
-     *
-     * @param {String} name - the name of the parameter to get
-     * @return {Number} the value of this parameter, or undefined if it does
-     * not exist.
-     */
-    getValue(name) {
-        return _values.get(this)[name];
-    }
-
-    /**
-     * Create a String representation of this Module.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        if (this.isParameterized()) {
-            return `${this.name}(${Object.values(_values.get(this)).join(',')})`;
-        } else {
-            return this.name;
-        }
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-const _expressions = new WeakMap();
-
-/**
- * A ModuleApplication defines a module in a successor of a production
- *
- * @property {Number[]} values
- */
-class ModuleApplication extends Module {
-
-    constructor(name, moduleDefinition, actualParameters) {
-        const formalParameters = moduleDefinition.parameters;
-
-        if (formalParameters.length !== actualParameters.length) {
-            throw new Error(`Number of actual parameters (${actualParameters.lenght}) should be equal to the number of formal parameters (${formalParameters.length}).`);
-        }
-
-        super(name, formalParameters);
-
-        const expressions = {};
-
-        for (let index = 0; index < formalParameters.length; index++) {
-            const name = formalParameters[index];
-            expressions[name] = actualParameters[index];
-        }
-
-        _expressions.set(this, expressions);
-    }
-
-    /**
-     * Get the value of a parameter.
-     *
-     * @param {String} name - the name of the parameter to get
-     * @return {Number} the value of this parameter, or undefined if it does
-     * not exist.
-     */
-    getExpression(name) {
-        return _expressions.get(this)[name];
-    }
-
-    apply(parameters) {
-        const values = this.parameters
-            .reduce(
-                (values, name) => {
-                    values.push(this.getExpression(name).evaluate(parameters));
-                    return values;
-                }, []
-            );
-        return new ModuleValue(this.name, this, values);
-    }
-
-    /**
-     * Create a String representation of this Module.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        if (this.isParameterized()) {
-            return `${this.name}(${Object.values(_expressions.get(this)).map(e => e.stringify()).join(',')})`;
-        } else {
-            return this.name;
-        }
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
-    const successor = new ModuleTree();
-    for (const module of moduleTree) {
-        if (module instanceof ModuleTree) {
-            successor.push(applyParametersToModuleTree(module, parameters));
-        } else {
-            successor.push(module.apply(parameters));
-        }
-    }
-    return successor;
-};
-
-/**
- * A successor in a production.
- *
- * @property {Module[]} a list of modules
- */
-class Successor extends ModuleTree {
-    /**
-     * Apply parameters to this successor.
-     * 
-     * @param {Object[]} [parameters = {}] - the parameters to apply.
-     *
-     * @returns {Successor} This Successor with parameters applied, if any.
-     */
-    apply(parameters = {}) {
-        return applyParametersToModuleTree(this, parameters);
     }
 }
 
@@ -1002,6 +759,252 @@ class Predecessor {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+const _formalParameters = new WeakMap();
+const _expression = new WeakMap();
+const _evaluator = new WeakMap();
+
+/**
+ * An Expression can be evaluated to yield a value.
+ *
+ * @property {String} expression - a textual representation of this expression
+ * @property {String[]} formalParameters - a list of formal parameter names
+ */
+class Expression {
+
+    /**
+     * Create a new instance of an Expression.
+     *
+     * @param {String[]} [formalParameters = []] - an optional list of formal
+     * parameter names.
+     * @param {Boolean|Number|undefined} [expression = undefined] - an optional expression
+     * value, defaults to undefined.
+     */
+    constructor(formalParameters = [], expression = undefined) {
+        _formalParameters.set(this, formalParameters);
+        _expression.set(this, expression);
+        _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
+    }
+
+    get formalParameters() {
+        return _formalParameters.get(this);
+    }
+
+    get expression() {
+        return _expression.get(this);
+    }
+
+    /**
+     * Evaluate this Expression given an optional list of actual parameters.
+     *
+     * @param {Number[]|Boolean[]} [parameters = {}] - an optional map
+     * of actual parameters to apply to this Expression before evaluating the
+     * Expression.
+     *
+     * @return {Number|Boolean|undefined} the result of the evaluating this
+     * Expression.
+     */
+    evaluate(parameters = {}) {
+        const actualParameters = this.formalParameters.map((p) => parameters[p]);
+        return _evaluator.get(this).apply(undefined, actualParameters);
+    }
+
+    /**
+     * Create a String representation of this Expression.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        return this.expression;
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _values = new WeakMap();
+
+/**
+ * A ModuleValue defines an actual module in a string.
+ *
+ * @property {Number[]} values
+ */
+class ModuleValue extends Module {
+
+    constructor(name, moduleDefinition, actualParameters) {
+        const formalParameters = moduleDefinition.parameters;
+
+        if (formalParameters.length !== actualParameters.length) {
+            throw new Error(`Number of actual parameters (${actualParameters.length}) should be equal to the number of formal parameters (${formalParameters.length}).`);
+        }
+
+        super(name, formalParameters);
+
+        const values = {};
+
+        for (let index = 0; index < formalParameters.length; index++) {
+            const name = formalParameters[index];
+            const value = actualParameters[index];
+            values[name] = value instanceof Expression ? value.evaluate() : value;
+        }
+
+        _values.set(this, values);
+    }
+
+    get values() {
+        return _values.get(this);
+    }
+
+    /**
+     * Get the value of a parameter.
+     *
+     * @param {String} name - the name of the parameter to get
+     * @return {Number} the value of this parameter, or undefined if it does
+     * not exist.
+     */
+    getValue(name) {
+        return _values.get(this)[name];
+    }
+
+    /**
+     * Create a String representation of this Module.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        if (this.isParameterized()) {
+            return `${this.name}(${Object.values(_values.get(this)).join(",")})`;
+        } else {
+            return this.name;
+        }
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _expressions = new WeakMap();
+
+/**
+ * A ModuleApplication defines a module in a successor of a production
+ */
+class ModuleApplication extends Module {
+
+    /**
+     * Create a new ModuleApplication
+     *
+     * @param {String} name
+     * @param {ModuleDefinition} moduleDefinition
+     * @param {Object[]} actualParameters
+     */
+    constructor(name, moduleDefinition, actualParameters) {
+        const formalParameters = moduleDefinition.parameters;
+
+        if (formalParameters.length !== actualParameters.length) {
+            throw new Error(`Number of actual parameters (${actualParameters.lenght}) should be equal to the number of formal parameters (${formalParameters.length}).`);
+        }
+
+        super(name, formalParameters);
+
+        const expressions = {};
+
+        for (let index = 0; index < formalParameters.length; index++) {
+            const name = formalParameters[index];
+            expressions[name] = actualParameters[index];
+        }
+
+        _expressions.set(this, expressions);
+    }
+
+    /**
+     * Get the value of a parameter.
+     *
+     * @param {String} name - the name of the parameter to get
+     * @return {Number} the value of this parameter, or undefined if it does
+     * not exist.
+     */
+    getExpression(name) {
+        return _expressions.get(this)[name];
+    }
+
+    apply(parameters) {
+        const values = this.parameters
+            .reduce(
+                (values, name) => {
+                    values.push(this.getExpression(name).evaluate(parameters));
+                    return values;
+                }, []
+            );
+        return new ModuleValue(this.name, this, values);
+    }
+
+    /**
+     * Create a String representation of this Module.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        if (this.isParameterized()) {
+            return `${this.name}(${Object.values(_expressions.get(this)).map(e => e.stringify()).join(",")})`;
+        } else {
+            return this.name;
+        }
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
 /**
  * A NumericalExpression, which yields a Number value when evaluated
  */
@@ -1191,6 +1194,8 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
 /**
  * An LSystem model
  *
+ * @property {String} name - this LSystem's name
+ * @property {String} description - this LSystem's description
  * @property {Alphabet} alphabet - the set of modules of this LSystem
  * @property {ModuleTree} axiom - the axion of this LSystem
  * @property {Production[]} productions - the set of productions of this
@@ -1199,9 +1204,6 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
  * LSystem
  * @property {Object{ globalContext - the global context in which this lsystem
  * exists. Used for constants and references to other lsystems.
- *
- * @property {String} name - this LSystem's name
- * @property {String} description - this LSystem's description
  */
 const LSystem = class {
     /**
@@ -1541,7 +1543,7 @@ const setupProbabilityMapping = function (production, successorList) {
     let lower = 0;
     for (const successor of successorList) {
         if (0 >= successor.probability || successor.probability > 1) {
-            throw new Error('Probability should be between 0 and 1');
+            throw new Error("Probability should be between 0 and 1");
         }
 
         successor.lower = lower;
@@ -1550,7 +1552,7 @@ const setupProbabilityMapping = function (production, successorList) {
     }
 
     if (1 !== successorList.reduce((sum, pair) => sum += pair.probability, 0)) {
-        throw new Error('Total probability should be 1');
+        throw new Error("Total probability should be 1");
     }
 
     _successorList.set(production, successorList);
@@ -2653,7 +2655,19 @@ class Lexer {
 
 const _function = new WeakMap();
 
+/**
+ * A command in an interpretation to make a step in rendering an derivation in an LSystem.
+ */
 class Command {
+
+    /**
+     * Create a new Command. If no arguments given, the Command is a "skip"
+     * command: it does do nothing.
+     *
+     * @param {String[]} - a list of parameters to the command. Can be omitted
+     * @param {String|Function} - a function or a string representing a
+     * function body that is executed when this command is run.
+     */
     constructor(...args) {
         let func;
 
@@ -2689,6 +2703,11 @@ class Command {
         _function.get(this).apply(interpretation, parameters);
     }
 
+    /**
+     * Create a String representation of this Command.
+     *
+     * @returns {String}
+     */
     toString() {
         return _function.get(this).toString().split("\n").slice(1, -1).map(l => l.trim()).join("\n");
     }
@@ -2772,7 +2791,6 @@ class Interpretation {
      * Create a new instance of an LSystem Interpretation.
      * 
      * @param {RenderingContext|SVGElement} canvas - the canvas to draw on.
-     * @param {Object} scope - the scope of this Interpretation.
      */
     constructor(initialState = {}) {
         _initialState.set(this, initialState);
@@ -3045,11 +3063,37 @@ const D = 2;
 const DELTA = Math.PI / 2;
 const ALPHA = 0;
 
+/**
+ * The color of a closed shape.
+ */
 const FILL_COLOR = "fill-color";
+
+/**
+ * The color of a line
+ */
 const LINE_COLOR = "line-color";
+
+/**
+ * The width of a line
+ */
 const LINE_WIDTH = "line-width";
+
+/**
+ * The type of line join. See also
+ * <https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/lineJoin>
+ */
 const LINE_JOIN = "line-join";
 
+/**
+ * A TurtleInterpretation as proposed in the book "The algorithmic beauty of
+ * plants", chapter 1.
+ *
+ * @property {Number} x - current x coordinate
+ * @property {Number} y - current y coordinate
+ * @property {Number} d - distance to draw or move
+ * @property {Number} alpha - the current angle
+ * @property {Number} delta - change of angle to rotate
+ */
 class TurtleInterpretation extends Interpretation {
     constructor(initialState = {}) {
         super(initialState);

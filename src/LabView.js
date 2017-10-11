@@ -178,7 +178,7 @@ const updateInterpretation = function (labview, interpretationTab) {
             });
 
             //labview.lab = labview.lab;
-            interpretationTab.showMessage("Interpretation updated successfully..", "info", 2000);
+            interpretationTab.showMessage("Interpretation updated successfully…", "info", 2000);
         } catch (e) {
             console.log(e);
             interpretationTab.showMessage(`Error updating interpretation: "${e}"`, "error");

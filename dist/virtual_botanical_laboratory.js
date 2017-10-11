@@ -306,62 +306,31 @@ class Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const _formalParameters = new WeakMap();
-const _expression = new WeakMap();
-const _evaluator = new WeakMap();
+const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
+    const successor = new ModuleTree();
+    for (const module of moduleTree) {
+        if (module instanceof ModuleTree) {
+            successor.push(applyParametersToModuleTree(module, parameters));
+        } else {
+            successor.push(module.apply(parameters));
+        }
+    }
+    return successor;
+};
 
 /**
- * An Expression can be evaluated to yield a value.
- *
- * @property {String} expression - a textual representation of this expression
- * @property {String[]} formalParameters - a list of formal parameter names
+ * A successor in a production.
  */
-class Expression {
-
+class Successor extends ModuleTree {
     /**
-     * Create a new instance of an Expression.
+     * Apply parameters to this successor.
+     * 
+     * @param {Object[]} [parameters = {}] - the parameters to apply.
      *
-     * @param {String[]} [formalParameters = []] - an optional list of formal
-     * parameter names.
-     * @param {Boolean|Number|undefined} [expression = undefined] - an optional expression
-     * value, defaults to undefined.
+     * @returns {Successor} This Successor with parameters applied, if any.
      */
-    constructor(formalParameters = [], expression = undefined) {
-        _formalParameters.set(this, formalParameters);
-        _expression.set(this, expression);
-        _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
-    }
-
-    get formalParameters() {
-        return _formalParameters.get(this);
-    }
-
-    get expression() {
-        return _expression.get(this);
-    }
-
-    /**
-     * Evaluate this Expression given an optional list of actual parameters.
-     *
-     * @param {Number[]|Boolean[]} [parameters = {}] - an optional map
-     * of actual parameters to apply to this Expression before evaluating the
-     * Expression.
-     *
-     * @return {Number|Boolean|undefined} the result of the evaluating this
-     * Expression.
-     */
-    evaluate(parameters = {}) {
-        const actualParameters = this.formalParameters.map((p) => parameters[p]);
-        return _evaluator.get(this).apply(undefined, actualParameters);
-    }
-
-    /**
-     * Create a String representation of this Expression.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        return this.expression;
+    apply(parameters = {}) {
+        return applyParametersToModuleTree(this, parameters);
     }
 }
 
@@ -448,218 +417,6 @@ class Module {
         } else {
             return this.name;
         }
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-const _values = new WeakMap();
-
-/**
- * A ModuleValue defines an actual module in a string.
- *
- * @property {Number[]} values
- */
-class ModuleValue extends Module {
-
-    constructor(name, moduleDefinition, actualParameters) {
-        const formalParameters = moduleDefinition.parameters;
-
-        if (formalParameters.length !== actualParameters.length) {
-            throw new Error(`Number of actual parameters (${actualParameters.length}) should be equal to the number of formal parameters (${formalParameters.length}).`);
-        }
-
-        super(name, formalParameters);
-
-        const values = {};
-
-        for (let index = 0; index < formalParameters.length; index++) {
-            const name = formalParameters[index];
-            const value = actualParameters[index];
-            values[name] = value instanceof Expression ? value.evaluate() : value;
-        }
-
-        _values.set(this, values);
-    }
-
-    get values() {
-        return _values.get(this);
-    }
-
-    /**
-     * Get the value of a parameter.
-     *
-     * @param {String} name - the name of the parameter to get
-     * @return {Number} the value of this parameter, or undefined if it does
-     * not exist.
-     */
-    getValue(name) {
-        return _values.get(this)[name];
-    }
-
-    /**
-     * Create a String representation of this Module.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        if (this.isParameterized()) {
-            return `${this.name}(${Object.values(_values.get(this)).join(',')})`;
-        } else {
-            return this.name;
-        }
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-const _expressions = new WeakMap();
-
-/**
- * A ModuleApplication defines a module in a successor of a production
- *
- * @property {Number[]} values
- */
-class ModuleApplication extends Module {
-
-    constructor(name, moduleDefinition, actualParameters) {
-        const formalParameters = moduleDefinition.parameters;
-
-        if (formalParameters.length !== actualParameters.length) {
-            throw new Error(`Number of actual parameters (${actualParameters.lenght}) should be equal to the number of formal parameters (${formalParameters.length}).`);
-        }
-
-        super(name, formalParameters);
-
-        const expressions = {};
-
-        for (let index = 0; index < formalParameters.length; index++) {
-            const name = formalParameters[index];
-            expressions[name] = actualParameters[index];
-        }
-
-        _expressions.set(this, expressions);
-    }
-
-    /**
-     * Get the value of a parameter.
-     *
-     * @param {String} name - the name of the parameter to get
-     * @return {Number} the value of this parameter, or undefined if it does
-     * not exist.
-     */
-    getExpression(name) {
-        return _expressions.get(this)[name];
-    }
-
-    apply(parameters) {
-        const values = this.parameters
-            .reduce(
-                (values, name) => {
-                    values.push(this.getExpression(name).evaluate(parameters));
-                    return values;
-                }, []
-            );
-        return new ModuleValue(this.name, this, values);
-    }
-
-    /**
-     * Create a String representation of this Module.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        if (this.isParameterized()) {
-            return `${this.name}(${Object.values(_expressions.get(this)).map(e => e.stringify()).join(',')})`;
-        } else {
-            return this.name;
-        }
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
-    const successor = new ModuleTree();
-    for (const module of moduleTree) {
-        if (module instanceof ModuleTree) {
-            successor.push(applyParametersToModuleTree(module, parameters));
-        } else {
-            successor.push(module.apply(parameters));
-        }
-    }
-    return successor;
-};
-
-/**
- * A successor in a production.
- *
- * @property {Module[]} a list of modules
- */
-class Successor extends ModuleTree {
-    /**
-     * Apply parameters to this successor.
-     * 
-     * @param {Object[]} [parameters = {}] - the parameters to apply.
-     *
-     * @returns {Successor} This Successor with parameters applied, if any.
-     */
-    apply(parameters = {}) {
-        return applyParametersToModuleTree(this, parameters);
     }
 }
 
@@ -873,6 +630,252 @@ class Predecessor {
         return str;
     }
 
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _formalParameters = new WeakMap();
+const _expression = new WeakMap();
+const _evaluator = new WeakMap();
+
+/**
+ * An Expression can be evaluated to yield a value.
+ *
+ * @property {String} expression - a textual representation of this expression
+ * @property {String[]} formalParameters - a list of formal parameter names
+ */
+class Expression {
+
+    /**
+     * Create a new instance of an Expression.
+     *
+     * @param {String[]} [formalParameters = []] - an optional list of formal
+     * parameter names.
+     * @param {Boolean|Number|undefined} [expression = undefined] - an optional expression
+     * value, defaults to undefined.
+     */
+    constructor(formalParameters = [], expression = undefined) {
+        _formalParameters.set(this, formalParameters);
+        _expression.set(this, expression);
+        _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
+    }
+
+    get formalParameters() {
+        return _formalParameters.get(this);
+    }
+
+    get expression() {
+        return _expression.get(this);
+    }
+
+    /**
+     * Evaluate this Expression given an optional list of actual parameters.
+     *
+     * @param {Number[]|Boolean[]} [parameters = {}] - an optional map
+     * of actual parameters to apply to this Expression before evaluating the
+     * Expression.
+     *
+     * @return {Number|Boolean|undefined} the result of the evaluating this
+     * Expression.
+     */
+    evaluate(parameters = {}) {
+        const actualParameters = this.formalParameters.map((p) => parameters[p]);
+        return _evaluator.get(this).apply(undefined, actualParameters);
+    }
+
+    /**
+     * Create a String representation of this Expression.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        return this.expression;
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _values = new WeakMap();
+
+/**
+ * A ModuleValue defines an actual module in a string.
+ *
+ * @property {Number[]} values
+ */
+class ModuleValue extends Module {
+
+    constructor(name, moduleDefinition, actualParameters) {
+        const formalParameters = moduleDefinition.parameters;
+
+        if (formalParameters.length !== actualParameters.length) {
+            throw new Error(`Number of actual parameters (${actualParameters.length}) should be equal to the number of formal parameters (${formalParameters.length}).`);
+        }
+
+        super(name, formalParameters);
+
+        const values = {};
+
+        for (let index = 0; index < formalParameters.length; index++) {
+            const name = formalParameters[index];
+            const value = actualParameters[index];
+            values[name] = value instanceof Expression ? value.evaluate() : value;
+        }
+
+        _values.set(this, values);
+    }
+
+    get values() {
+        return _values.get(this);
+    }
+
+    /**
+     * Get the value of a parameter.
+     *
+     * @param {String} name - the name of the parameter to get
+     * @return {Number} the value of this parameter, or undefined if it does
+     * not exist.
+     */
+    getValue(name) {
+        return _values.get(this)[name];
+    }
+
+    /**
+     * Create a String representation of this Module.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        if (this.isParameterized()) {
+            return `${this.name}(${Object.values(_values.get(this)).join(",")})`;
+        } else {
+            return this.name;
+        }
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _expressions = new WeakMap();
+
+/**
+ * A ModuleApplication defines a module in a successor of a production
+ */
+class ModuleApplication extends Module {
+
+    /**
+     * Create a new ModuleApplication
+     *
+     * @param {String} name
+     * @param {ModuleDefinition} moduleDefinition
+     * @param {Object[]} actualParameters
+     */
+    constructor(name, moduleDefinition, actualParameters) {
+        const formalParameters = moduleDefinition.parameters;
+
+        if (formalParameters.length !== actualParameters.length) {
+            throw new Error(`Number of actual parameters (${actualParameters.lenght}) should be equal to the number of formal parameters (${formalParameters.length}).`);
+        }
+
+        super(name, formalParameters);
+
+        const expressions = {};
+
+        for (let index = 0; index < formalParameters.length; index++) {
+            const name = formalParameters[index];
+            expressions[name] = actualParameters[index];
+        }
+
+        _expressions.set(this, expressions);
+    }
+
+    /**
+     * Get the value of a parameter.
+     *
+     * @param {String} name - the name of the parameter to get
+     * @return {Number} the value of this parameter, or undefined if it does
+     * not exist.
+     */
+    getExpression(name) {
+        return _expressions.get(this)[name];
+    }
+
+    apply(parameters) {
+        const values = this.parameters
+            .reduce(
+                (values, name) => {
+                    values.push(this.getExpression(name).evaluate(parameters));
+                    return values;
+                }, []
+            );
+        return new ModuleValue(this.name, this, values);
+    }
+
+    /**
+     * Create a String representation of this Module.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        if (this.isParameterized()) {
+            return `${this.name}(${Object.values(_expressions.get(this)).map(e => e.stringify()).join(",")})`;
+        } else {
+            return this.name;
+        }
+    }
 }
 
 /*
@@ -1669,7 +1672,7 @@ const setupProbabilityMapping = function (production, successorList) {
     let lower = 0;
     for (const successor of successorList) {
         if (0 >= successor.probability || successor.probability > 1) {
-            throw new Error('Probability should be between 0 and 1');
+            throw new Error("Probability should be between 0 and 1");
         }
 
         successor.lower = lower;
@@ -1678,7 +1681,7 @@ const setupProbabilityMapping = function (production, successorList) {
     }
 
     if (1 !== successorList.reduce((sum, pair) => sum += pair.probability, 0)) {
-        throw new Error('Total probability should be 1');
+        throw new Error("Total probability should be 1");
     }
 
     _successorList.set(production, successorList);
@@ -2451,6 +2454,8 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
 /**
  * An LSystem model
  *
+ * @property {String} name - this LSystem's name
+ * @property {String} description - this LSystem's description
  * @property {Alphabet} alphabet - the set of modules of this LSystem
  * @property {ModuleTree} axiom - the axion of this LSystem
  * @property {Production[]} productions - the set of productions of this
@@ -2459,9 +2464,6 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
  * LSystem
  * @property {Object{ globalContext - the global context in which this lsystem
  * exists. Used for constants and references to other lsystems.
- *
- * @property {String} name - this LSystem's name
- * @property {String} description - this LSystem's description
  */
 const LSystem = class {
     /**
@@ -2649,7 +2651,19 @@ const LSystem = class {
 
 const _function = new WeakMap();
 
+/**
+ * A command in an interpretation to make a step in rendering an derivation in an LSystem.
+ */
 class Command {
+
+    /**
+     * Create a new Command. If no arguments given, the Command is a "skip"
+     * command: it does do nothing.
+     *
+     * @param {String[]} - a list of parameters to the command. Can be omitted
+     * @param {String|Function} - a function or a string representing a
+     * function body that is executed when this command is run.
+     */
     constructor(...args) {
         let func;
 
@@ -2685,6 +2699,11 @@ class Command {
         _function.get(this).apply(interpretation, parameters);
     }
 
+    /**
+     * Create a String representation of this Command.
+     *
+     * @returns {String}
+     */
     toString() {
         return _function.get(this).toString().split("\n").slice(1, -1).map(l => l.trim()).join("\n");
     }
@@ -2768,7 +2787,6 @@ class Interpretation {
      * Create a new instance of an LSystem Interpretation.
      * 
      * @param {RenderingContext|SVGElement} canvas - the canvas to draw on.
-     * @param {Object} scope - the scope of this Interpretation.
      */
     constructor(initialState = {}) {
         _initialState.set(this, initialState);
@@ -3041,11 +3059,37 @@ const D = 2;
 const DELTA = Math.PI / 2;
 const ALPHA = 0;
 
+/**
+ * The color of a closed shape.
+ */
 const FILL_COLOR = "fill-color";
+
+/**
+ * The color of a line
+ */
 const LINE_COLOR = "line-color";
+
+/**
+ * The width of a line
+ */
 const LINE_WIDTH = "line-width";
+
+/**
+ * The type of line join. See also
+ * <https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/lineJoin>
+ */
 const LINE_JOIN = "line-join";
 
+/**
+ * A TurtleInterpretation as proposed in the book "The algorithmic beauty of
+ * plants", chapter 1.
+ *
+ * @property {Number} x - current x coordinate
+ * @property {Number} y - current y coordinate
+ * @property {Number} d - distance to draw or move
+ * @property {Number} alpha - the current angle
+ * @property {Number} delta - change of angle to rotate
+ */
 class TurtleInterpretation extends Interpretation {
     constructor(initialState = {}) {
         super(initialState);
@@ -3174,7 +3218,21 @@ class TurtleInterpretation extends Interpretation {
  */
 const _canvas = new WeakMap();
 
+/**
+ * The TurtleInterpretation implemented on the HTML Canvas.
+ *
+ * @property {CanvasRenderingContext2D} canvas
+ * @property {HTMLCanvasElement} canvasElement
+ */
 class CanvasTurtleInterpretation extends TurtleInterpretation {
+
+    /**
+     * Create a new CanvasTurtleInterpretation
+     *
+     * @param {CanvasRenderingContext2D} canvas
+     * @param {Object} [initialState = {}] - the initial state of the
+     * interpretation
+     */
     constructor(canvas, initialState = {}) {
         super(initialState);
         _canvas.set(this, canvas);
@@ -3512,6 +3570,9 @@ class Lab {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+/**
+ * The CSS styling for the LabView
+ */
 var STYLE = `
 .lab-view {
     font-size: 12pt;
@@ -3703,6 +3764,9 @@ var STYLE = `
  * <http://www.gnu.org/licenses/>.
  * 
  */
+/**
+ * About template
+ */
 var ABOUT = `
 <p>
     virtual_botanical_laboratory © 2017 Huub de Beer &lt;<a href="mailto:Huub@heerdebeer.org">Huub@heerdebeer.org</a>&gt;.
@@ -3745,6 +3809,9 @@ var ABOUT = `
  * with virtual_botanical_laboratory.  If not, see
  * <http://www.gnu.org/licenses/>.
  * 
+ */
+/**
+ * The manual.
  */
 var HELP = `
 <p>
@@ -3847,12 +3914,10 @@ var EMPTY_CONFIGURATION = `{
  * <http://www.gnu.org/licenses/>.
  * 
  */
-
 const _name$3 = new WeakMap();
 const _icon = new WeakMap();
 const _tooltip = new WeakMap();
 const _callback = new WeakMap();
-
 const _enabled = new WeakMap();
 
 const _element$2 = new WeakMap();
@@ -3860,12 +3925,24 @@ const _element$2 = new WeakMap();
 /**
  * Action
  *
- * @property {String} name
- * @property {String} icon
- * @property {String} tooltip
- * @property {Boolean} enabled
+ * @property {String} name - this Action's name
+ * @property {String} icon - this Action's icon, which is just a unicode
+ * character
+ * @property {String} tooltip - this Action's tooltip
+ * @property {Boolean} enabled - is this Action enabled?
+ * @property {HTMLElement} element - the HTML element related to this Action.
  */
 class Action {
+
+    /**
+     * Create a new Action
+     *
+     * @param {String} name
+     * @param {String} icon
+     * @param {String} tooltip
+     * @param {Function} callback that is executed when this Action is run
+     * @param {Boolean} [enabled = true]
+     */
     constructor(name, icon, tooltip, callback, enabled = true) {
         _name$3.set(this, name);
         _icon.set(this, icon);
@@ -3886,18 +3963,32 @@ class Action {
         return _tooltip.get(this);
     }
 
+    /**
+     * Is this action enabled?
+     *
+     * @returns {Boolean} True if this action is enabled, false otherwise
+     */
     isEnabled() {
         return true === _enabled.get(this);
     }
 
+    /**
+     * Enable this action.
+     */
     enable() {
         _enabled.set(this, true);
     }
 
+    /**
+     * Disable this action
+     */
     disable() {
         _enabled.set(this, false);
     }
 
+    /**
+     * Execute this action.
+     */
     execute() {
         _callback.get(this).call(null);
     }
@@ -3909,8 +4000,6 @@ class Action {
     get element() {
         return _element$2.get(this);
     }
-
-
 
 }
 
@@ -3934,8 +4023,13 @@ class Action {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-
+/**
+ * A Spacer is an empty action, just a shortcut to separate groups of actions.
+ */
 class Spacer extends Action {
+    /**
+     * Create a new Spacer
+     */
     constructor() {
         super("", "|", "", () => false, false);
     }
@@ -4026,6 +4120,13 @@ const createView = function (view, name, header, parentElt) {
  */
 class View {
 
+    /**
+     * Create a new View
+     *
+     * @param {HTMLElement} parentElt
+     * @param {String} name
+     * @param {Object} [config = {}]
+     */
     constructor(parentElt, name, config = {}) {
         _actions.set(this, []);
         createView(this, name, config.header, parentElt);
@@ -4036,6 +4137,15 @@ class View {
         return _element$1.get(this);
     }
 
+    /**
+     * Show a message on top of this View
+     *
+     * @param {String} message to show
+     * @param {String} [type = "info"] - the type of message. One of "info"
+     * (default), "error", or "warning"
+     * @param {Number} [timeout = false] - the time after which the message
+     * should disappear.
+     */
     showMessage(message, type = "info", timeout = false) {
         const messagePane = this.element.querySelector("div.messages");
         if (null !== messagePane) {
@@ -4047,6 +4157,9 @@ class View {
         }
     }
 
+    /**
+     * Hide all messages on this View.
+     */
     hideMessage() {
         const messagePane = this.element.querySelector("div.messages");
         if (null !== messagePane) {
@@ -4069,10 +4182,20 @@ class View {
         }
     }
 
+    /**
+     * Add an action to this View
+     *
+     * @param {Action} action
+     */
     addAction(action) {
         createAction(this, action);
     }
 
+    /**
+     * Remove an action from this View
+     *
+     * @param {String} name
+     */
     removeAction(name) {
         const action = this.action(name);
         if (undefined !== action) {
@@ -4082,6 +4205,11 @@ class View {
         }
     }
 
+    /**
+     * Configure this View
+     *
+     * @param {Object} [config = {}]
+     */
     configure(config = {}) {
         _config$1.set(this, config);
     }
@@ -4107,7 +4235,6 @@ class View {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-
 const _canvas$1 = new WeakMap();
 
 /**
@@ -4117,6 +4244,12 @@ const _canvas$1 = new WeakMap();
  */
 class RenderView extends View {
 
+    /**
+     * Create a new RenderView.
+     *
+     * @param {HTMLCanvasElement} elt
+     * @param {Object} [config = {}]
+     */
     constructor(elt, config = {}) {
         super(elt, "render", config);
     }
@@ -4191,7 +4324,7 @@ class DocumentView extends View {
         }
         contentsEl.innerHTML = str;
         _contents.set(this, str);
-    };
+    }
 
 }
 
@@ -4220,12 +4353,20 @@ const INDENT = "  ";
 const _originalLSystem = new WeakMap();
 
 /**
- * View represents a tab in the LabView.
+ * The LSystemView offers an editor to edit the LSystem definition.
  *
- * @property {String} lsystem
+ * @property {String} originalLSystem - the initial LSystem definition
+ * @property {String} lsystem -  the current LSystem definition
  */
 class LSystemView extends View {
 
+    /**
+     * Create a new LSystemView
+     *
+     * @param {HTMLElement} element
+     * @param {LSystem} lsystem
+     * @param {Object} [config = {}]
+     */
     constructor(elt, lsystem, config = {}) {
         super(elt, "lsystem", config);
         _originalLSystem.set(this, lsystem);
@@ -4298,7 +4439,6 @@ class LSystemView extends View {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-
 const ROWS = 10;
 
 const _element$3 = new WeakMap();
@@ -4517,14 +4657,33 @@ class PropertyEditor {
         return props;
     }
 
+    /**
+     * Has the property with name been configured?
+     *
+     * @param {String} name
+     * @returns {Boolean} True if there is a property with name.
+     */
     hasProperty(name) {
         return name in this.properties;
     }
 
+    /**
+     * Get the property value with name
+     *
+     * @param {String} name
+     * @returns {String} the value of this property or undefined if it does
+     * not exist
+     */
     getProperty(name) {
         return _properties.get(this)[name];
     }
 
+    /**
+     * Set a named property's value if that property is allowed to be set.
+     *
+     * @param {String} name
+     * @param {String} value
+     */
     setProperty(name, value) {
         if (this.isAllowedProperty(name)) {
             this.properties[name] = value;
@@ -4534,20 +4693,36 @@ class PropertyEditor {
         }
     }
 
+    /**
+     * Delete a property from this editor
+     *
+     * @param {String} name - the property to delete
+     */
     deleteProperty(name) {
         if (this.hasProperty(name)) {
             delete this.properties[name];
         }
     }
 
+    /**
+     * Get the specification of a property
+     *
+     * @param {String} name
+     * @returns {Object} the property specification
+     */
     getPropertySpecification(name) {
         return this.propertySpecifications.find((p) => name === p.name);
     }
 
+    /**
+     * Is setting a property allowed?
+     *
+     * @param {String} name
+     * @returns {Boolean} True if name has a specification.
+     */
     isAllowedProperty(name) {
         return undefined !== this.getPropertySpecification(name);
     }
-
 
 }
 
@@ -4601,11 +4776,25 @@ const createCommandPropertyEditor = function(view, commands, definedCommands) {
 
 
 /**
- * View represents a tab in the LabView.
+ * The InterpretationView represents a form to inspect and configure the
+ * properties of an Interpretation.
+ *
+ * @property {Object} properties - the properties of the interpretation to
+ * configure
+ * @property {Object} values - the values of the properties of the
+ * interpretation to configure
  *
  */
 class InterpretationView extends View {
 
+    /**
+     * Create a new InterpretationView
+     *
+     * @param {HTMLElement} elt
+     * @param {Interpretation} interpretation
+     * @param {Object} [interpretationConfig = {}]
+     * @param {Object} [config = {}]
+     */
     constructor(elt, interpretation, interpretationConfig = {}, config = {}) {
         super(elt, "interpretation", config);
 
@@ -4812,7 +5001,7 @@ const updateInterpretation = function (labview, interpretationTab) {
             });
 
             //labview.lab = labview.lab;
-            interpretationTab.showMessage("Interpretation updated successfully..", "info", 2000);
+            interpretationTab.showMessage("Interpretation updated successfully…", "info", 2000);
         } catch (e) {
             console.log(e);
             interpretationTab.showMessage(`Error updating interpretation: "${e}"`, "error");
