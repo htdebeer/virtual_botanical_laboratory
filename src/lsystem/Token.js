@@ -101,7 +101,6 @@ class Token {
     }
 }
 
-
 export {
     Token
 };

@@ -18,6 +18,9 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
+/**
+ * The CSS styling for the LabView
+ */
 export default `
 .lab-view {
     font-size: 12pt;

@@ -86,4 +86,4 @@ class ModuleTree extends Array {
 
 export {
     ModuleTree
-}
+};

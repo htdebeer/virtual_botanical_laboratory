@@ -21,7 +21,19 @@
 
 const _function = new WeakMap();
 
+/**
+ * A command in an interpretation to make a step in rendering an derivation in an LSystem.
+ */
 class Command {
+
+    /**
+     * Create a new Command. If no arguments given, the Command is a "skip"
+     * command: it does do nothing.
+     *
+     * @param {String[]} - a list of parameters to the command. Can be omitted
+     * @param {String|Function} - a function or a string representing a
+     * function body that is executed when this command is run.
+     */
     constructor(...args) {
         let func;
 
@@ -57,6 +69,11 @@ class Command {
         _function.get(this).apply(interpretation, parameters);
     }
 
+    /**
+     * Create a String representation of this Command.
+     *
+     * @returns {String}
+     */
     toString() {
         return _function.get(this).toString().split("\n").slice(1, -1).map(l => l.trim()).join("\n");
     }

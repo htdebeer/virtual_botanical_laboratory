@@ -23,8 +23,8 @@
  * string.
  */
 class LexicalError extends Error {
-};
+}
 
 export {
     LexicalError
-}
+};

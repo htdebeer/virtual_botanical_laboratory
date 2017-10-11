@@ -18,10 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {ModuleValue} from "./ModuleValue.js";
-import {ModuleApplication} from "./ModuleApplication.js";
 import {ModuleTree} from "./ModuleTree.js";
-
 
 const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
     const successor = new ModuleTree();
@@ -37,8 +34,6 @@ const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
 
 /**
  * A successor in a production.
- *
- * @property {Module[]} a list of modules
  */
 class Successor extends ModuleTree {
     /**
@@ -56,4 +51,4 @@ class Successor extends ModuleTree {
 export {
     Successor
 
-}
+};

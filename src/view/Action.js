@@ -18,12 +18,10 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-
 const _name = new WeakMap();
 const _icon = new WeakMap();
 const _tooltip = new WeakMap();
 const _callback = new WeakMap();
-
 const _enabled = new WeakMap();
 
 const _element = new WeakMap();
@@ -31,12 +29,24 @@ const _element = new WeakMap();
 /**
  * Action
  *
- * @property {String} name
- * @property {String} icon
- * @property {String} tooltip
- * @property {Boolean} enabled
+ * @property {String} name - this Action's name
+ * @property {String} icon - this Action's icon, which is just a unicode
+ * character
+ * @property {String} tooltip - this Action's tooltip
+ * @property {Boolean} enabled - is this Action enabled?
+ * @property {HTMLElement} element - the HTML element related to this Action.
  */
 class Action {
+
+    /**
+     * Create a new Action
+     *
+     * @param {String} name
+     * @param {String} icon
+     * @param {String} tooltip
+     * @param {Function} callback that is executed when this Action is run
+     * @param {Boolean} [enabled = true]
+     */
     constructor(name, icon, tooltip, callback, enabled = true) {
         _name.set(this, name);
         _icon.set(this, icon);
@@ -57,18 +67,32 @@ class Action {
         return _tooltip.get(this);
     }
 
+    /**
+     * Is this action enabled?
+     *
+     * @returns {Boolean} True if this action is enabled, false otherwise
+     */
     isEnabled() {
         return true === _enabled.get(this);
     }
 
+    /**
+     * Enable this action.
+     */
     enable() {
         _enabled.set(this, true);
     }
 
+    /**
+     * Disable this action
+     */
     disable() {
         _enabled.set(this, false);
     }
 
+    /**
+     * Execute this action.
+     */
     execute() {
         _callback.get(this).call(null);
     }
@@ -81,9 +105,7 @@ class Action {
         return _element.get(this);
     }
 
-
-
-};
+}
 
 export {
     Action

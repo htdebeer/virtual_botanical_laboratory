@@ -85,6 +85,13 @@ const createView = function (view, name, header, parentElt) {
  */
 class View {
 
+    /**
+     * Create a new View
+     *
+     * @param {HTMLElement} parentElt
+     * @param {String} name
+     * @param {Object} [config = {}]
+     */
     constructor(parentElt, name, config = {}) {
         _actions.set(this, []);
         createView(this, name, config.header, parentElt);
@@ -95,6 +102,15 @@ class View {
         return _element.get(this);
     }
 
+    /**
+     * Show a message on top of this View
+     *
+     * @param {String} message to show
+     * @param {String} [type = "info"] - the type of message. One of "info"
+     * (default), "error", or "warning"
+     * @param {Number} [timeout = false] - the time after which the message
+     * should disappear.
+     */
     showMessage(message, type = "info", timeout = false) {
         const messagePane = this.element.querySelector("div.messages");
         if (null !== messagePane) {
@@ -106,6 +122,9 @@ class View {
         }
     }
 
+    /**
+     * Hide all messages on this View.
+     */
     hideMessage() {
         const messagePane = this.element.querySelector("div.messages");
         if (null !== messagePane) {
@@ -128,12 +147,22 @@ class View {
         }
     }
 
+    /**
+     * Add an action to this View
+     *
+     * @param {Action} action
+     */
     addAction(action) {
-        createAction(this, action)
+        createAction(this, action);
     }
 
+    /**
+     * Remove an action from this View
+     *
+     * @param {String} name
+     */
     removeAction(name) {
-        const action = this.action(name)
+        const action = this.action(name);
         if (undefined !== action) {
             _actionBar.get(this).removeChild(action.element);
             const actionIndex = _actions.get(this).indexOf(action);
@@ -141,10 +170,15 @@ class View {
         }
     }
 
+    /**
+     * Configure this View
+     *
+     * @param {Object} [config = {}]
+     */
     configure(config = {}) {
         _config.set(this, config);
     }
-};
+}
 
 export {
     View

@@ -19,7 +19,7 @@
  * 
  */
 import {Expression} from "./Expression.js";
-import {Module} from './Module.js';
+import {Module} from "./Module.js";
 
 const _values = new WeakMap();
 
@@ -72,7 +72,7 @@ class ModuleValue extends Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${Object.values(_values.get(this)).join(',')})`;
+            return `${this.name}(${Object.values(_values.get(this)).join(",")})`;
         } else {
             return this.name;
         }
@@ -81,4 +81,4 @@ class ModuleValue extends Module {
 
 export {
     ModuleValue
-}
+};

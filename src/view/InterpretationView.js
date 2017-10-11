@@ -52,11 +52,25 @@ const createCommandPropertyEditor = function(view, commands, definedCommands) {
 
 
 /**
- * View represents a tab in the LabView.
+ * The InterpretationView represents a form to inspect and configure the
+ * properties of an Interpretation.
+ *
+ * @property {Object} properties - the properties of the interpretation to
+ * configure
+ * @property {Object} values - the values of the properties of the
+ * interpretation to configure
  *
  */
 class InterpretationView extends View {
 
+    /**
+     * Create a new InterpretationView
+     *
+     * @param {HTMLElement} elt
+     * @param {Interpretation} interpretation
+     * @param {Object} [interpretationConfig = {}]
+     * @param {Object} [config = {}]
+     */
     constructor(elt, interpretation, interpretationConfig = {}, config = {}) {
         super(elt, "interpretation", config);
 

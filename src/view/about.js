@@ -18,6 +18,9 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
+/**
+ * About template
+ */
 export default `
 <p>
     virtual_botanical_laboratory © 2017 Huub de Beer &lt;<a href="mailto:Huub@heerdebeer.org">Huub@heerdebeer.org</a>&gt;.

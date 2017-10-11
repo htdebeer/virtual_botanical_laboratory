@@ -79,7 +79,6 @@ class Interpretation {
      * Create a new instance of an LSystem Interpretation.
      * 
      * @param {RenderingContext|SVGElement} canvas - the canvas to draw on.
-     * @param {Object} scope - the scope of this Interpretation.
      */
     constructor(initialState = {}) {
         _initialState.set(this, initialState);
@@ -159,7 +158,7 @@ class Interpretation {
      */
     registerProperty(...properties) {
         properties.forEach(p => {
-            this.registeredProperties.push(p)
+            this.registeredProperties.push(p);
         });
     }
 

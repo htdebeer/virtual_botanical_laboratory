@@ -28,7 +28,21 @@ import {
 
 const _canvas = new WeakMap();
 
+/**
+ * The TurtleInterpretation implemented on the HTML Canvas.
+ *
+ * @property {CanvasRenderingContext2D} canvas
+ * @property {HTMLCanvasElement} canvasElement
+ */
 class CanvasTurtleInterpretation extends TurtleInterpretation {
+
+    /**
+     * Create a new CanvasTurtleInterpretation
+     *
+     * @param {CanvasRenderingContext2D} canvas
+     * @param {Object} [initialState = {}] - the initial state of the
+     * interpretation
+     */
     constructor(canvas, initialState = {}) {
         super(initialState);
         _canvas.set(this, canvas);

@@ -28,11 +28,37 @@ const D = 2;
 const DELTA = Math.PI / 2;
 const ALPHA = 0;
 
+/**
+ * The color of a closed shape.
+ */
 const FILL_COLOR = "fill-color";
+
+/**
+ * The color of a line
+ */
 const LINE_COLOR = "line-color";
+
+/**
+ * The width of a line
+ */
 const LINE_WIDTH = "line-width";
+
+/**
+ * The type of line join. See also
+ * <https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/lineJoin>
+ */
 const LINE_JOIN = "line-join";
 
+/**
+ * A TurtleInterpretation as proposed in the book "The algorithmic beauty of
+ * plants", chapter 1.
+ *
+ * @property {Number} x - current x coordinate
+ * @property {Number} y - current y coordinate
+ * @property {Number} d - distance to draw or move
+ * @property {Number} alpha - the current angle
+ * @property {Number} delta - change of angle to rotate
+ */
 class TurtleInterpretation extends Interpretation {
     constructor(initialState = {}) {
         super(initialState);

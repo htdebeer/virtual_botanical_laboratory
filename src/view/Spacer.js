@@ -18,14 +18,19 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-
 import {Action} from "./Action.js";
 
+/**
+ * A Spacer is an empty action, just a shortcut to separate groups of actions.
+ */
 class Spacer extends Action {
+    /**
+     * Create a new Spacer
+     */
     constructor() {
         super("", "|", "", () => false, false);
     }
-};
+}
 
 export {
     Spacer

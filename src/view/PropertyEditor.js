@@ -18,7 +18,6 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-
 const ROWS = 10;
 
 const _element = new WeakMap();
@@ -237,14 +236,33 @@ class PropertyEditor {
         return props;
     }
 
+    /**
+     * Has the property with name been configured?
+     *
+     * @param {String} name
+     * @returns {Boolean} True if there is a property with name.
+     */
     hasProperty(name) {
         return name in this.properties;
     }
 
+    /**
+     * Get the property value with name
+     *
+     * @param {String} name
+     * @returns {String} the value of this property or undefined if it does
+     * not exist
+     */
     getProperty(name) {
         return _properties.get(this)[name];
     }
 
+    /**
+     * Set a named property's value if that property is allowed to be set.
+     *
+     * @param {String} name
+     * @param {String} value
+     */
     setProperty(name, value) {
         if (this.isAllowedProperty(name)) {
             this.properties[name] = value;
@@ -254,20 +272,36 @@ class PropertyEditor {
         }
     }
 
+    /**
+     * Delete a property from this editor
+     *
+     * @param {String} name - the property to delete
+     */
     deleteProperty(name) {
         if (this.hasProperty(name)) {
             delete this.properties[name];
         }
     }
 
+    /**
+     * Get the specification of a property
+     *
+     * @param {String} name
+     * @returns {Object} the property specification
+     */
     getPropertySpecification(name) {
         return this.propertySpecifications.find((p) => name === p.name);
     }
 
+    /**
+     * Is setting a property allowed?
+     *
+     * @param {String} name
+     * @returns {Boolean} True if name has a specification.
+     */
     isAllowedProperty(name) {
         return undefined !== this.getPropertySpecification(name);
     }
-
 
 }
 

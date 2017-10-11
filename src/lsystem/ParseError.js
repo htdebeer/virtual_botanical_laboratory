@@ -22,8 +22,8 @@
  * A Error encountered while parsing a LSystem input string.
  */
 class ParseError extends Error {
-};
+}
 
 export {
     ParseError
-}
+};

@@ -52,4 +52,4 @@ class IdentityProduction extends Production {
 
 export {
     IdentityProduction
-}
+};

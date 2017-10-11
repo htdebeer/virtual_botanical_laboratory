@@ -117,6 +117,8 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
 /**
  * An LSystem model
  *
+ * @property {String} name - this LSystem's name
+ * @property {String} description - this LSystem's description
  * @property {Alphabet} alphabet - the set of modules of this LSystem
  * @property {ModuleTree} axiom - the axion of this LSystem
  * @property {Production[]} productions - the set of productions of this
@@ -125,9 +127,6 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
  * LSystem
  * @property {Object{ globalContext - the global context in which this lsystem
  * exists. Used for constants and references to other lsystems.
- *
- * @property {String} name - this LSystem's name
- * @property {String} description - this LSystem's description
  */
 const LSystem = class {
     /**

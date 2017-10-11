@@ -26,12 +26,20 @@ const INDENT = "  ";
 const _originalLSystem = new WeakMap();
 
 /**
- * View represents a tab in the LabView.
+ * The LSystemView offers an editor to edit the LSystem definition.
  *
- * @property {String} lsystem
+ * @property {String} originalLSystem - the initial LSystem definition
+ * @property {String} lsystem -  the current LSystem definition
  */
 class LSystemView extends View {
 
+    /**
+     * Create a new LSystemView
+     *
+     * @param {HTMLElement} element
+     * @param {LSystem} lsystem
+     * @param {Object} [config = {}]
+     */
     constructor(elt, lsystem, config = {}) {
         super(elt, "lsystem", config);
         _originalLSystem.set(this, lsystem);
