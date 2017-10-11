@@ -3818,9 +3818,7 @@ var EXPORT_HTML_TEMPLATE = `
  * 
  */
 var EMPTY_CONFIGURATION = `{
-    "name": "New Laboratory",
-    "description": "New Laboratory. See '?' for help.",
-    "lsystem": "lsystem(alphabet: {F}, axiom: F, productions: {F -> F F})",
+    "lsystem": "new_lab = lsystem(description: \"New lab, see '?' for help.\", alphabet: {F}, axiom: F, productions: {F -> F F})",
     "interpretation": {
         "config": {
             "derivationLength": 1,
@@ -5006,9 +5004,9 @@ class LabView {
      */
     create() {
         const htmlCode = EXPORT_HTML_TEMPLATE
-            .replace(/__NAME__/, "New Laboratory")
+            .replace(/__NAME__/, "New_lab")
             .replace(/__SOURCE_URL__/, scriptURL())
-            .replace(/__DESCRIPTION__/, "New Laboratory. See '?' for help.")
+            .replace(/__DESCRIPTION__/, "New Lab. See '?' for help.")
             .replace(/__CONFIGURATION__/, EMPTY_CONFIGURATION);
 
         const newLabWindow = window.open();
