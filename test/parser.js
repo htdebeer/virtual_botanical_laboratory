@@ -21,7 +21,7 @@ const parse = function (str) {
     try {
         parser.parse(strToParse);
     } catch (e) {
-        console.log(`ERROR occurred (Sstringified): `, e);
+        console.log(`ERROR occurred (stringified): `, e);
     }
 
     assert.doesNotThrow(() => {
@@ -29,8 +29,8 @@ const parse = function (str) {
     });
 };
 
-describe('Parser', function () {
-    describe('parse()', function () {
+describe("Parser", function () {
+    describe("parse()", function () {
 
         const minimal = `lsystem(  
             alphabet: {A, B, C},

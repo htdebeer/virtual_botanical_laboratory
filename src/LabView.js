@@ -314,7 +314,11 @@ class LabView {
     }
 
     get name() {
-        return getProperty(_config.get(this), "name", "virtual plant");
+        let name = "virtual_plant";
+        if (this.lab && this.lab.lsystem && "" !== this.lab.lsystem.name) {
+            name = this.lab.lsystem.name;
+        }
+        return name;
     }
 
     get description() {
