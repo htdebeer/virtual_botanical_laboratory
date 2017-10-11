@@ -22,6 +22,7 @@ import {ModuleTree} from "./ModuleTree.js";
 import {IdentityProduction} from "./IdentityProduction.js";
 import {Parser} from "./Parser.js";
 
+const _name = new WeakMap();
 const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
 const _productions = new WeakMap();
@@ -123,6 +124,8 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
  * LSystem
  * @property {Object{ globalContext - the global context in which this lsystem
  * exists. Used for constants and references to other lsystems.
+ *
+ * @property {String} name - this LSystem's name
  */
 const LSystem = class {
     /**
@@ -133,8 +136,9 @@ const LSystem = class {
      * @param {Production[]} productions
      * @param {Module[]} ignore
      */
-    constructor(alphabet, axiom, productions, ignore = []) {
+    constructor(name, alphabet, axiom, productions, ignore = []) {
         _globalContext.set(this, {});
+        _name.set(this, name);
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
         _productions.set(this, productions);
@@ -153,6 +157,18 @@ const LSystem = class {
      */
     static parse(input) {
         return (new Parser()).parse(input);
+    }
+
+    get name() {
+        return _name.get(this) || "";
+    }
+
+    set name(newName) {
+        _name.set(this, newName);
+    }
+
+    hasName() {
+        return 0 < this.name.length;
     }
 
     get globalContext() {
@@ -201,6 +217,10 @@ const LSystem = class {
         lsystem += constants;
         
         // Serialize the LSystem definition
+        if (this.hasName()) {
+            lsystem += `${this.name} = `;
+        }
+
         lsystem += `lsystem(alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
 
         if (0 < this.ignore.length) {

@@ -386,7 +386,7 @@ class Expression {
  * 
  */
 // A Module's private properties
-const _name = new WeakMap();
+const _name$1 = new WeakMap();
 const _parameters = new WeakMap();
 
 /**
@@ -404,12 +404,12 @@ class Module {
      * @param {Object[]} [parameters = []] - the module's parameters, if any
      */
     constructor(name, parameters = []) {
-        _name.set(this, name);
+        _name$1.set(this, name);
         _parameters.set(this, parameters);
     }
 
     get name() {
-        return _name.get(this);
+        return _name$1.get(this);
     }
 
     get parameters() {
@@ -990,7 +990,7 @@ class IdentityProduction extends Production {
  * 
  */
 // Token's private members
-const _name$1 = new WeakMap();
+const _name$2 = new WeakMap();
 const _lexeme = new WeakMap();
 const _value = new WeakMap();
 const _column$1 = new WeakMap();
@@ -1029,7 +1029,7 @@ class Token {
      *   lexeme in the input string
      */
     constructor(name, lexeme, value, line, column, lexemeBegin) {
-        _name$1.set(this, name);
+        _name$2.set(this, name);
         _lexeme.set(this, lexeme);
         _value.set(this, value);
         _line$1.set(this, line);
@@ -1038,7 +1038,7 @@ class Token {
     }
 
     get name() {
-        return _name$1.get(this);
+        return _name$2.get(this);
     }
     
     get lexeme() {
@@ -1828,7 +1828,7 @@ const match = function (parser, name, value = undefined, context = undefined) {
     if (token.name === name && (undefined !== value ? token.value === value : true)) {
         return token;
     } else {
-        throw new ParseError(`expected ${name.toString()}${undefined !== value ? " with value '" + value + "'": ''} at ${token.position()}`);
+        throw new ParseError(`expected ${name.toString()}${undefined !== value ? " with value '" + value + "'": ""} at ${token.position()}`);
     }
 };
 
@@ -2060,7 +2060,7 @@ const parseModuleTree = function (parser, ModuleClass, withSubTrees = true) {
         if (withSubTrees && lookAhead(parser, BRACKET_OPEN, "[")) {
             // Match a sub tree
             match(parser, BRACKET_OPEN, "[");
-            moduleTree.push(parsemoduleTree(parser));
+            moduleTree.push(parseModuleTree(parser));
             match(parser, BRACKET_CLOSE, "]");
         } else {
             // Match a module in the moduleTree
@@ -2138,7 +2138,6 @@ const parseStochasticSuccessorList = function (parser) {
 const parsePredecessor = function (parser) {
     const modules = [];
     let hasLeftContext = false;
-    let hasRightContext = false;
 
     modules.push(parseModuleApplicationTree(parser, false));
     
@@ -2151,7 +2150,6 @@ const parsePredecessor = function (parser) {
     if (lookAhead(parser, BRACKET_CLOSE, ">", 1, CONTEXT)) {
         match(parser, BRACKET_CLOSE, ">", CONTEXT);
         modules.push(parseModuleApplicationTree(parser));
-        hasRightContext = true;
     }
 
     let predecessor = undefined;
@@ -2220,6 +2218,12 @@ const parseIgnore = function (parser) {
 };
 
 const parseLSystem = function (parser) {
+    let name = "";
+    if (lookAhead(parser, IDENTIFIER)) {
+        name = match(parser, IDENTIFIER).value;
+        match(parser, OPERATOR, "=");
+    }
+
     match(parser, KEYWORD, "lsystem");
     match(parser, BRACKET_OPEN, "(");
     const alphabet = parseAlphabet(parser);
@@ -2233,7 +2237,9 @@ const parseLSystem = function (parser) {
         ignore = parseIgnore(parser);
     }
     match(parser, BRACKET_CLOSE, ")");
-    const lsystem = new LSystem(alphabet, axiom, productions, ignore);
+
+    const lsystem = new LSystem(name, alphabet, axiom, productions, ignore);
+    
     return lsystem;
 };
 
@@ -2255,7 +2261,7 @@ const parse = function (parser) {
 
     const globalContext = {};
     // Constants
-    while (lookAhead(parser, IDENTIFIER)) {
+    while (lookAhead(parser, IDENTIFIER) && !lookAhead(parser, KEYWORD, "lsystem", 3)) {
         const constant = parseConstant(parser);
         globalContext[constant.name] = constant.value;
     }
@@ -2313,6 +2319,7 @@ class Parser {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+const _name = new WeakMap();
 const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
 const _productions = new WeakMap();
@@ -2414,6 +2421,8 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
  * LSystem
  * @property {Object{ globalContext - the global context in which this lsystem
  * exists. Used for constants and references to other lsystems.
+ *
+ * @property {String} name - this LSystem's name
  */
 const LSystem = class {
     /**
@@ -2424,8 +2433,9 @@ const LSystem = class {
      * @param {Production[]} productions
      * @param {Module[]} ignore
      */
-    constructor(alphabet, axiom, productions, ignore = []) {
+    constructor(name, alphabet, axiom, productions, ignore = []) {
         _globalContext.set(this, {});
+        _name.set(this, name);
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
         _productions.set(this, productions);
@@ -2444,6 +2454,18 @@ const LSystem = class {
      */
     static parse(input) {
         return (new Parser()).parse(input);
+    }
+
+    get name() {
+        return _name.get(this) || "";
+    }
+
+    set name(newName) {
+        _name.set(this, newName);
+    }
+
+    hasName() {
+        return 0 < this.name.length;
     }
 
     get globalContext() {
@@ -2492,6 +2514,10 @@ const LSystem = class {
         lsystem += constants;
         
         // Serialize the LSystem definition
+        if (this.hasName()) {
+            lsystem += `${this.name} = `;
+        }
+
         lsystem += `lsystem(alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
 
         if (0 < this.ignore.length) {
@@ -3755,7 +3781,7 @@ var EMPTY_CONFIGURATION = `{
  * 
  */
 
-const _name$2 = new WeakMap();
+const _name$3 = new WeakMap();
 const _icon = new WeakMap();
 const _tooltip = new WeakMap();
 const _callback = new WeakMap();
@@ -3774,7 +3800,7 @@ const _element$2 = new WeakMap();
  */
 class Action {
     constructor(name, icon, tooltip, callback, enabled = true) {
-        _name$2.set(this, name);
+        _name$3.set(this, name);
         _icon.set(this, icon);
         _tooltip.set(this, tooltip);
         _callback.set(this, callback);
@@ -3782,7 +3808,7 @@ class Action {
     }
 
     get name() {
-        return _name$2.get(this);
+        return _name$3.get(this);
     }
 
     get icon() {

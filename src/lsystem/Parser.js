@@ -30,7 +30,6 @@ import {
 } from "./Lexer.js";
 import {ParseError} from "./ParseError.js";
 import {LSystem} from "./LSystem.js";
-import {Module} from "./Module.js";
 import {ModuleTree} from "./ModuleTree.js";
 import {ModuleDefinition} from "./ModuleDefinition.js";
 import {ModuleValue} from "./ModuleValue.js";
@@ -56,8 +55,6 @@ const GLOBAL = Symbol("GLOBAL");
 
 // Contexts
 const CONTEXT = Symbol("CONTEXT");
-const BOOL_EXPR = Symbol("BOOL_EXPR");
-const ACTUAL_PARAMETERS = Symbol("ACTUAL_PARAMETERS");
 const MODULE_NAME = Symbol("MODULE_NAME");
 
 const defined = function (parser, name, scope = MODULE) {
@@ -90,9 +87,9 @@ const match = function (parser, name, value = undefined, context = undefined) {
     if (token.name === name && (undefined !== value ? token.value === value : true)) {
         return token;
     } else {
-        throw new ParseError(`expected ${name.toString()}${undefined !== value ? " with value '" + value + "'": ''} at ${token.position()}`);
+        throw new ParseError(`expected ${name.toString()}${undefined !== value ? " with value '" + value + "'": ""} at ${token.position()}`);
     }
-}
+};
 
 const parseList = function (parser, recognizeFunction, closingBracket = ")") {
     if (lookAhead(parser, BRACKET_CLOSE, closingBracket)) {
@@ -306,10 +303,6 @@ const parseActualModule = function (parser, ModuleClass) {
     return new ModuleClass(moduleName, module.moduleDefinition, actualParameters);
 };
 
-const parseModuleValue = function (parser) {
-    return parseActualModule(parser, ModuleValue);
-};
-
 const parseModuleApplication = function (parser) {
     return parseActualModule(parser, ModuleApplication);
 };
@@ -326,7 +319,7 @@ const parseModuleTree = function (parser, ModuleClass, withSubTrees = true) {
         if (withSubTrees && lookAhead(parser, BRACKET_OPEN, "[")) {
             // Match a sub tree
             match(parser, BRACKET_OPEN, "[");
-            moduleTree.push(parsemoduleTree(parser));
+            moduleTree.push(parseModuleTree(parser));
             match(parser, BRACKET_CLOSE, "]");
         } else {
             // Match a module in the moduleTree
@@ -402,9 +395,8 @@ const parseStochasticSuccessorList = function (parser) {
 };
 
 const parsePredecessor = function (parser) {
-    const modules = []
+    const modules = [];
     let hasLeftContext = false;
-    let hasRightContext = false;
 
     modules.push(parseModuleApplicationTree(parser, false));
     
@@ -417,7 +409,6 @@ const parsePredecessor = function (parser) {
     if (lookAhead(parser, BRACKET_CLOSE, ">", 1, CONTEXT)) {
         match(parser, BRACKET_CLOSE, ">", CONTEXT);
         modules.push(parseModuleApplicationTree(parser));
-        hasRightContext = true;
     }
 
     let predecessor = undefined;
@@ -486,6 +477,12 @@ const parseIgnore = function (parser) {
 };
 
 const parseLSystem = function (parser) {
+    let name = "";
+    if (lookAhead(parser, IDENTIFIER)) {
+        name = match(parser, IDENTIFIER).value;
+        match(parser, OPERATOR, "=");
+    }
+
     match(parser, KEYWORD, "lsystem");
     match(parser, BRACKET_OPEN, "(");
     const alphabet = parseAlphabet(parser);
@@ -493,13 +490,15 @@ const parseLSystem = function (parser) {
     const axiom = parseAxiom(parser);
     match(parser, DELIMITER, ",");
     const productions = parseProductions(parser);
-    let ignore = []
+    let ignore = [];
     if (lookAhead(parser, DELIMITER, ",")) {
         match(parser, DELIMITER, ",");
         ignore = parseIgnore(parser);
     }
     match(parser, BRACKET_CLOSE, ")");
-    const lsystem = new LSystem(alphabet, axiom, productions, ignore);
+
+    const lsystem = new LSystem(name, alphabet, axiom, productions, ignore);
+    
     return lsystem;
 };
 
@@ -521,7 +520,7 @@ const parse = function (parser) {
 
     const globalContext = {};
     // Constants
-    while (lookAhead(parser, IDENTIFIER)) {
+    while (lookAhead(parser, IDENTIFIER) && !lookAhead(parser, KEYWORD, "lsystem", 3)) {
         const constant = parseConstant(parser);
         globalContext[constant.name] = constant.value;
     }
@@ -531,7 +530,7 @@ const parse = function (parser) {
     lsystem.globalContext = globalContext;
 
     return lsystem;
-}
+};
 
 /**
  * Parser for LSystem input strings
@@ -557,10 +556,11 @@ class Parser {
         _idTable.set(this, []);
         return parse(this);
     }
-};
+}
 
 export {
     Parser,
     CONTEXT,
+    PARAMETER,
     MODULE_NAME
 };

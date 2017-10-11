@@ -1,5 +1,5 @@
-const assert = require('assert');
-const lab = require('../dist/node-lab.js');
+const assert = require("assert");
+const lab = require("../dist/node-lab.js");
 const parser = new lab.Parser();
 
 const parse = function (str) {
@@ -10,7 +10,7 @@ const parse = function (str) {
         lsystem = parser.parse(strToParse);
         console.log(lsystem.stringify(), lsystem.globalContext);
     } catch (e) {
-        console.log(`ERROR occurred: `, e);
+        console.log(`ERROR occurred (original): `, e);
     }
 
     assert.doesNotThrow(() => {
@@ -21,7 +21,7 @@ const parse = function (str) {
     try {
         parser.parse(strToParse);
     } catch (e) {
-        console.log(`ERROR occurred ls: `, e);
+        console.log(`ERROR occurred (Sstringified): `, e);
     }
 
     assert.doesNotThrow(() => {
@@ -40,6 +40,15 @@ describe('Parser', function () {
         )`;
 
         it(`should match "${minimal}"`, () => parse(minimal));
+        
+        const named_minimal = `minimal = lsystem(  
+            alphabet: {A, B, C},
+            axiom: A,
+            productions: {
+            }
+        )`;
+
+        it(`should match "${named_minimal}"`, () => parse(named_minimal));
 
         const simple = `lsystem (
             alphabet: {A, B, C},
