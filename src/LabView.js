@@ -370,9 +370,9 @@ class LabView {
      */
     create() {
         const htmlCode = EXPORT_HTML_TEMPLATE
-            .replace(/__NAME__/, "New Laboratory")
+            .replace(/__NAME__/, "New_lab")
             .replace(/__SOURCE_URL__/, scriptURL())
-            .replace(/__DESCRIPTION__/, "New Laboratory. See '?' for help.")
+            .replace(/__DESCRIPTION__/, "New Lab. See '?' for help.")
             .replace(/__CONFIGURATION__/, EMPTY_CONFIGURATION)
         ;
 

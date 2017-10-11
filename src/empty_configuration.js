@@ -19,9 +19,7 @@
  * 
  */
 export default `{
-    "name": "New Laboratory",
-    "description": "New Laboratory. See '?' for help.",
-    "lsystem": "lsystem(alphabet: {F}, axiom: F, productions: {F -> F F})",
+    "lsystem": "new_lab = lsystem(description: \"New lab, see '?' for help.\", alphabet: {F}, axiom: F, productions: {F -> F F})",
     "interpretation": {
         "config": {
             "derivationLength": 1,
