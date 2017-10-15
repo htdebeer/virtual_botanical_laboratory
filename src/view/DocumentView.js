@@ -56,9 +56,9 @@ class DocumentView extends View {
         }
         contentsEl.innerHTML = str;
         _contents.set(this, str);
-    };
+    }
 
-};
+}
 
 export {
     DocumentView

@@ -25,13 +25,15 @@ import {Interpretation} from "./interpretation/Interpretation.js";
 import {TurtleInterpretation} from "./interpretation/TurtleInterpretation.js";
 import {CanvasTurtleInterpretation} from "./interpretation/CanvasTurtleInterpretation.js";
 import {Lab} from "./Lab.js";
+import {LabView} from "./LabView.js";
 
-export {
+window.virtual_botanical_laboratory = window.virtual_botanical_laboratory || {
     LexicalError,
     ParseError,
     LSystem,
     Interpretation,
     TurtleInterpretation,
     CanvasTurtleInterpretation,
-    Lab
+    Lab,
+    LabView
 };

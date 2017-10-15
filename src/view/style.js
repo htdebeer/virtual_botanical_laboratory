@@ -18,6 +18,9 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
+/**
+ * The CSS styling for the LabView
+ */
 export default `
 .lab-view {
     font-size: 12pt;
@@ -34,7 +37,6 @@ export default `
     
     background: #F5F5F5;
     border: 1px solid dimgray;
-    padding-top: 10px;
 }
 
 .lab-view .tab {
@@ -48,7 +50,7 @@ export default `
 }
 
 .lab-view .tab > label {
-    padding: 10px;
+    padding: 0px 10px 4px 10px;
     left: 1px;
 }
 
@@ -62,7 +64,7 @@ export default `
 
 .lab-view .tab .contents {
     position: absolute;
-    top: 38px;
+    top: 26px;
     left: 0;
     background: white;
     right: 0;
@@ -147,12 +149,45 @@ export default `
 
 .lab-view [data-section="lsystem"] .editor {
     width: 100%;
-    height: 85%;
+    height: 83%;
+    clear: left;
+    padding-top: 1ex;
 }
 
 .lab-view [data-section="lsystem"] textarea {
-    width: 100%;
+    width: 99%;
     height: 100%;
+}
+
+.lab-view [data-section="interpretation"] .property-editor {
+    clear: left;
+    padding-top: 1ex;
+}
+
+.lab-view .interpretation-contents {
+    overflow-y: auto;
+    height: 83%;
+    clear: left;
+}
+
+.lab-view .property-editor table {
+    border-collapse: collapse;
+}
+
+.lab-view .property-editor th {
+    text-align: left;
+}
+
+.lab-view .property-editor th, .lab-view .property-editor td {
+    padding: 0.5ex;
+}
+
+.lab-view .property-editor td.value {
+    width: 100%;
+}
+
+.lab-view .property-editor textarea {
+    width: 100%;
 }
 
 `;

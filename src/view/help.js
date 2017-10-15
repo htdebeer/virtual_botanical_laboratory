@@ -18,6 +18,9 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
+/**
+ * The manual.
+ */
 export default `
 <p>
     To do ...

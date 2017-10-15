@@ -25,11 +25,16 @@ const _expressions = new WeakMap();
 
 /**
  * A ModuleApplication defines a module in a successor of a production
- *
- * @property {Number[]} values
  */
 class ModuleApplication extends Module {
 
+    /**
+     * Create a new ModuleApplication
+     *
+     * @param {String} name
+     * @param {ModuleDefinition} moduleDefinition
+     * @param {Object[]} actualParameters
+     */
     constructor(name, moduleDefinition, actualParameters) {
         const formalParameters = moduleDefinition.parameters;
 
@@ -78,7 +83,7 @@ class ModuleApplication extends Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${Object.values(_expressions.get(this)).map(e => e.stringify()).join(',')})`;
+            return `${this.name}(${Object.values(_expressions.get(this)).map(e => e.stringify()).join(",")})`;
         } else {
             return this.name;
         }
@@ -87,4 +92,4 @@ class ModuleApplication extends Module {
 
 export {
     ModuleApplication
-}
+};

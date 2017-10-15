@@ -291,9 +291,6 @@ const conditionHolds = function (production, edge) {
         return true;
     }
 
-    const parameters = determineParameters(production, edge);
-    const condition = production.condition;
-    const value = condition.evaluate(determineParameters(production, edge));
     return production.condition.evaluate(determineParameters(production, edge));
 };
 
@@ -349,12 +346,10 @@ class Production {
      * @param {Number} edgeIndex - the index of edge in the moduleTree
      * @param {Module[]} [ignore = []] - a list of modules to ignore when
      * looking at the context
-     * @param {Object} [globalContext = {}] - the globalContext in which this
-     * match should be determined.
      *
      * @returns {Boolean} True if this production matches the edge
      */
-    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = [], globalContext = {}) {
+    matches(edge, moduleTree, pathTaken, edgeIndex, ignore = []) {
         if (this.isConditional() && !conditionHolds(this, edge)) {
             return false;
         }
@@ -418,62 +413,31 @@ class Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const _formalParameters = new WeakMap();
-const _expression = new WeakMap();
-const _evaluator = new WeakMap();
+const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
+    const successor = new ModuleTree();
+    for (const module of moduleTree) {
+        if (module instanceof ModuleTree) {
+            successor.push(applyParametersToModuleTree(module, parameters));
+        } else {
+            successor.push(module.apply(parameters));
+        }
+    }
+    return successor;
+};
 
 /**
- * An Expression can be evaluated to yield a value.
- *
- * @property {String} expression - a textual representation of this expression
- * @property {String[]} formalParameters - a list of formal parameter names
+ * A successor in a production.
  */
-class Expression {
-
+class Successor extends ModuleTree {
     /**
-     * Create a new instance of an Expression.
+     * Apply parameters to this successor.
+     * 
+     * @param {Object[]} [parameters = {}] - the parameters to apply.
      *
-     * @param {String[]} [formalParameters = []] - an optional list of formal
-     * parameter names.
-     * @param {Boolean|Number|undefined} [expression = undefined] - an optional expression
-     * value, defaults to undefined.
+     * @returns {Successor} This Successor with parameters applied, if any.
      */
-    constructor(formalParameters = [], expression = undefined) {
-        _formalParameters.set(this, formalParameters);
-        _expression.set(this, expression);
-        _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
-    }
-
-    get formalParameters() {
-        return _formalParameters.get(this);
-    }
-
-    get expression() {
-        return _expression.get(this);
-    }
-
-    /**
-     * Evaluate this Expression given an optional list of actual parameters.
-     *
-     * @param {Number[]|Boolean[]} [parameters = {}] - an optional map
-     * of actual parameters to apply to this Expression before evaluating the
-     * Expression.
-     *
-     * @return {Number|Boolean|undefined} the result of the evaluating this
-     * Expression.
-     */
-    evaluate(parameters = {}) {
-        const actualParameters = this.formalParameters.map((p) => parameters[p]);
-        return _evaluator.get(this).apply(undefined, actualParameters);
-    }
-
-    /**
-     * Create a String representation of this Expression.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        return this.expression;
+    apply(parameters = {}) {
+        return applyParametersToModuleTree(this, parameters);
     }
 }
 
@@ -498,7 +462,7 @@ class Expression {
  * 
  */
 // A Module's private properties
-const _name$1 = new WeakMap();
+const _name$2 = new WeakMap();
 const _parameters = new WeakMap();
 
 /**
@@ -516,12 +480,12 @@ class Module {
      * @param {Object[]} [parameters = []] - the module's parameters, if any
      */
     constructor(name, parameters = []) {
-        _name$1.set(this, name);
+        _name$2.set(this, name);
         _parameters.set(this, parameters);
     }
 
     get name() {
-        return _name$1.get(this);
+        return _name$2.get(this);
     }
 
     get parameters() {
@@ -556,222 +520,10 @@ class Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(',')})`;
+            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(",")})`;
         } else {
             return this.name;
         }
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-const _values = new WeakMap();
-
-/**
- * A ModuleValue defines an actual module in a string.
- *
- * @property {Number[]} values
- */
-class ModuleValue extends Module {
-
-    constructor(name, moduleDefinition, actualParameters) {
-        const formalParameters = moduleDefinition.parameters;
-
-        if (formalParameters.length !== actualParameters.length) {
-            throw new Error(`Number of actual parameters (${actualParameters.length}) should be equal to the number of formal parameters (${formalParameters.length}).`);
-        }
-
-        super(name, formalParameters);
-
-        const values = {};
-
-        for (let index = 0; index < formalParameters.length; index++) {
-            const name = formalParameters[index];
-            const value = actualParameters[index];
-            values[name] = value instanceof Expression ? value.evaluate() : value;
-        }
-
-        _values.set(this, values);
-    }
-
-    get values() {
-        return _values.get(this);
-    }
-
-    /**
-     * Get the value of a parameter.
-     *
-     * @param {String} name - the name of the parameter to get
-     * @return {Number} the value of this parameter, or undefined if it does
-     * not exist.
-     */
-    getValue(name) {
-        return _values.get(this)[name];
-    }
-
-    /**
-     * Create a String representation of this Module.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        if (this.isParameterized()) {
-            return `${this.name}(${Object.values(_values.get(this)).join(',')})`;
-        } else {
-            return this.name;
-        }
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-const _expressions = new WeakMap();
-
-/**
- * A ModuleApplication defines a module in a successor of a production
- *
- * @property {Number[]} values
- */
-class ModuleApplication extends Module {
-
-    constructor(name, moduleDefinition, actualParameters) {
-        const formalParameters = moduleDefinition.parameters;
-
-        if (formalParameters.length !== actualParameters.length) {
-            throw new Error(`Number of actual parameters (${actualParameters.lenght}) should be equal to the number of formal parameters (${formalParameters.length}).`);
-        }
-
-        super(name, formalParameters);
-
-        const expressions = {};
-
-        for (let index = 0; index < formalParameters.length; index++) {
-            const name = formalParameters[index];
-            expressions[name] = actualParameters[index];
-        }
-
-        _expressions.set(this, expressions);
-    }
-
-    /**
-     * Get the value of a parameter.
-     *
-     * @param {String} name - the name of the parameter to get
-     * @return {Number} the value of this parameter, or undefined if it does
-     * not exist.
-     */
-    getExpression(name) {
-        return _expressions.get(this)[name];
-    }
-
-    apply(parameters) {
-        const values = this.parameters
-            .reduce(
-                (values, name) => {
-                    values.push(this.getExpression(name).evaluate(parameters));
-                    return values;
-                }, []
-            );
-        return new ModuleValue(this.name, this, values);
-    }
-
-    /**
-     * Create a String representation of this Module.
-     *
-     * @returns {String}
-     */
-    stringify() {
-        if (this.isParameterized()) {
-            return `${this.name}(${Object.values(_expressions.get(this)).map(e => e.stringify()).join(',')})`;
-        } else {
-            return this.name;
-        }
-    }
-}
-
-/*
- * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
- *
- * This file is part of virtual_botanical_laboratory.
- *
- * virtual_botanical_laboratory is free software: you can redistribute it
- * and/or modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * virtual_botanical_laboratory is distributed in the hope that it will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
- * Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with virtual_botanical_laboratory.  If not, see
- * <http://www.gnu.org/licenses/>.
- * 
- */
-const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
-    const successor = new ModuleTree();
-    for (const module of moduleTree) {
-        if (module instanceof ModuleTree) {
-            successor.push(applyParametersToModuleTree(module, parameters));
-        } else {
-            successor.push(module.apply(parameters));
-        }
-    }
-    return successor;
-};
-
-/**
- * A successor in a production.
- *
- * @property {Module[]} a list of modules
- */
-class Successor extends ModuleTree {
-    /**
-     * Apply parameters to this successor.
-     * 
-     * @param {Object[]} [parameters = {}] - the parameters to apply.
-     *
-     * @returns {Successor} This Successor with parameters applied, if any.
-     */
-    apply(parameters = {}) {
-        return applyParametersToModuleTree(this, parameters);
     }
 }
 
@@ -1007,6 +759,252 @@ class Predecessor {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+const _formalParameters = new WeakMap();
+const _expression = new WeakMap();
+const _evaluator = new WeakMap();
+
+/**
+ * An Expression can be evaluated to yield a value.
+ *
+ * @property {String} expression - a textual representation of this expression
+ * @property {String[]} formalParameters - a list of formal parameter names
+ */
+class Expression {
+
+    /**
+     * Create a new instance of an Expression.
+     *
+     * @param {String[]} [formalParameters = []] - an optional list of formal
+     * parameter names.
+     * @param {Boolean|Number|undefined} [expression = undefined] - an optional expression
+     * value, defaults to undefined.
+     */
+    constructor(formalParameters = [], expression = undefined) {
+        _formalParameters.set(this, formalParameters);
+        _expression.set(this, expression);
+        _evaluator.set(this, new Function(...formalParameters, `return ${expression}`));
+    }
+
+    get formalParameters() {
+        return _formalParameters.get(this);
+    }
+
+    get expression() {
+        return _expression.get(this);
+    }
+
+    /**
+     * Evaluate this Expression given an optional list of actual parameters.
+     *
+     * @param {Number[]|Boolean[]} [parameters = {}] - an optional map
+     * of actual parameters to apply to this Expression before evaluating the
+     * Expression.
+     *
+     * @return {Number|Boolean|undefined} the result of the evaluating this
+     * Expression.
+     */
+    evaluate(parameters = {}) {
+        const actualParameters = this.formalParameters.map((p) => parameters[p]);
+        return _evaluator.get(this).apply(undefined, actualParameters);
+    }
+
+    /**
+     * Create a String representation of this Expression.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        return this.expression;
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _values = new WeakMap();
+
+/**
+ * A ModuleValue defines an actual module in a string.
+ *
+ * @property {Number[]} values
+ */
+class ModuleValue extends Module {
+
+    constructor(name, moduleDefinition, actualParameters) {
+        const formalParameters = moduleDefinition.parameters;
+
+        if (formalParameters.length !== actualParameters.length) {
+            throw new Error(`Number of actual parameters (${actualParameters.length}) should be equal to the number of formal parameters (${formalParameters.length}).`);
+        }
+
+        super(name, formalParameters);
+
+        const values = {};
+
+        for (let index = 0; index < formalParameters.length; index++) {
+            const name = formalParameters[index];
+            const value = actualParameters[index];
+            values[name] = value instanceof Expression ? value.evaluate() : value;
+        }
+
+        _values.set(this, values);
+    }
+
+    get values() {
+        return _values.get(this);
+    }
+
+    /**
+     * Get the value of a parameter.
+     *
+     * @param {String} name - the name of the parameter to get
+     * @return {Number} the value of this parameter, or undefined if it does
+     * not exist.
+     */
+    getValue(name) {
+        return _values.get(this)[name];
+    }
+
+    /**
+     * Create a String representation of this Module.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        if (this.isParameterized()) {
+            return `${this.name}(${Object.values(_values.get(this)).join(",")})`;
+        } else {
+            return this.name;
+        }
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
+const _expressions = new WeakMap();
+
+/**
+ * A ModuleApplication defines a module in a successor of a production
+ */
+class ModuleApplication extends Module {
+
+    /**
+     * Create a new ModuleApplication
+     *
+     * @param {String} name
+     * @param {ModuleDefinition} moduleDefinition
+     * @param {Object[]} actualParameters
+     */
+    constructor(name, moduleDefinition, actualParameters) {
+        const formalParameters = moduleDefinition.parameters;
+
+        if (formalParameters.length !== actualParameters.length) {
+            throw new Error(`Number of actual parameters (${actualParameters.lenght}) should be equal to the number of formal parameters (${formalParameters.length}).`);
+        }
+
+        super(name, formalParameters);
+
+        const expressions = {};
+
+        for (let index = 0; index < formalParameters.length; index++) {
+            const name = formalParameters[index];
+            expressions[name] = actualParameters[index];
+        }
+
+        _expressions.set(this, expressions);
+    }
+
+    /**
+     * Get the value of a parameter.
+     *
+     * @param {String} name - the name of the parameter to get
+     * @return {Number} the value of this parameter, or undefined if it does
+     * not exist.
+     */
+    getExpression(name) {
+        return _expressions.get(this)[name];
+    }
+
+    apply(parameters) {
+        const values = this.parameters
+            .reduce(
+                (values, name) => {
+                    values.push(this.getExpression(name).evaluate(parameters));
+                    return values;
+                }, []
+            );
+        return new ModuleValue(this.name, this, values);
+    }
+
+    /**
+     * Create a String representation of this Module.
+     *
+     * @returns {String}
+     */
+    stringify() {
+        if (this.isParameterized()) {
+            return `${this.name}(${Object.values(_expressions.get(this)).map(e => e.stringify()).join(",")})`;
+        } else {
+            return this.name;
+        }
+    }
+}
+
+/*
+ * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
+ *
+ * This file is part of virtual_botanical_laboratory.
+ *
+ * virtual_botanical_laboratory is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ * virtual_botanical_laboratory is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with virtual_botanical_laboratory.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ * 
+ */
 /**
  * A NumericalExpression, which yields a Number value when evaluated
  */
@@ -1101,6 +1099,8 @@ class IdentityProduction extends Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+const _name$1 = new WeakMap();
+const _description = new WeakMap();
 const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
 const _productions = new WeakMap();
@@ -1194,6 +1194,8 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
 /**
  * An LSystem model
  *
+ * @property {String} name - this LSystem's name
+ * @property {String} description - this LSystem's description
  * @property {Alphabet} alphabet - the set of modules of this LSystem
  * @property {ModuleTree} axiom - the axion of this LSystem
  * @property {Production[]} productions - the set of productions of this
@@ -1207,13 +1209,17 @@ const LSystem = class {
     /**
      * Create a new instance of LSystem.
      *
+     * @param {String} name
+     * @param {String} description
      * @param {Alphabet} alphabet
      * @param {ModuleTree} axiom
      * @param {Production[]} productions
      * @param {Module[]} ignore
      */
-    constructor(alphabet, axiom, productions, ignore = []) {
+    constructor(name, description, alphabet, axiom, productions, ignore = []) {
         _globalContext.set(this, {});
+        _name$1.set(this, name);
+        _description.set(this, description);
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
         _productions.set(this, productions);
@@ -1232,6 +1238,40 @@ const LSystem = class {
      */
     static parse(input) {
         return (new Parser()).parse(input);
+    }
+
+    get name() {
+        return _name$1.get(this) || "";
+    }
+
+    set name(newName) {
+        _name$1.set(this, newName);
+    }
+    
+    /**
+     * Does this LSystem have a name?
+     *
+     * @returns {Boolesn} this LSystem has a non-empty name
+     */
+    hasName() {
+        return 0 < this.name.length;
+    }
+
+    get description() {
+        return _description.get(this) || "";
+    }
+
+    set description(newDescription) {
+        _description.set(this, newDescription);
+    }
+
+    /**
+     * Does this LSystem have a description?
+     *
+     * @returns {Boolean} this LSystem has a non-empty description
+     */
+    hasDescription() {
+        return 0 < this.description.length;
     }
 
     get globalContext() {
@@ -1258,14 +1298,6 @@ const LSystem = class {
         return _ignore.get(this);
     }
 
-    get globals() {
-        return _globals.get(this);
-    }
-
-    set globals(map) {
-        _globals.set(this, map);
-    }
-
     get derivationLength() {
         return _derivationLength.get(this);
     }
@@ -1277,7 +1309,7 @@ const LSystem = class {
      * @return {String}
      */
     stringify() {
-        let lsystem = '';
+        let lsystem = "";
 
         // Serialize the global context, if any.
         let constants = Object.keys(this.globalContext).map(key => `${key} = ${this.globalContext[key].stringify()}`).join(";\n");
@@ -1288,12 +1320,21 @@ const LSystem = class {
         lsystem += constants;
         
         // Serialize the LSystem definition
-        lsystem += `lsystem(alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
+        if (this.hasName()) {
+            lsystem += `${this.name} = `;
+        }
+
+        lsystem += "lsystem(";
+        if (this.hasDescription()) {
+            lsystem += `description: "${this.description}", `;
+        }
+            
+        lsystem += `alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
 
         if (0 < this.ignore.length) {
             lsystem += `, ignore: {${this.ignore.map(m => m.stringify()).join(", ")}}`;
         }
-        lsystem += `)`;
+        lsystem += ")";
         return lsystem;
     }
 
@@ -1371,7 +1412,7 @@ class ModuleDefinition extends Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${this.parameters.join(',')})`;
+            return `${this.name}(${this.parameters.join(",")})`;
         } else {
             return this.name;
         }
@@ -1402,6 +1443,8 @@ const _moduleDefinitions = new WeakMap();
 
 /**
  * The Alphabet of an LSystem. The modules in an Alphabet are unique.
+ *
+ * @property {ModuleDefinition[]} moduleDefinitions
  */
 class Alphabet {
 
@@ -1415,6 +1458,10 @@ class Alphabet {
         for (const module of modules) {
             this.add(module);
         }
+    }
+
+    get moduleDefinitions() {
+        return _moduleDefinitions.get(this);
     }
 
     /**
@@ -1438,7 +1485,7 @@ class Alphabet {
      * @returns {Boolean} True if this Alphabet contains this module.
      */
     has(module) {
-       return undefined !== this.get(module);
+        return undefined !== this.get(module);
     }
 
     /**
@@ -1448,7 +1495,7 @@ class Alphabet {
      * @returns {Module|undefined} the module
      */
     get(module) {
-       const found = _moduleDefinitions
+        const found = _moduleDefinitions
             .get(this)
             .filter(
                 (m) => 
@@ -1496,7 +1543,7 @@ const setupProbabilityMapping = function (production, successorList) {
     let lower = 0;
     for (const successor of successorList) {
         if (0 >= successor.probability || successor.probability > 1) {
-            throw new Error('Probability should be between 0 and 1');
+            throw new Error("Probability should be between 0 and 1");
         }
 
         successor.lower = lower;
@@ -1505,7 +1552,7 @@ const setupProbabilityMapping = function (production, successorList) {
     }
 
     if (1 !== successorList.reduce((sum, pair) => sum += pair.probability, 0)) {
-        throw new Error('Total probability should be 1');
+        throw new Error("Total probability should be 1");
     }
 
     _successorList.set(production, successorList);
@@ -1679,7 +1726,7 @@ const match = function (parser, name, value = undefined, context = undefined) {
     if (token.name === name && (undefined !== value ? token.value === value : true)) {
         return token;
     } else {
-        throw new ParseError(`expected ${name.toString()}${undefined !== value ? " with value '" + value + "'": ''} at ${token.position()}`);
+        throw new ParseError(`expected ${name.toString()}${undefined !== value ? " with value '" + value + "'": ""} at ${token.position()}`);
     }
 };
 
@@ -1696,6 +1743,12 @@ const parseList = function (parser, recognizeFunction, closingBracket = ")") {
             return list;
         }
     }
+};
+
+const parseDescription = function (parser) {
+    match(parser, KEYWORD, "description");
+    match(parser, DELIMITER, ":");
+    return match(parser, STRING).value;
 };
 
 const parseFormalParameter = function (parser) {
@@ -1911,7 +1964,7 @@ const parseModuleTree = function (parser, ModuleClass, withSubTrees = true) {
         if (withSubTrees && lookAhead(parser, BRACKET_OPEN, "[")) {
             // Match a sub tree
             match(parser, BRACKET_OPEN, "[");
-            moduleTree.push(parsemoduleTree(parser));
+            moduleTree.push(parseModuleTree(parser));
             match(parser, BRACKET_CLOSE, "]");
         } else {
             // Match a module in the moduleTree
@@ -1989,7 +2042,6 @@ const parseStochasticSuccessorList = function (parser) {
 const parsePredecessor = function (parser) {
     const modules = [];
     let hasLeftContext = false;
-    let hasRightContext = false;
 
     modules.push(parseModuleApplicationTree(parser, false));
     
@@ -2002,7 +2054,6 @@ const parsePredecessor = function (parser) {
     if (lookAhead(parser, BRACKET_CLOSE, ">", 1, CONTEXT)) {
         match(parser, BRACKET_CLOSE, ">", CONTEXT);
         modules.push(parseModuleApplicationTree(parser));
-        hasRightContext = true;
     }
 
     let predecessor = undefined;
@@ -2071,8 +2122,21 @@ const parseIgnore = function (parser) {
 };
 
 const parseLSystem = function (parser) {
+    let name = "";
+    if (lookAhead(parser, IDENTIFIER)) {
+        name = match(parser, IDENTIFIER).value;
+        match(parser, OPERATOR, "=");
+    }
+
     match(parser, KEYWORD, "lsystem");
     match(parser, BRACKET_OPEN, "(");
+
+    let description = "";
+    if (lookAhead(parser, KEYWORD, "description")) {
+        description = parseDescription(parser);
+        match(parser, DELIMITER, ",");
+    }
+
     const alphabet = parseAlphabet(parser);
     match(parser, DELIMITER, ",");
     const axiom = parseAxiom(parser);
@@ -2084,7 +2148,9 @@ const parseLSystem = function (parser) {
         ignore = parseIgnore(parser);
     }
     match(parser, BRACKET_CLOSE, ")");
-    const lsystem = new LSystem(alphabet, axiom, productions, ignore);
+
+    const lsystem = new LSystem(name, description, alphabet, axiom, productions, ignore);
+    
     return lsystem;
 };
 
@@ -2106,7 +2172,7 @@ const parse = function (parser) {
 
     const globalContext = {};
     // Constants
-    while (lookAhead(parser, IDENTIFIER)) {
+    while (lookAhead(parser, IDENTIFIER) && !lookAhead(parser, KEYWORD, "lsystem", 3)) {
         const constant = parseConstant(parser);
         globalContext[constant.name] = constant.value;
     }
@@ -2166,13 +2232,14 @@ class Parser {
  */
 // Token names
 
-const NUMBER = Symbol('NUMBER');
-const IDENTIFIER = Symbol('IDENTIFIER');
-const BRACKET_OPEN = Symbol('BRACKET_OPEN');
-const BRACKET_CLOSE = Symbol('BRACKET_CLOSE');
-const OPERATOR = Symbol('OPERATOR');
-const DELIMITER = Symbol('DELIMITER');
-const KEYWORD = Symbol('KEYWORD');
+const NUMBER = Symbol("NUMBER");
+const IDENTIFIER = Symbol("IDENTIFIER");
+const BRACKET_OPEN = Symbol("BRACKET_OPEN");
+const BRACKET_CLOSE = Symbol("BRACKET_CLOSE");
+const OPERATOR = Symbol("OPERATOR");
+const DELIMITER = Symbol("DELIMITER");
+const KEYWORD = Symbol("KEYWORD");
+const STRING = Symbol("STRING");
 
 // Private data and functions for lexer
 
@@ -2238,7 +2305,7 @@ const moveForward = function (lexer, skip = false) {
     const c = peek(lexer);
     if (c) {
         _forward.set(lexer, _forward.get(lexer) + 1);
-        if ('\n' === c) {
+        if ("\n" === c) {
             _line$1.set(lexer, line(lexer) + 1);
             _column$1.set(lexer, 0);
         } else {
@@ -2257,13 +2324,13 @@ const lexeme = function (lexer) {
     return _input.get(lexer).slice(start, end + 1);
 };
 
-const recognize  = function (lexer, tokenName, value) {
+const recognize  = function (lexer, tokenName, value, l = line(lexer), c = column(lexer) - lexeme(lexer).length) {
     const token = new Token(
         tokenName, 
         lexeme(lexer), 
         value, 
-        line(lexer), 
-        column(lexer) - lexeme(lexer).length,
+        l, 
+        c,
         _lexemeBegin$1.get(this)
     );
 
@@ -2280,19 +2347,19 @@ const position = function (lexer) {
 // Recognize patterns
 
 const isWhitespace = function (c) {
-    return [' ', '\t', '\n'].includes(c);
+    return [" ", "\t", "\n"].includes(c);
 };
 
 const isCommentStart = function (c) {
-    return '#' === c;
+    return "#" === c;
 };
 
 const isDigit = function (c) {
-    return '0' <= c && c <= '9';
+    return "0" <= c && c <= "9";
 };
 
 const isLetter = function (c) {
-    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
+    return ("a" <= c && c <= "z") || ("A" <= c && c <= "Z");
 };
 
 const isIdentifierExtra = function (c) {
@@ -2304,17 +2371,18 @@ const isIdentifierExtra = function (c) {
 
 const isKeyword = function (identifier) {
     return [
-        'lsystem',
-        'alphabet',
-        'axiom',
-        'productions',
-        'ignore',
-        'include',
-        'and',
-        'or',
-        'not',
-        'true',
-        'false'
+        "lsystem",
+        "alphabet",
+        "axiom",
+        "productions",
+        "ignore",
+        "include",
+        "and",
+        "or",
+        "not",
+        "true",
+        "false",
+        "description"
     ].includes(identifier);
 };
 
@@ -2332,6 +2400,27 @@ const isIdentifierSymbol = function (c) {
 
 // Recognize Tokens
 
+const string = function (lexer, delimiter = "\"") {
+    if (delimiter === peek(lexer)) {
+        const lineStart = line(lexer);
+        const colStart = column(lexer);
+
+        moveForward(lexer);
+        while (delimiter !== peek(lexer)) {
+            moveForward(lexer);
+        }
+        moveForward(lexer);
+
+        return recognize(
+            lexer, 
+            STRING, 
+            lexeme(lexer).slice(1, -1), 
+            lineStart, 
+            colStart
+        );
+    }
+};
+
 const skipWhitespace = function (lexer) {
     while (isWhitespace(peek(lexer))) {
         moveForward(lexer, true);
@@ -2340,7 +2429,7 @@ const skipWhitespace = function (lexer) {
 
 const skipComment = function (lexer) {
     if (isCommentStart(peek(lexer))) {
-        while ('\n' !== peek(lexer)) {
+        while ("\n" !== peek(lexer)) {
             moveForward(lexer, true);
         }
     }
@@ -2364,21 +2453,21 @@ const number = function (lexer) {
         integer(lexer);
 
         // Decimal part
-        if ('.' === peek(lexer) && isDigit(peek(lexer, 2))) {
+        if ("." === peek(lexer) && isDigit(peek(lexer, 2))) {
             moveForward(lexer);
             digits(lexer);
         }
 
         // Exponent part
-        if (['e', 'E'].includes(peek(lexer))) {
+        if (["e", "E"].includes(peek(lexer))) {
             moveForward(lexer);
 
-            if (['+', '-'].includes(peek(lexer))) {
+            if (["+", "-"].includes(peek(lexer))) {
                 moveForward(lexer);
             }
 
             if (!isDigit(peek(lexer))) {
-                throw new LexicalError(`Expected a numerical exponential part at ${position(lexer)}, got '${peek(lexer)}' instead.`);
+                throw new LexicalError(`Expected a numerical exponential part at ${position(lexer)}, got "${peek(lexer)}" instead.`);
             }
 
             digits(lexer);
@@ -2388,7 +2477,7 @@ const number = function (lexer) {
             const value = parseFloat(lexeme(lexer));
             return recognize(lexer, NUMBER, value);        
         } catch (e) {
-            throw new LexicalError(`Unable to parse '${lexeme(lexer)}' as a number at ${position(lexer)}.`);
+            throw new LexicalError(`Unable to parse "${lexeme(lexer)}" as a number at ${position(lexer)}.`);
         }
     }
 };
@@ -2416,8 +2505,8 @@ const identifier = function (lexer) {
 
 
 const bracket = function (lexer) {
-    const BRACKET_OPEN_CHARACTERS = ['(', '{', '['];
-    const BRACKET_CLOSE_CHARACTERS = [')', '}', ']'];
+    const BRACKET_OPEN_CHARACTERS = ["(", "{", "["];
+    const BRACKET_CLOSE_CHARACTERS = [")", "}", "]"];
 
     if (isContext(lexer, CONTEXT)) {
         BRACKET_OPEN_CHARACTERS.push("<");
@@ -2436,7 +2525,7 @@ const bracket = function (lexer) {
 
 const delimiter = function (lexer) {
     const c = peek(lexer);
-    if ([',', ':', ";"].includes(c)) {
+    if ([",", ":", ";"].includes(c)) {
         moveForward(lexer);
         return recognize(lexer, DELIMITER, c);
     }
@@ -2444,20 +2533,20 @@ const delimiter = function (lexer) {
 
 const operator = function (lexer) {
     const c = peek(lexer);
-    if (['-', '+', '*', '/', '^', '>', '<', '='].includes(c)) {
-        if ('-' === c) {
+    if (["-", "+", "*", "/", "^", ">", "<", "="].includes(c)) {
+        if ("-" === c) {
             moveForward(lexer);
-            if ('>' === peek(lexer)) {
+            if (">" === peek(lexer)) {
                 moveForward(lexer);
             }
-        } else if ('<' === c) {
+        } else if ("<" === c) {
             moveForward(lexer);
-            if ('=' === peek(lexer) || '>' === peek(lexer)) {
+            if ("=" === peek(lexer) || ">" === peek(lexer)) {
                 moveForward(lexer);
             }
-        } else if ('>' === c) {
+        } else if (">" === c) {
             moveForward(lexer);
-            if ('=' === peek(lexer)) {
+            if ("=" === peek(lexer)) {
                 moveForward(lexer);
             }
         } else {
@@ -2479,7 +2568,7 @@ class Lexer {
      *
      * @param {String} [input = ''] - the input string the analyse.
      */
-    constructor(input = '') {
+    constructor(input = "") {
         reset(this, input);
     }
 
@@ -2503,14 +2592,15 @@ class Lexer {
                 skipComment(this);
             } while (
                 isWhitespace(peek(this)) || isCommentStart(peek(this))
-            )
+            );
 
             const token =
                 identifier(this) ||
                 number(this) ||
                 bracket(this) ||
                 delimiter(this) ||
-                operator(this);
+                operator(this) ||
+                string(this);
 
             if (token) {
                 return token;
@@ -2565,7 +2655,19 @@ class Lexer {
 
 const _function = new WeakMap();
 
+/**
+ * A command in an interpretation to make a step in rendering an derivation in an LSystem.
+ */
 class Command {
+
+    /**
+     * Create a new Command. If no arguments given, the Command is a "skip"
+     * command: it does do nothing.
+     *
+     * @param {String[]} - a list of parameters to the command. Can be omitted
+     * @param {String|Function} - a function or a string representing a
+     * function body that is executed when this command is run.
+     */
     constructor(...args) {
         let func;
 
@@ -2600,6 +2702,15 @@ class Command {
     execute(interpretation, ...parameters) {
         _function.get(this).apply(interpretation, parameters);
     }
+
+    /**
+     * Create a String representation of this Command.
+     *
+     * @returns {String}
+     */
+    toString() {
+        return _function.get(this).toString().split("\n").slice(1, -1).map(l => l.trim()).join("\n");
+    }
 }
 
 /*
@@ -2622,6 +2733,31 @@ class Command {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+const property = function (name, type, defaultValue, convert) {
+    return {
+        "name": name,
+        "type": type,
+        "default": defaultValue,
+        "converter": convert
+    };
+};
+
+const number$1 = function (name, defaultValue = 0) {
+    return property(name, "text", defaultValue, (n) => parseFloat(n));
+};
+
+const bool = function (name, defaultValue = false) {
+    return property(name, "text", defaultValue, (b) => "true" === b ? true : false);
+};
+
+const string$1 = function (name, defaultValue = "") {
+    return property(name, "text", defaultValue, (s) => s);
+};
+
+const color = function (name, defaultValue = "black") {
+    return property(name, "color", defaultValue, (s) => s);
+};
+
 const _commands = new WeakMap();
 const _initialState = new WeakMap();
 const _states = new WeakMap();
@@ -2645,19 +2781,27 @@ const renderTree = function (interpretation, moduleTree) {
  * @property {Object} state - the current state of this Interpretation.
  * @property {Object} registeredProperties - the properties that are
  * registered in this Interpretation.
+ * @property {Object} properties - the properties that have been set in this
+ * Interpretation
+ * @property {Object} commands - the commands that have been defined in this
+ * Interpretation.
  */
 class Interpretation {
     /**
      * Create a new instance of an LSystem Interpretation.
      * 
      * @param {RenderingContext|SVGElement} canvas - the canvas to draw on.
-     * @param {Object} scope - the scope of this Interpretation.
      */
     constructor(initialState = {}) {
         _initialState.set(this, initialState);
         _states.set(this, []);
         _commands.set(this, {});
-        _registeredProperties.set(this, new Set());
+        _registeredProperties.set(this, []);
+
+        this.registerProperty(
+            bool("animate"),
+            number$1("derivationLength")
+        );
     }
 
     get state() {
@@ -2671,6 +2815,14 @@ class Interpretation {
 
     get registeredProperties() {
         return _registeredProperties.get(this);
+    }
+
+    get properties() {
+        return this.state();
+    }
+
+    get commands() {
+        return _commands.get(this);
     }
 
     /**
@@ -2690,7 +2842,7 @@ class Interpretation {
      * parameters to apply when the command is executed.
      */
     execute(name, parameters = []) {
-        const command = _commands.get(this)[name];
+        const command = this.commands[name];
 
         if (undefined === command) {
             // By default commands that are unknown are ignored, only those
@@ -2716,8 +2868,20 @@ class Interpretation {
      *
      * @param {String} names - the names of the properties to register
      */
-    registerProperty(...names) {
-        names.forEach(name => this.registeredProperties.add(name));
+    registerProperty(...properties) {
+        properties.forEach(p => {
+            this.registeredProperties.push(p);
+        });
+    }
+
+    /**
+     * Get a registered property by name
+     *
+     * @param {String} name  - the name of the registered property to get.
+     * @returns {Object}
+     */
+    getRegisteredProperty(name) {
+        return this.registeredProperties.find((p) => name === p.name);
     }
 
     /**
@@ -2729,7 +2893,7 @@ class Interpretation {
     setProperty(name, value) {
         this.state[name] = value;
     }
-
+    
     /**
      * Get a property of this Interpretation. If no such property exists, or
      * if its value is undefined or null, return the defaultValue.
@@ -2752,7 +2916,18 @@ class Interpretation {
      * @param {Command} command - the command.
      */
     setCommand(name, command) {
-        _commands.get(this)[name] = command;
+        this.commands[name] = command;
+    }
+
+    /**
+     * Does this Interpretation have defined a command?
+     *
+     * @param {String} name - the name of the command to check
+     * @returns {Boolean} True if there exist a command with name in this
+     * Interpretation
+     */
+    hasCommand(name) {
+        return undefined !== this.getCommand(name);
     }
 
     /**
@@ -2787,7 +2962,7 @@ class Interpretation {
         }
 
         for(const alias of aliasNames) {
-            _commands.get(this)[alias] = commandName;
+            this.commands[alias] = commandName;
         }
     }
 
@@ -2798,12 +2973,12 @@ class Interpretation {
      * @returns {Command|undefined}
      */
     getCommand(name) {
-        const command = _commands.get(this)[name];
+        const command = this.commands[name];
 
         if (command instanceof Command) {
             return command;
         } else if ("string" === typeof command) {
-            return getCommand(command);
+            return this.getCommand(command);
         } else {
             return undefined;
         }
@@ -2888,11 +3063,37 @@ const D = 2;
 const DELTA = Math.PI / 2;
 const ALPHA = 0;
 
+/**
+ * The color of a closed shape.
+ */
 const FILL_COLOR = "fill-color";
+
+/**
+ * The color of a line
+ */
 const LINE_COLOR = "line-color";
+
+/**
+ * The width of a line
+ */
 const LINE_WIDTH = "line-width";
+
+/**
+ * The type of line join. See also
+ * <https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/lineJoin>
+ */
 const LINE_JOIN = "line-join";
 
+/**
+ * A TurtleInterpretation as proposed in the book "The algorithmic beauty of
+ * plants", chapter 1.
+ *
+ * @property {Number} x - current x coordinate
+ * @property {Number} y - current y coordinate
+ * @property {Number} d - distance to draw or move
+ * @property {Number} alpha - the current angle
+ * @property {Number} delta - change of angle to rotate
+ */
 class TurtleInterpretation extends Interpretation {
     constructor(initialState = {}) {
         super(initialState);
@@ -2920,10 +3121,18 @@ class TurtleInterpretation extends Interpretation {
         }));
 
         this.registerProperty(
-            LINE_WIDTH, 
-            LINE_COLOR,
-            LINE_JOIN,
-            FILL_COLOR
+            number$1("x", 100),
+            number$1("y", 200),
+            number$1("width", 600),
+            number$1("height", 400),
+            number$1("d", 10),
+            number$1("alpha", 90),
+            number$1("delta", 1),
+            bool("close", false),
+            number$1(LINE_WIDTH), 
+            color(LINE_COLOR),
+            string$1(LINE_JOIN),
+            color(FILL_COLOR)
         );
     }
 
@@ -2935,6 +3144,7 @@ class TurtleInterpretation extends Interpretation {
      */
     moveTo(x, y) {
         // to be implemented by a sub class 
+        console.log(x, y);
     }
 
     /**
@@ -2945,6 +3155,7 @@ class TurtleInterpretation extends Interpretation {
      */
     lineTo(x, y) {
         // to be implemented by a sub class 
+        console.log(x, y);
     }
 
     get x() {
@@ -3019,8 +3230,10 @@ exports.DELIMITER = DELIMITER;
 exports.BRACKET_OPEN = BRACKET_OPEN;
 exports.BRACKET_CLOSE = BRACKET_CLOSE;
 exports.OPERATOR = OPERATOR;
+exports.STRING = STRING;
 exports.KEYWORD = KEYWORD;
 exports.Parser = Parser;
+exports.ParseError = ParseError;
 exports.LSystem = LSystem;
 exports.Interpretation = Interpretation;
 exports.TurtleInterpretation = TurtleInterpretation;

@@ -18,20 +18,12 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {Action} from "./Action.js";
-
-/**
- * A Spacer is an empty action, just a shortcut to separate groups of actions.
- */
-class Spacer extends Action {
-    /**
-     * Create a new Spacer
-     */
-    constructor() {
-        super("", "|", "", () => false, false);
+export default `{
+    "lsystem": "new_lab = lsystem(description: \"New lab, see '?' for help.\", alphabet: {F}, axiom: F, productions: {F -> F F})",
+    "interpretation": {
+        "config": {
+            "derivationLength": 1,
+            "y": 50
+        }
     }
-}
-
-export {
-    Spacer
-};
+}`;

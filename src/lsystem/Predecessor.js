@@ -215,4 +215,4 @@ class Predecessor {
 
 export {
     Predecessor
-}
+};

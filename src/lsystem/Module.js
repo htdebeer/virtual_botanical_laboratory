@@ -77,7 +77,7 @@ class Module {
      */
     stringify() {
         if (this.isParameterized()) {
-            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(',')})`;
+            return `${this.name}(${this.parameters.map((p) => p.stringify()).join(",")})`;
         } else {
             return this.name;
         }
@@ -86,4 +86,4 @@ class Module {
 
 export {
     Module
-}
+};

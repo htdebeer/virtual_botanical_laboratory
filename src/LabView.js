@@ -18,30 +18,51 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {Lab} from "./Lab.js";
+import {Lab, getProperty} from "./Lab.js";
 import {LSystem} from "./lsystem/LSystem.js";
 
 import STYLE from "./view/style.js";
 import ABOUT from "./view/about.js";
 import HELP from "./view/help.js";
 
+import EXPORT_HTML_TEMPLATE from "./export_html_template.js";
+import EMPTY_CONFIGURATION from "./empty_configuration.js";
+
 import {RenderView} from "./view/RenderView.js";
 import {DocumentView} from "./view/DocumentView.js";
 import {LSystemView} from "./view/LSystemView.js";
 import {InterpretationView} from "./view/InterpretationView.js";
 
+import {Command} from "./interpretation/Command.js";
+
 import {Action} from "./view/Action.js";
 import {Spacer} from "./view/Spacer.js";
 
 const _lab = new WeakMap();
-const _parentElement = new WeakMap();
-const _element = new WeakMap();
 const _config = new WeakMap();
 
 const _tabs = new WeakMap();
 
 const _paused = new WeakMap();
 
+const saveAs = function (labView, extension, dataURI) {
+    const name = labView.name.replace(/[ \t\n\r]+/g, "_");
+
+    const a = document.createElement("a");
+    a.download = `${name}.${extension}`,
+    a.href = dataURI;
+    document.body.appendChild(a);
+    a.addEventListener("click", () => document.body.removeChild(a));
+    a.click();
+};
+
+const scriptURL = function () {
+    // Get the source code by URL; assuming the script is loaded
+    // by a path ending in 'virtual_botanical_laboratory.js'.
+    const scripts = Array.from(document.querySelectorAll("script"));
+    const labScript = scripts.filter((s) => s.src.endsWith("virtual_botanical_laboratory.js"));
+    return labScript[0].src;
+};
 
 const tab = function (labview, name) {
     const tabs = _tabs.get(labview);
@@ -56,7 +77,7 @@ const generateId = function () {
     let randomId;
     do {
         randomId = Math.random().toString(16).slice(2);
-    } while (null !== document.getElementById(randomId))
+    } while (null !== document.getElementById(randomId));
 
     return randomId;
 };
@@ -90,7 +111,6 @@ const createTab = function (labview, name, text, tooltip, checked = false, right
 
 const updateLSystem = function (labview, lsystemTab) {
     const lsystemString = lsystemTab.lsystem;
-    console.log(lsystemString);
     // If the lsystem has been changed, try to parse it and update lsystem
     if (lsystemTab.originalLSystem !== lsystemString) {
         try {
@@ -99,33 +119,91 @@ const updateLSystem = function (labview, lsystemTab) {
             labview.lab.lsystem = lsystem;
             lsystemTab.originalLSystem = lsystemString;
             lsystemTab.showMessage("LSystem parsed and updated successfully.", "info", 2000);
+            _config.get(labview)["lsystem"] = lsystemString;
         } catch (e) {
             lsystemTab.showMessage(`Error parsing LSystem: "${e}"`, "error");
         }
     }
 };
 
-const updateInterpretation = function (labview) {
+const updateInterpretation = function (labview, interpretationTab) {
+    const properties = interpretationTab.properties;
+    const commands = interpretationTab.commands;
+
+    const changed = true; // TODO determine if interpretation specification has changed
+
+    if (changed) {
+        // update interpretation
+        try {
+
+            const config = {};
+            Object.entries(properties).forEach(([key, value]) => {
+                const registeredProperty = labview.lab.interpretation.getRegisteredProperty(key);
+                const converter = registeredProperty["converter"] || function (v) { return v.toString();};
+                config[key] = converter.call(null, value);
+            });
+
+            const interpretationConfig = {
+                "config": config,
+                "commands": {}
+            };
+
+            _config.get(labview)["interpretation"] = interpretationConfig;
+
+            const lsystem = labview.lab.lsystem.stringify();
+
+            labview.reset();
+
+            labview.lab = new Lab({
+                "lsystem": lsystem,
+                "interpretation": interpretationConfig
+            });
+
+            Object.entries(commands).forEach(([key, func]) => {
+                if (undefined !== func && "" !== func) {
+                    const modules = labview.lab.lsystem.alphabet.moduleDefinitions;
+                    let parameters = [];
+                    if (undefined !== modules) {
+                        parameters = modules.find((md) => key === md.name);
+                        if (undefined !== parameters) {
+                            parameters = parameters.parameters;
+                        } else {
+                            parameters = [];
+                        }
+                    }
+
+                    const command = new Command(parameters, func);
+                    labview.lab.interpretation.setCommand(key, command);
+                }
+            });
+
+            //labview.lab = labview.lab;
+            interpretationTab.showMessage("Interpretation updated successfully…", "info", 2000);
+        } catch (e) {
+            console.log(e);
+            interpretationTab.showMessage(`Error updating interpretation: "${e}"`, "error");
+        }
+    }
 };
 
 const setupTabs = function (labview, element, tabConfig) {
-    const tabsElement = document.createElement("ul")
+    const tabsElement = document.createElement("ul");
     tabsElement.classList.add("tabs");
-    element.appendChild(tabsElement)
+    element.appendChild(tabsElement);
 
     const tabs = {};
 
-    // General 'render' tab to view and control L-System
+    // General "render" tab to view and control L-System
     const renderTabElement = createTab(labview, "render", "♣", "View interpreted L-System", true);
     tabsElement.appendChild(renderTabElement);
-    const renderTab = tabs['render'] = new RenderView(renderTabElement, {});
+    const renderTab = tabs["render"] = new RenderView(renderTabElement, {});
 
-    //renderTab.addAction(new Action("create", "★", "Create a new L-System.", () => labview.create()));
-    //renderTab.addAction(new Action("open", "▲", "Open a L-System from your computer.", () => labview.open()));
-    //renderTab.addAction(new Action("save", "▼", "Save this L-System to your computer.", () => labview.save()));
-    //renderTab.addAction(new Spacer());
-    //renderTab.addAction(new Action("exportToPng", "▼ PNG", "Export this L-System to a PNG file.", () => labview.exportToPng()));
+    renderTab.addAction(new Action("create", "★", "Create a new L-System.", () => labview.create()));
+    renderTab.addAction(new Action("exportToHtml", "▼ HTML", "Save this L-System to a HTML file.", () => labview.exportToHTML()));
+    renderTab.addAction(new Action("exportToPng", "▼ PNG", "Export this L-System to a PNG file.", () => labview.exportToPNG()));
+
     renderTab.addAction(new Spacer());
+
     renderTab.addAction(new Action("run", "▶️", "Run this L-System.", () => labview.run()));
     renderTab.addAction(new Action("pause", "⏸", "Pause this L-System.", () => labview.pause()));
     renderTab.addAction(new Action("step", "1", "Derive the next succesor of this L-System.", () => labview.step()));
@@ -134,23 +212,37 @@ const setupTabs = function (labview, element, tabConfig) {
     // L-System tab to edit L-System definition
     const lsystemTabElement = createTab(labview, "lsystem", "L-System", "Edit L-System");
     tabsElement.appendChild(lsystemTabElement);
-    tabs['lsystem'] = new LSystemView(lsystemTabElement, tabConfig.lsystem, {
+    tabs["lsystem"] = new LSystemView(lsystemTabElement, tabConfig.lsystem, {
         header: "L-System definition"
     });
-    tabs['lsystem'].addAction(new Action("update", "update", "Update this L-System.", () => updateLSystem(labview, tabs['lsystem'])));
+    tabs["lsystem"].addAction(
+        new Action(
+            "update", 
+            "update", 
+            "Update this L-System.", 
+            () => updateLSystem(labview, tabs["lsystem"])
+        )
+    );
     
     // Interpretation tab to change properties in the interpretation
     const interpretationTabElement = createTab(labview, "interpretation", "Interpretation", "Edit interpretation");
     tabsElement.appendChild(interpretationTabElement);
-    tabs['interpretation'] = new InterpretationView(interpretationTabElement, tabConfig.interpretation, {
+    tabs["interpretation"] = new InterpretationView(interpretationTabElement, labview.lab.interpretation, tabConfig.interpretation, {
         header: "Configure interpretation"
     });
-    tabs['interpretation'].addAction(new Action("update", "update", "Update this L-System.", () => updateInterpretation(labview), false));
+    tabs["interpretation"].addAction(
+        new Action(
+            "update", 
+            "update", 
+            "Update this L-System.", 
+            () => updateInterpretation(labview, tabs["interpretation"])
+        )
+    );
     
     // About tab with information about the virtual_botanical_lab
     const aboutTabElement = createTab(labview, "about", "i", "About", false, true);
     tabsElement.appendChild(aboutTabElement);
-    tabs['about'] = new DocumentView(aboutTabElement, "about", {
+    tabs["about"] = new DocumentView(aboutTabElement, "about", {
         header: "About",
         contents: ABOUT
     });
@@ -158,7 +250,7 @@ const setupTabs = function (labview, element, tabConfig) {
     // Help tab with a manual for the virtual_botanical_lab
     const helpTabElement = createTab(labview, "help", "?", "help", false, true);
     tabsElement.appendChild(helpTabElement);
-    tabs['help'] = new DocumentView(helpTabElement, "help", {
+    tabs["help"] = new DocumentView(helpTabElement, "help", {
         header: "Help",
         contents: HELP
     });
@@ -181,12 +273,16 @@ const createLabView = function (labview, parentElementOrSelector, config) {
         elt = document.querySelector(parentElementOrSelector);
     }
 
-    elt.append(template);
+    if (elt.firstChild) {
+        elt.insertBefore(template, elt.firstChild);
+    } else {
+        elt.append(template);
+    }
 
     setupTabs(labview, template, config);
 
     return elt;
-}
+};
 
 /**
  * A user interface for a Lab.
@@ -208,10 +304,38 @@ class LabView {
         // TODO: It is probably a good idea to validate the config first, though.
         _config.set(this, Object.create(null, {}));
         Object.assign(_config.get(this), config);
+        _lab.set(this, new Lab(config));
 
         createLabView(this, parentElementOrSelector, config);
-        this.lab = new Lab(config);
+        
+        this.lab = this.lab;
+
         _paused.set(this, false);
+    }
+
+    get name() {
+        let name = "virtual_plant";
+        if (this.lab && this.lab.lsystem && "" !== this.lab.lsystem.name) {
+            name = this.lab.lsystem.name;
+        }
+        return name;
+    }
+
+    get description() {
+        let description = "Plant generated by the virtual botanical laboratory.";
+        if (this.lab && this.lab.lsystem && "" !== this.lab.lsystem.description) {
+            description = this.lab.lsystem.description;
+        }
+        return description;
+    }
+
+    get configuration() {
+        return JSON.stringify({
+            "name": this.name,
+            "description": this.description,
+            "lsystem": _config.get(this)["lsystem"],
+            "interpretation": _config.get(this)["interpretation"]
+        }, null, 4);
     }
 
     get lab() {
@@ -220,7 +344,7 @@ class LabView {
 
     set lab(newLab) {
         _lab.set(this, newLab);
-        tab(this, 'render').canvas = this.lab.element;
+        tab(this, "render").canvas = this.lab.element;
     }
 
     // Control the lab view
@@ -241,21 +365,53 @@ class LabView {
 
     // File and export actions
 
+    /**
+     * Create an empty Lab in a new window/tab.
+     */
     create() {
+        const htmlCode = EXPORT_HTML_TEMPLATE
+            .replace(/__NAME__/, "New_lab")
+            .replace(/__SOURCE_URL__/, scriptURL())
+            .replace(/__DESCRIPTION__/, "New Lab. See '?' for help.")
+            .replace(/__CONFIGURATION__/, EMPTY_CONFIGURATION)
+        ;
+
+        const newLabWindow = window.open();
+        newLabWindow.document.write(htmlCode);
+        newLabWindow.document.close();
+    }
+
+    /**
+     * Export the current lsystem and its configuration to a stand-alone HTML
+     * file.
+     */
+    exportToHTML() {
         if (undefined !== this.lab) {
+            const htmlCode = "<!DOCTYPE html>\n<html>\n" + 
+                EXPORT_HTML_TEMPLATE
+                .replace(/__NAME__/, this.name)
+                .replace(/__SOURCE_URL__/, scriptURL())
+                .replace(/__DESCRIPTION__/, this.description)
+                .replace(/__CONFIGURATION__/, this.configuration)
+            ;
+
+            const data = new Blob([htmlCode], {type: "text/html"});
+            saveAs(this, "html", URL.createObjectURL(data));
         }
     }
 
-    save() {
-        if (undefined !== this.lab) {
-        }
-    }
-
-    open() {
-    }
-
+    /**
+     * Export the current interpretation to a PNG file.
+     */
     exportToPNG() {
         if (undefined !== this.lab) {
+            const dataURI = this.lab
+                .interpretation
+                .canvasElement
+                .toDataURL("image/png")
+                .replace(/^data:image\/[^;]/, "data:application/octet-stream");
+            
+            saveAs(this, "png", dataURI);
         }
     }
 
@@ -263,7 +419,7 @@ class LabView {
 
     run() {
         if (undefined !== this.lab) {
-            const derivationLength = _config.get(this).derivationLength || 1;
+            const derivationLength = getProperty(_config.get(this), "interpretation.config.derivationLength", 0);
 
             const steps = derivationLength - this.lab.lsystem.derivationLength;
             this.lab.run(steps);
@@ -300,4 +456,4 @@ class LabView {
 
 export {
     LabView
-}
+};

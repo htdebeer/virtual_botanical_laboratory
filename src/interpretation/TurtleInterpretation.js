@@ -18,7 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-import {Interpretation} from "./Interpretation.js";
+import {Interpretation, number, bool, color, string} from "./Interpretation.js";
 import {Command} from "./Command.js";
 
 // Default values
@@ -28,17 +28,37 @@ const D = 2;
 const DELTA = Math.PI / 2;
 const ALPHA = 0;
 
-const _x = new WeakMap();
-const _y = new WeakMap();
-const _d = new WeakMap();
-const _delta = new WeakMap();
-const _alpha = new WeakMap();
-
+/**
+ * The color of a closed shape.
+ */
 const FILL_COLOR = "fill-color";
+
+/**
+ * The color of a line
+ */
 const LINE_COLOR = "line-color";
+
+/**
+ * The width of a line
+ */
 const LINE_WIDTH = "line-width";
+
+/**
+ * The type of line join. See also
+ * <https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/lineJoin>
+ */
 const LINE_JOIN = "line-join";
 
+/**
+ * A TurtleInterpretation as proposed in the book "The algorithmic beauty of
+ * plants", chapter 1.
+ *
+ * @property {Number} x - current x coordinate
+ * @property {Number} y - current y coordinate
+ * @property {Number} d - distance to draw or move
+ * @property {Number} alpha - the current angle
+ * @property {Number} delta - change of angle to rotate
+ */
 class TurtleInterpretation extends Interpretation {
     constructor(initialState = {}) {
         super(initialState);
@@ -66,10 +86,18 @@ class TurtleInterpretation extends Interpretation {
         }));
 
         this.registerProperty(
-            LINE_WIDTH, 
-            LINE_COLOR,
-            LINE_JOIN,
-            FILL_COLOR
+            number("x", 100),
+            number("y", 200),
+            number("width", 600),
+            number("height", 400),
+            number("d", 10),
+            number("alpha", 90),
+            number("delta", 1),
+            bool("close", false),
+            number(LINE_WIDTH), 
+            color(LINE_COLOR),
+            string(LINE_JOIN),
+            color(FILL_COLOR)
         );
     }
 
@@ -81,6 +109,7 @@ class TurtleInterpretation extends Interpretation {
      */
     moveTo(x, y) {
         // to be implemented by a sub class 
+        console.log(x, y);
     }
 
     /**
@@ -91,6 +120,7 @@ class TurtleInterpretation extends Interpretation {
      */
     lineTo(x, y) {
         // to be implemented by a sub class 
+        console.log(x, y);
     }
 
     get x() {
@@ -140,5 +170,5 @@ export {
     LINE_WIDTH,
     LINE_COLOR,
     LINE_JOIN,
-    FILL_COLOR
-}
+    FILL_COLOR,
+};

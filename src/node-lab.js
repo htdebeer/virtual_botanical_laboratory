@@ -28,6 +28,7 @@ import {
     BRACKET_OPEN, 
     BRACKET_CLOSE, 
     OPERATOR, 
+    STRING,
     KEYWORD
 }  from "./lsystem/Lexer.js";
 import {ParseError} from "./lsystem/ParseError.js";
@@ -46,8 +47,10 @@ export {
     BRACKET_OPEN,
     BRACKET_CLOSE,
     OPERATOR,
+    STRING,
     KEYWORD,
     Parser,
+    ParseError,
     LSystem,
     Interpretation,
     TurtleInterpretation

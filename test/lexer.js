@@ -1,12 +1,13 @@
-const assert = require('assert');
-const lab = require('../dist/node-lab.js');
+const assert = require("assert");
+const lab = require("../dist/node-lab.js");
 
 const recognizeAllOfType = function (strings, type, toValue = (s) => s) {
     for (const string of strings) {
         const lexer = new lab.Lexer(string);
         const tok = lexer.getNextToken();
         assert.equal(type, tok.name);
-        assert.equal(toValue(string), tok.value);
+        const value = lab.STRING === type ? `"${tok.value}"` : tok.value;
+        assert.equal(toValue(string), value);
         assert.equal(string, tok.lexeme);
         assert.equal(0, tok.line);
         assert.equal(0, tok.column);
@@ -29,6 +30,11 @@ const recognizeTheFollowingTokensInString = function (string, expectedTokens) {
 
 describe('Lexer', function () {
     describe('getNextToken()', function () {
+
+        const STRINGS = ["\"this is a string\"", "\"\"", "\"a \nmultiline\nstring\""];
+        it(`should return a string token when analyzing any of: ${STRINGS.join(" ")}`, function () {
+            recognizeAllOfType(STRINGS, lab.STRING);
+        });
 
         const IDS = ["aname", "A", "aname2", "a2naME"];
         it(`should return an identifier token when analyzing any of: ${IDS.join(" ")}`, function () {

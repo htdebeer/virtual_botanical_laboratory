@@ -22,6 +22,8 @@ import {ModuleTree} from "./ModuleTree.js";
 import {IdentityProduction} from "./IdentityProduction.js";
 import {Parser} from "./Parser.js";
 
+const _name = new WeakMap();
+const _description = new WeakMap();
 const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
 const _productions = new WeakMap();
@@ -115,6 +117,8 @@ const derive = function(lsystem, moduleTree, pathTaken = [], edgeIndex = 0) {
 /**
  * An LSystem model
  *
+ * @property {String} name - this LSystem's name
+ * @property {String} description - this LSystem's description
  * @property {Alphabet} alphabet - the set of modules of this LSystem
  * @property {ModuleTree} axiom - the axion of this LSystem
  * @property {Production[]} productions - the set of productions of this
@@ -128,13 +132,17 @@ const LSystem = class {
     /**
      * Create a new instance of LSystem.
      *
+     * @param {String} name
+     * @param {String} description
      * @param {Alphabet} alphabet
      * @param {ModuleTree} axiom
      * @param {Production[]} productions
      * @param {Module[]} ignore
      */
-    constructor(alphabet, axiom, productions, ignore = []) {
+    constructor(name, description, alphabet, axiom, productions, ignore = []) {
         _globalContext.set(this, {});
+        _name.set(this, name);
+        _description.set(this, description);
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
         _productions.set(this, productions);
@@ -153,6 +161,40 @@ const LSystem = class {
      */
     static parse(input) {
         return (new Parser()).parse(input);
+    }
+
+    get name() {
+        return _name.get(this) || "";
+    }
+
+    set name(newName) {
+        _name.set(this, newName);
+    }
+    
+    /**
+     * Does this LSystem have a name?
+     *
+     * @returns {Boolesn} this LSystem has a non-empty name
+     */
+    hasName() {
+        return 0 < this.name.length;
+    }
+
+    get description() {
+        return _description.get(this) || "";
+    }
+
+    set description(newDescription) {
+        _description.set(this, newDescription);
+    }
+
+    /**
+     * Does this LSystem have a description?
+     *
+     * @returns {Boolean} this LSystem has a non-empty description
+     */
+    hasDescription() {
+        return 0 < this.description.length;
     }
 
     get globalContext() {
@@ -179,14 +221,6 @@ const LSystem = class {
         return _ignore.get(this);
     }
 
-    get globals() {
-        return _globals.get(this);
-    }
-
-    set globals(map) {
-        _globals.set(this, map);
-    }
-
     get derivationLength() {
         return _derivationLength.get(this);
     }
@@ -198,7 +232,7 @@ const LSystem = class {
      * @return {String}
      */
     stringify() {
-        let lsystem = '';
+        let lsystem = "";
 
         // Serialize the global context, if any.
         let constants = Object.keys(this.globalContext).map(key => `${key} = ${this.globalContext[key].stringify()}`).join(";\n");
@@ -209,12 +243,21 @@ const LSystem = class {
         lsystem += constants;
         
         // Serialize the LSystem definition
-        lsystem += `lsystem(alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
+        if (this.hasName()) {
+            lsystem += `${this.name} = `;
+        }
+
+        lsystem += "lsystem(";
+        if (this.hasDescription()) {
+            lsystem += `description: "${this.description}", `;
+        }
+            
+        lsystem += `alphabet: {${this.alphabet.stringify()}}, axiom: ${this.axiom.stringify()}, productions: {${this.productions.map((p) => p.stringify()).join(", ")}}`;
 
         if (0 < this.ignore.length) {
             lsystem += `, ignore: {${this.ignore.map(m => m.stringify()).join(", ")}}`;
         }
-        lsystem += `)`;
+        lsystem += ")";
         return lsystem;
     }
 

@@ -24,42 +24,73 @@ import {CanvasTurtleInterpretation} from "./interpretation/CanvasTurtleInterpret
 
 import {Command} from "./interpretation/Command.js";
 
-const SIZE = 1000; // px
+const DEFAULT_WIDTH = 800;// px
+const DEFAULT_HEIGHT = 600;// px
 const SPEED = 500; // ms
 
 const _element = new WeakMap();
 const _lsystem = new WeakMap();
 const _interpretation = new WeakMap();
-const _description = new WeakMap();
 
 const _running = new WeakMap();
 const _animate = new WeakMap();
 const _speed = new WeakMap();
 
+const getProperty = function(map, path, defaultValue) {
+    const levels = path.split(".");
+    let level = 0;
+    while (level < levels.length) {
+        const name = levels[level];
+        if (undefined !== map[name]) {
+            map = map[name];
+        } else {
+            return defaultValue;
+        }
+
+        level++;
+    }
+
+    return undefined !== map ? map : defaultValue;
+};
+
 const createInterpretation = function (lab, interpretationConfig = {}) {
     let interpretation;
     if (!(interpretationConfig instanceof Interpretation)) {
-        if ("canvas" === interpretationConfig.type) {
-            const element = document.createElement("canvas");
-            element.width = SIZE;
-            element.height = SIZE;
-            
-            _element.set(lab, element);
-            
-            interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretationConfig.config);
-        } else {
-            // not implemented yet
-            throw new Error("Only the canvas format has been implemented yet.");
-        }
+        const element = document.createElement("canvas");
+        element.width = getProperty(interpretationConfig, "config.width", DEFAULT_WIDTH);
+        element.height = getProperty(interpretationConfig, "config.height", DEFAULT_HEIGHT);
 
+        _element.set(lab, element);
+
+        interpretation = new CanvasTurtleInterpretation(element.getContext("2d"), interpretationConfig.config);
+
+        // Get all possible commands and their definitions, if any.
+        const availableCommands = {};
+        lab
+            .lsystem
+            .alphabet
+            .moduleDefinitions
+            .forEach((md) => {
+                if (!interpretation.hasCommand(md.name)) {
+                    availableCommands[md.name] = undefined;
+                }
+            });
+       
+        // Commands can be (re)defined in a configuration of an Interpretation 
         if ("commands" in interpretationConfig) {
             Object
                 .entries(interpretationConfig["commands"])
                 .forEach((entry) => {
                     const [name, func] = entry;
-                    interpretation.setCommand(name, new Command(func))
+                    availableCommands[name] = func;
                 });
         }
+
+        Object.keys(availableCommands)
+            .forEach((entry) => {
+                const [name, func] = entry;
+                interpretation.setCommand(name, new Command(func));
+            });
     } else {
         interpretation = interpretationConfig;
     }
@@ -89,7 +120,7 @@ const animateDeriving = function (lab, steps, currentStep) {
     if (_running.get(lab) && currentStep < steps) {
         setTimeout(() => {
             lab.interpretation.render(lab.derive());
-            animateDeriving(lab, steps, currentStep + 1)
+            animateDeriving(lab, steps, currentStep + 1);
         }, _speed.get(lab));
     } else {
         _running.set(lab, false);
@@ -112,7 +143,7 @@ const setupAnimation = function (lab, animate = false) {
         _animate.set(lab, false);
         _speed.set(lab, undefined);
     }
-}
+};
 
 /**
  * Lab is the public API to interact with an lsystem and its interpretation.
@@ -132,9 +163,12 @@ class Lab {
 
         createLSystem(this, config.lsystem || "");
         createInterpretation(this, config.interpretation);
-        setupAnimation(this, config.animate);
 
-        initializeAndRun(this, config.derivationLength);
+        const animate = getProperty(config, "interpretation.config.animate", false);
+        setupAnimation(this, animate);
+
+        const derivationLength = getProperty(config, "interpretation.config.derivationLength", 0);
+        initializeAndRun(this, derivationLength);
     }
 
     get element() {
@@ -212,5 +246,6 @@ class Lab {
 }
 
 export {
-    Lab
-}
+    Lab,
+    getProperty
+};

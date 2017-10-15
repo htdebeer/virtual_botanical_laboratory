@@ -28,7 +28,7 @@ const setupProbabilityMapping = function (production, successorList) {
     let lower = 0;
     for (const successor of successorList) {
         if (0 >= successor.probability || successor.probability > 1) {
-            throw new Error('Probability should be between 0 and 1');
+            throw new Error("Probability should be between 0 and 1");
         }
 
         successor.lower = lower;
@@ -37,7 +37,7 @@ const setupProbabilityMapping = function (production, successorList) {
     }
 
     if (1 !== successorList.reduce((sum, pair) => sum += pair.probability, 0)) {
-        throw new Error('Total probability should be 1');
+        throw new Error("Total probability should be 1");
     }
 
     _successorList.set(production, successorList);
@@ -100,4 +100,4 @@ class StochasticProduction extends Production {
 
 export {
     StochasticProduction
-}
+};

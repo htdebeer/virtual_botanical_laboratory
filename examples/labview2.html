@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8">
+        <script src="/dist/virtual_botanical_laboratory.js"></script>
     </head>
     <body>
         <header>
@@ -9,11 +10,10 @@
         </header>
         <div id="lab">
         </div>
-        <script type="module">
-import {LabView} from "../../../src/LabView.js";
-
-new LabView("#lab", {
-    lsystem: `lsystem(
+        <script>
+new virtual_botanical_laboratory.LabView("#lab", {
+    lsystem: `simple_tree = lsystem(
+        description: "Simple growing tree from book.",
         alphabet: {F, O, I, -, +},
         axiom: F I F I F I,
         productions: {
@@ -31,18 +31,21 @@ new LabView("#lab", {
         ignore: {+, -, F}
     )`,
     interpretation: {
-        type: "canvas",
         config: {
-            x: 400,
-            y: 800,
+            x: 200,
+            y: 300,
+            width: 600,
+            height: 400,
             d: 10,
             delta: (-22.5 * Math.PI)/180,
             alpha: (270 * Math.PI)/180,
-            close: false
+            close: false,
+            derivationLength: 10,
+            animate: false
+        },
+        commands: {
         }
-    },
-    derivationLength: 10,
-    animate: true
+    }
 });
         </script>
     </body>

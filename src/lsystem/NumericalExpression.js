@@ -50,4 +50,4 @@ class NumericalExpression extends Expression {
 
 export {
     NumericalExpression
-}
+};

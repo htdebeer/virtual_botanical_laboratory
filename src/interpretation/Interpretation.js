@@ -20,6 +20,32 @@
  */
 import {Command} from "./Command.js";
 
+
+const property = function (name, type, defaultValue, convert) {
+    return {
+        "name": name,
+        "type": type,
+        "default": defaultValue,
+        "converter": convert
+    };
+};
+
+const number = function (name, defaultValue = 0) {
+    return property(name, "text", defaultValue, (n) => parseFloat(n));
+};
+
+const bool = function (name, defaultValue = false) {
+    return property(name, "text", defaultValue, (b) => "true" === b ? true : false);
+};
+
+const string = function (name, defaultValue = "") {
+    return property(name, "text", defaultValue, (s) => s);
+};
+
+const color = function (name, defaultValue = "black") {
+    return property(name, "color", defaultValue, (s) => s);
+};
+
 const _commands = new WeakMap();
 const _initialState = new WeakMap();
 const _states = new WeakMap();
@@ -43,19 +69,27 @@ const renderTree = function (interpretation, moduleTree) {
  * @property {Object} state - the current state of this Interpretation.
  * @property {Object} registeredProperties - the properties that are
  * registered in this Interpretation.
+ * @property {Object} properties - the properties that have been set in this
+ * Interpretation
+ * @property {Object} commands - the commands that have been defined in this
+ * Interpretation.
  */
 class Interpretation {
     /**
      * Create a new instance of an LSystem Interpretation.
      * 
      * @param {RenderingContext|SVGElement} canvas - the canvas to draw on.
-     * @param {Object} scope - the scope of this Interpretation.
      */
     constructor(initialState = {}) {
         _initialState.set(this, initialState);
         _states.set(this, []);
         _commands.set(this, {});
-        _registeredProperties.set(this, new Set());
+        _registeredProperties.set(this, []);
+
+        this.registerProperty(
+            bool("animate"),
+            number("derivationLength")
+        );
     }
 
     get state() {
@@ -69,6 +103,14 @@ class Interpretation {
 
     get registeredProperties() {
         return _registeredProperties.get(this);
+    }
+
+    get properties() {
+        return this.state();
+    }
+
+    get commands() {
+        return _commands.get(this);
     }
 
     /**
@@ -88,7 +130,7 @@ class Interpretation {
      * parameters to apply when the command is executed.
      */
     execute(name, parameters = []) {
-        const command = _commands.get(this)[name];
+        const command = this.commands[name];
 
         if (undefined === command) {
             // By default commands that are unknown are ignored, only those
@@ -114,8 +156,20 @@ class Interpretation {
      *
      * @param {String} names - the names of the properties to register
      */
-    registerProperty(...names) {
-        names.forEach(name => this.registeredProperties.add(name));
+    registerProperty(...properties) {
+        properties.forEach(p => {
+            this.registeredProperties.push(p);
+        });
+    }
+
+    /**
+     * Get a registered property by name
+     *
+     * @param {String} name  - the name of the registered property to get.
+     * @returns {Object}
+     */
+    getRegisteredProperty(name) {
+        return this.registeredProperties.find((p) => name === p.name);
     }
 
     /**
@@ -127,7 +181,7 @@ class Interpretation {
     setProperty(name, value) {
         this.state[name] = value;
     }
-
+    
     /**
      * Get a property of this Interpretation. If no such property exists, or
      * if its value is undefined or null, return the defaultValue.
@@ -139,7 +193,7 @@ class Interpretation {
      * @returns {Object} the value of the property.
      */
     getProperty(name, defaultValue = 0) {
-        const value = this.state[name]
+        const value = this.state[name];
         return (undefined === value || null === value) ? defaultValue : value;
     }
 
@@ -150,7 +204,18 @@ class Interpretation {
      * @param {Command} command - the command.
      */
     setCommand(name, command) {
-        _commands.get(this)[name] = command;
+        this.commands[name] = command;
+    }
+
+    /**
+     * Does this Interpretation have defined a command?
+     *
+     * @param {String} name - the name of the command to check
+     * @returns {Boolean} True if there exist a command with name in this
+     * Interpretation
+     */
+    hasCommand(name) {
+        return undefined !== this.getCommand(name);
     }
 
     /**
@@ -185,7 +250,7 @@ class Interpretation {
         }
 
         for(const alias of aliasNames) {
-            _commands.get(this)[alias] = commandName;
+            this.commands[alias] = commandName;
         }
     }
 
@@ -196,15 +261,15 @@ class Interpretation {
      * @returns {Command|undefined}
      */
     getCommand(name) {
-        const command = _commands.get(this)[name];
+        const command = this.commands[name];
 
         if (command instanceof Command) {
             return command;
         } else if ("string" === typeof command) {
-            return getCommand(command);
+            return this.getCommand(command);
         } else {
             return undefined;
-        };
+        }
     }
 
     /**
@@ -260,5 +325,10 @@ class Interpretation {
 }
 
 export {
-    Interpretation
-}
+    Interpretation,
+    number,
+    bool,
+    string,
+    color,
+    property
+};

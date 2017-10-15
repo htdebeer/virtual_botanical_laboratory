@@ -19,17 +19,103 @@
  * 
  */
 import {View} from "./View.js";
+import {Command} from "../interpretation/Command.js";
+import {PropertyEditor} from "./PropertyEditor.js";
+
+const _propertyEditor = new WeakMap();
+const _commandEditor = new WeakMap();
+
+const createPropertyEditor = function(view, properties, definedProperties) {
+    const propertyEditor = new PropertyEditor(properties, definedProperties, {
+        header: "Properties",
+        keyLabel: "Name",
+        valueLabel: "Value",
+        addLabel: "Add property"
+    });
+
+    _propertyEditor.set(view, propertyEditor);
+    return propertyEditor;
+};
+
+const createCommandPropertyEditor = function(view, commands, definedCommands) {
+    const commandEditor = new PropertyEditor(commands, definedCommands, {
+        header: "Commands",
+        keyLabel: "Name",
+        valueLabel: "Definition",
+        addLabel: "Add command definition",
+        editable: false
+    });
+
+    _commandEditor.set(view, commandEditor);
+    return commandEditor;
+};
+
 
 /**
- * View represents a tab in the LabView.
+ * The InterpretationView represents a form to inspect and configure the
+ * properties of an Interpretation.
+ *
+ * @property {Object} properties - the properties of the interpretation to
+ * configure
+ * @property {Object} values - the values of the properties of the
+ * interpretation to configure
  *
  */
 class InterpretationView extends View {
 
-    constructor(elt, interpretation, config = {}) {
+    /**
+     * Create a new InterpretationView
+     *
+     * @param {HTMLElement} elt
+     * @param {Interpretation} interpretation
+     * @param {Object} [interpretationConfig = {}]
+     * @param {Object} [config = {}]
+     */
+    constructor(elt, interpretation, interpretationConfig = {}, config = {}) {
         super(elt, "interpretation", config);
+
+        const container = document.createElement("div");
+        container.classList.add("interpretation-contents");
+
+        const properties = interpretation.registeredProperties;
+
+        container.appendChild(createPropertyEditor(this, properties, interpretationConfig.config).element);
+        
+        const commands = Object.keys(interpretation.commands).map(command => {
+            return {
+                name: command,
+                type: "textarea",
+                default: "",
+                converter: (s) => s
+            };
+        });
+        
+        const definedCommands = {};
+
+        Object.keys(interpretation.commands).forEach(name => {
+            const command = interpretation.commands[name];
+            definedCommands[name] = command.toString();
+        });
+
+        if (undefined !== interpretationConfig.commands) {
+            Object.keys(interpretationConfig.commands).forEach(name => {
+                const command = new Command(interpretationConfig.commands[name]);
+                definedCommands[name] = command.toString();
+            });
+        }
+
+        container.appendChild(createCommandPropertyEditor(this, commands, definedCommands).element);
+        this.element.appendChild(container);
     }
-};
+
+    get properties() {
+        return _propertyEditor.get(this).propertyValues;
+    }
+
+    get commands() {
+        return _commandEditor.get(this).propertyValues;
+    }
+}
 
 export {
     InterpretationView

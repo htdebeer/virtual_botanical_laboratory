@@ -54,4 +54,4 @@ class BooleanExpression extends Expression {
 
 export {
     BooleanExpression
-}
+};
