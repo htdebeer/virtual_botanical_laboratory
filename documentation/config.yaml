@@ -1,0 +1,13 @@
+templates:
+  mddoc:
+    pandoc:
+      from: "markdown"
+      to: "markdown"
+      standalone: true
+      filter: 
+      - "insert_document.rb"
+      - "insert_code_block.rb"
+      - "remove_pandocomatic_metadata.rb"
+  indexdoc:
+      extends: "mddoc"
+      postprocessors: ['setup_for_website.rb']
