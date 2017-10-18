@@ -31,7 +31,7 @@
   "homepage": "https://github.com/htdebeer/virtual_botanical_laboratory#readme",
   "devDependencies": {
     "docdash": "^0.4.0",
-    "jsdoc": "^3.5.3",
+    "jsdoc": "^3.5.5",
     "mocha": "^3.4.2",
     "rollup": "^0.45.2"
   }
