@@ -41,8 +41,12 @@ new virtual_botanical_laboratory.LabView("#lab", {
             animate: true
         },
         commands: {
-            Fl: "this.getCommand('F').execute(this)",
-            Fr: "this.getCommand('F').execute(this)"
+            "Fl": function () {
+                this.getCommand("F").execute(this);
+            },
+            "Fr": function () {
+                this.getCommand("F").execute(this);
+            }
         }
     }
 });

@@ -3391,14 +3391,14 @@ const createInterpretation = function (lab, interpretationConfig = {}) {
                 });
         }
 
-        Object.keys(availableCommands)
-            .forEach((entry) => {
-                const [name, func] = entry;
-                interpretation.setCommand(name, new Command(func));
-            });
+        Object
+            .keys(availableCommands)
+            .forEach((name) => interpretation.setCommand(name, new Command(availableCommands[name])));
     } else {
         interpretation = interpretationConfig;
     }
+
+    console.log(interpretation.commands);
 
     _interpretation.set(lab, interpretation);
 };
