@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <script src="../../../dist/virtual_botanical_laboratory.js"></script>
+    <body>
+        <header>
+            <h2>
+                Prusinkiewicz and Lindenmayer (1990) <i>The Algorithmic Beauty of Plants</i> 
+                (<a href="http://algorithmicbotany.org/papers/#abop">link</a>)
+            </h2>
+            <h3>Chapter 1—Graphical modeling using L-systems</h3>
+            <h1>Figure 1.31.d: Examples of branching structures generated
+                using L-systems based on the results of Hogeweg and Hesper (pp. 30—31)</h1>
+        </header>
+        <figure id="lab"></figure>
+        <script>
+new virtual_botanical_laboratory.LabView("#lab", {
+    lsystem: `branching_structure = lsystem(
+        description: "Figure 1.31.d: Examples of branching structures
+            generated using L-systems based on the results of Hogeweg and Hesper
+            (Prusinkiewicz, P., & Lindenmayer, A. (1990). The algorithmic beauty
+            of plants, pp. 30—31)",
+        alphabet: {F, O, I, -, +},
+        axiom: F O F I F I,
+        productions: {
+            O < O > O -> I,
+            O < O > I -> O,
+            O < I > O -> O,
+            O < I > I -> I F I,
+            I < O > O -> I,
+            I < O > I -> I [ + F I F I ],
+            I < I > O -> I,
+            I < I > I -> O,
+            + -> -,
+            - -> + 
+        },
+        ignore: {+, -, F}
+    )`,
+    interpretation: {
+        config: {
+            x: 300,
+            y: 500,
+            width: 500,
+            height: 500,
+            d: 10,
+            delta: (-25.75 * Math.PI)/180,
+            alpha: (270 * Math.PI)/180,
+            close: false,
+            derivationLength: 24,
+            animate: true
+        }
+    }
+});
+    </script>

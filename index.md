@@ -221,6 +221,10 @@ to do
 Developing `virtual_botanical_laboratory` {#developing}
 =========================================
 
+Note. The `virtual_botanical_laboratory` is quite SPACE inefficient.
+This is fine for the prototype it is now, but this issue needs to be
+addressed when continuing the project.
+
 If you plan on extending or adapting the `virtual_botanical_laboratory`,
 see the [API
 documentation](https://heerdebeer.org/Software/virtual_botanical_laboratory/documentation/api/).
@@ -263,12 +267,15 @@ The following list of features and improvements are still to do:
     -   **Import**ing other l-systems
     -   **`&`** operator
     -   Other stuff from later in the book
+    -   Derive a successor in a separate (worker) thread
 -   **Interpretation**:
     -   Rendering **3D** interpretations
 -   An **improved user interface**. The current interface is just a
     placeholder. Enough to configure and experiment with l-systems, but
     in not user-friendly. Feel free to replace it with something better,
     pull requests are welcome!
+
+    -   make derivation and rendering cancellable.
 
 References
 ==========

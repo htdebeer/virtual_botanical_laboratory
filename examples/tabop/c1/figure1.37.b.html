@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <script src="../../../dist/virtual_botanical_laboratory.js"></script>
+    <body>
+        <header>
+            <h2>
+                Prusinkiewicz and Lindenmayer (1990) <i>The Algorithmic Beauty of Plants</i> 
+                (<a href="http://algorithmicbotany.org/papers/#abop">link</a>)
+            </h2>
+            <h3>Chapter 1—Graphical modeling using L-systems</h3>
+            <h1>Figure 1.37.b: Two curves suggesting a "row of trees" (p. 48)</h1>
+        </header>
+        <figure id="lab"></figure>
+        <script>
+new virtual_botanical_laboratory.LabView("#lab", {
+    lsystem: `
+        c = 1;
+        p = 0.3;
+        q = c - p;
+        h = (p * q) ^ 0.5;
+        
+        row_of_trees = lsystem(
+            description: "Figure 1.37.b: Two curves suggesting a 'row of trees'
+                (Prusinkiewicz, P., & Lindenmayer, A. (1990). The algorithmic beauty
+                of plants, p. 48)",
+            alphabet: {F(x, t), -, +},
+            axiom: F(1, 0),
+            productions: {
+                F(x, t) : t = 0 -> F(x * p, 2) + F(x * h, 1) - - F(x*h, 1) +
+                                    F(x*q, 0),
+                F(x, t) : t > 0 -> F(x, t - 1)
+            }
+        )`,
+    interpretation: {
+        config: {
+            x: 0,
+            y: 300,
+            width: 500,
+            height: 500,
+            d: 5,
+            delta: (-86 * Math.PI)/180,
+            alpha: 0,
+            close: false,
+            derivationLength: 10,
+            animate: true
+        }
+    }
+});
+    </script>

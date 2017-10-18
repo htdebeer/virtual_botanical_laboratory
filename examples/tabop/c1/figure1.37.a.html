@@ -10,33 +10,38 @@
                 (<a href="http://algorithmicbotany.org/papers/#abop">link</a>)
             </h2>
             <h3>Chapter 1—Graphical modeling using L-systems</h3>
-            <h1>Figure 1.9.f: A sequence of Koch curves obtained by successive
-                modification of the production successor (p. 10)</h1>
+            <h1>Figure 1.37.a: Two curves suggesting a "row of trees" (p. 48)</h1>
         </header>
         <figure id="lab"></figure>
         <script>
 new virtual_botanical_laboratory.LabView("#lab", {
-    lsystem: `Koch_curve = lsystem(
-        description: "Figure 1.9.f: F → F - F + F - F - F
-            (Prusinkiewicz, P., & Lindenmayer, A. (1990). The algorithmic beauty
-            of plants, p. 10)",
-        alphabet: {F, -, +},
-        axiom: F - F - F - F,
-        productions: {
-            F -> F - F + F - F - F
-        }
-    )`,
+    lsystem: `
+        c = 1;
+        p = 0.3;
+        q = c - p;
+        h = (p * q) ^ 0.5;
+        
+        row_of_trees = lsystem(
+            description: "Figure 1.37.a: Two curves suggesting a 'row of trees'
+                (Prusinkiewicz, P., & Lindenmayer, A. (1990). The algorithmic beauty
+                of plants, p. 48)",
+            alphabet: {F(x), -, +},
+            axiom: F(1),
+            productions: {
+                F(x) -> F(x * p) + F (x * h) - - F(x * h) + F(x * q)
+            }
+        )`,
     interpretation: {
         config: {
-            x: 250,
-            y: 400,
+            x: 0,
+            y: 500,
             width: 500,
             height: 500,
-            d: 6,
-            delta: (90 * Math.PI)/180,
+            d: 5,
+            delta: (-86 * Math.PI)/180,
             alpha: 0,
             close: false,
-            derivationLength: 4,
+            derivationLength: 6,
             animate: true
         }
     }
