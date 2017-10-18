@@ -40,5 +40,5 @@ the material I would not have reached by using the available software. Here I
 present my own virtual botanical laboratory that I unoriginally named
 `virtual_botanical_laboratory`. Feel free to use is to explore the book *The
 algorithmic beauty of plants* yourself, use it to generate your own plant-like
-shapes, or just have fun with it!
+shapes, or just have fun with it! (For example, look at that odd looking tree I generated above :-))
 
