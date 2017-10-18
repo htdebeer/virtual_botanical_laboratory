@@ -10,33 +10,33 @@
                 (<a href="http://algorithmicbotany.org/papers/#abop">link</a>)
             </h2>
             <h3>Chapter 1—Graphical modeling using L-systems</h3>
-            <h1>Figure 1.8: Combination of islands and lakes (p. 9)</h1>
+            <h1>Figure 1.9.f: A sequence of Koch curves obtained by successive
+                modification of the production successor (p. 10)</h1>
         </header>
         <figure id="lab"></figure>
         <script>
 new virtual_botanical_laboratory.LabView("#lab", {
-    lsystem: `islands_and_lakes = lsystem(
-        description: "Figure 1.8: Combination of islands and lakes
+    lsystem: `Koch_curve = lsystem(
+        description: "Figure 1.9.f: F → F - F + F - F - F
             (Prusinkiewicz, P., & Lindenmayer, A. (1990). The algorithmic beauty
-            of plants, p. 9)",
-        alphabet: {F, f, -, +},
-        axiom: F + F + F + F,
+            of plants, p. 10)",
+        alphabet: {F, -, +},
+        axiom: F - F - F - F,
         productions: {
-            F -> F + f - F F + F + F F + F f + F F - f + F F - F - F F - F f - F F F,
-            f -> f f f f f f
+            F -> F - F + F - F - F
         }
     )`,
     interpretation: {
         config: {
-            x: 200,
-            y: 180,
+            x: 250,
+            y: 400,
             width: 500,
             height: 500,
-            d: 4,
+            d: 6,
             delta: (90 * Math.PI)/180,
             alpha: 0,
             close: false,
-            derivationLength: 2,
+            derivationLength: 4,
             animate: true
         },
         commands: {

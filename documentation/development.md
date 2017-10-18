@@ -1,3 +1,6 @@
+If you plan on extending or adapting the `virtual_botanical_laboratory`, see the [API
+documentation](https://heerdebeer.org/Software/virtual_botanical_laboratory/documentation/api/).
+
 ## Building
 
 -   To build the `virtual_botanical_laboratory`, run

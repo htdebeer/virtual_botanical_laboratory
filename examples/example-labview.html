@@ -2,18 +2,18 @@
 <html>
     <head>
         <meta charset="utf-8">
+        <script src="../dist/virtual_botanical_laboratory.js"></script>
     </head>
     <body>
         <header>
             <h1>Experimental Virtual Botanical Lab</h1>
         </header>
-        <main id="lab">
-        </main>
-        <script type="module">
-import {Lab} from "../../../src/Lab.js";
-
-const config = {
-    lsystem: `lsystem(
+        <div id="lab">
+        </div>
+        <script>
+new virtual_botanical_laboratory.LabView("#lab", {
+    lsystem: `simple_tree = lsystem(
+        description: "Simple growing tree from book.",
         alphabet: {F, O, I, -, +},
         axiom: F I F I F I,
         productions: {
@@ -31,28 +31,22 @@ const config = {
         ignore: {+, -, F}
     )`,
     interpretation: {
-        type: "canvas",
         config: {
-            x: 400,
-            y: 800,
+            x: 200,
+            y: 300,
+            width: 600,
+            height: 400,
             d: 10,
             delta: (-22.5 * Math.PI)/180,
             alpha: (270 * Math.PI)/180,
-            close: false
+            close: false,
+            derivationLength: 10,
+            animate: false
+        },
+        commands: {
         }
-    },
-    derivationLength: 30,
-    animate: true
-};
-
-const lab = new Lab(config);
-const labElement = document.getElementById("lab");
-labElement.appendChild(lab.element);
-
-// For testing/experimenting purposes, the lab is added to the global scope so
-// you can access it from the web browser JavaScript console via the `lab`
-// variable.
-window.lab = lab;
+    }
+});
         </script>
     </body>
 </html>

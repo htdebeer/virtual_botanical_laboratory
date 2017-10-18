@@ -1,10 +1,11 @@
 A while back I was reading *Artificial life. A report from the frontier where
 computers meet biology* [@Levy1992a]. In this book, Levy describes the
 development of the scientific field of *artificial life* till the 1990s.
-Although I think the book was less readable than his work *Hackers* [@Levy2010a], it was still an
-interesting read. What piqued my interest most in Levy's book on artificial
-life was the idea of generating plant-like structures by means of a rewriting
-system known as an *[L-system](https://en.wikipedia.org/wiki/L-system)*.
+Although I think the book was less readable than his work *Hackers*
+[@Levy2010a], it was still an interesting read. What piqued my interest most
+in Levy's book on artificial life was the idea of generating plant-like
+structures by means of a rewriting system known as an
+*[L-system](https://en.wikipedia.org/wiki/L-system)*.
 
 In the notes to the Chapter *Artificial flora, artifical fauna, artificial
 ecologies* I found a reference to a book called *The algorithmic beauty of
@@ -40,5 +41,5 @@ the material I would not have reached by using the available software. Here I
 present my own virtual botanical laboratory that I unoriginally named
 `virtual_botanical_laboratory`. Feel free to use is to explore the book *The
 algorithmic beauty of plants* yourself, use it to generate your own plant-like
-shapes, or just have fun with it! (For example, look at that odd looking tree I generated above :-))
-
+shapes, or just have fun with it! (For example, look at that odd looking tree
+I generated above :-))

@@ -24,6 +24,13 @@ the [L-system language](#l-system). Finally, [building the
 software](#developing) is discussed, including a list with [to do
 items](#todo).
 
+## Running the `virtual_botanical_laboratory` {#running
+
+::paru::insert running.md
+
+For more information about creating and configuring L-systems, see the
+chapters below.
+
 ## License
 
 ::paru::insert license.md

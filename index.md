@@ -71,6 +71,71 @@ overview of the [L-system language](#l-system). Finally, [building the
 software](#developing) is discussed, including a list with [to do
 items](#todo).
 
+Running the `virtual_botanical_laboratory` {\#running
+-----------------------------------------------------
+
+To run the `virtual_botanical_laboratory`, you need to:
+
+-   include `dist/virtual_botanical_laboratory.js` in your HTML file.
+    For example in the HEAD like:
+
+    ``` {.html}
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <script src="dist/virtual_botanical_laboratory.js"></script>
+    ```
+
+-   create a LabView and configure it. For example:
+
+    ``` {.html}
+    <figure id="lab"></figure>
+    <script>
+        new virtual_botanical_laboratory.LabView("#lab", {
+            lsystem: `simple_tree = lsystem(
+                description: "Simple growing tree",
+                alphabet: {F, O, I, -, +},
+                axiom: F I F I F I,
+                productions: {
+                    O < O > O -> I,
+                    O < O > I -> I [ - F I F I ],
+                    O < I > O -> I,
+                    O < I > I -> I,
+                    I < O > O -> O,
+                    I < O > I -> I F I,
+                    I < I > O -> I,
+                    I < I > I -> O,
+                    + -> -,
+                    - -> +
+                },
+                ignore: {+, -, F}
+            )`,
+            interpretation: {
+                config: {
+                    x: 200,
+                    y: 300,
+                    width: 600,
+                    height: 400,
+                    d: 10,
+                    delta: (-22.5 * Math.PI)/180,
+                    alpha: (270 * Math.PI)/180,
+                    close: false,
+                    derivationLength: 10,
+                    animate: false
+                }
+            }
+        });
+    </script>
+    ```
+
+-   and open the HTML file in a modern web browser!
+
+For more examples, please see the
+[examples](https://heerdebeer.org/Software/virtual_botanical_laboratory/#reading).
+
+For more information about creating and configuring L-systems, see the
+chapters below.
+
 License
 -------
 
@@ -84,7 +149,58 @@ software](https://www.gnu.org/philosophy/free-sw.en.html);
 Reading *The algorithmic beauty of plants* {#reading}
 ==========================================
 
-examples
+In this Chapter all examples in the first Chapter of the book *The
+algorithmic beauty of plants*, **Graphical modeling using L-systems**,
+are recreated using the `virtual_botanical_laboratory`. I recommend you
+read the book's chapter while exploring the examples. In doing so, you
+will get familiar with the syntax of defining a L-system.
+
+Note. Sometimes doing another derivation might crash your browser.
+
+Figure 1.6: Generating a quadratic Koch island [@Prusinkiewicz1990a, p.8]
+-------------------------------------------------------------------------
+
+![The Koch island with a derivation of length 3; [click to open example
+in the
+`virtual_botanical_laboratory`](examples/tabop/c1/figure1.6.html)](images/tabop/c1/figure1.6.png)
+
+Figure 1.7: Examples of Koch curves generated using L-systems [@Prusinkiewicz1990a, p.9]
+----------------------------------------------------------------------------------------
+
+![Figure 1.7.a. Quadratic Koch island [click to open example in the
+`virtual_botanical_laboratory`](examples/tabop/c1/figure1.7.a.html)](images/tabop/c1/figure1.7.a.png)
+
+![Figure 1.7.b. A quadratic modification of the snowflake curve [click
+to open example in the
+`virtual_botanical_laboratory`](examples/tabop/c1/figure1.7.b.html)](images/tabop/c1/figure1.7.b.png)
+
+Figure 1.8: Combination of islands and lakes [@Prusinkiewicz1990a, p.9]
+-----------------------------------------------------------------------
+
+![Figure 1.8. Combination of islands and lakes [click to open example in
+the
+`virtual_botanical_laboratory`](examples/tabop/c1/figure1.8.html)](images/tabop/c1/figure1.8.png)
+
+Figure 1.9: A sequence of Koch curves obtained by successive modification of the production successor [@Prusinkiewicz1990a, p.10]
+---------------------------------------------------------------------------------------------------------------------------------
+
+![Figure 1.9.a: F → FF-F-F-F-F-F+F [click to open example in the
+`virtual_botanical_laboratory`](examples/tabop/c1/figure1.9.a.html)](images/tabop/c1/figure1.9.a.png)
+
+![Figure 1.9.b: F → FF-F-F-F-FF [click to open example in the
+`virtual_botanical_laboratory`](examples/tabop/c1/figure1.9.b.html)](images/tabop/c1/figure1.9.b.png)
+
+![Figure 1.9.c: F → FF-F+F-F-FF [click to open example in the
+`virtual_botanical_laboratory`](examples/tabop/c1/figure1.9.c.html)](images/tabop/c1/figure1.9.c.png)
+
+![Figure 1.9.d: F → FF-F--F-F [click to open example in the
+`virtual_botanical_laboratory`](examples/tabop/c1/figure1.9.d.html)](images/tabop/c1/figure1.9.d.png)
+
+![Figure 1.9.e: F → F-FF--F-F [click to open example in the
+`virtual_botanical_laboratory`](examples/tabop/c1/figure1.9.e.html)](images/tabop/c1/figure1.9.e.png)
+
+![Figure 1.9.f: F → F-F+F-F-F [click to open example in the
+`virtual_botanical_laboratory`](examples/tabop/c1/figure1.9.f.html)](images/tabop/c1/figure1.9.f.png)
 
 Using the virtual botanical laboratory {#using}
 ======================================
@@ -92,11 +208,19 @@ Using the virtual botanical laboratory {#using}
 Interface
 ---------
 
+to do
+
 The L-system language {#l-system}
 ---------------------
 
+to do
+
 Developing `virtual_botanical_laboratory` {#developing}
 =========================================
+
+If you plan on extending or adapting the `virtual_botanical_laboratory`,
+see the [API
+documentation](https://heerdebeer.org/Software/virtual_botanical_laboratory/documentation/api/).
 
 Building
 --------
