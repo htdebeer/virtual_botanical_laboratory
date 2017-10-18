@@ -3398,8 +3398,6 @@ const createInterpretation = function (lab, interpretationConfig = {}) {
         interpretation = interpretationConfig;
     }
 
-    console.log(interpretation.commands);
-
     _interpretation.set(lab, interpretation);
 };
 
