@@ -69,7 +69,7 @@ To run the `virtual_botanical_laboratory`, you need to:
     </script>
     ```
 
--   and open the HTML file in a modern web browser!
+-   and [open](https://heerdebeer.org/Software/virtual_botanical_laboratory/examples/example-labview.html) the HTML file in a modern web browser!
 
 For more examples, please see the [examples](https://heerdebeer.org/Software/virtual_botanical_laboratory/#reading).
 
