@@ -300,12 +300,252 @@ Using the virtual botanical laboratory {#using}
 Interface
 ---------
 
-to do
+The `virtual_botanical_laboratory` has a very simple and bare-bones user
+interface. It has been added more as an afterthought than that it has
+been designed with user experience in mind. (Feel free to create a
+better interface, `virtual_botanical_laboratory` is free software after
+all.)
+
+The interface is meant to show the generated images while giving the
+user access to the underlying L-system and the configuration of the
+interpretation of that L-system.
+
+The user interface consists of five tab pages:
+
+1.  On the *main* tab page, labeled with **♣**, you can see the rendered
+    L-system (see figure below). It also has some buttons to control the
+    L-system and export the rendering.
+
+    ![The *main* tab to view and control the
+    L-system](https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/main-tab.png)
+
+    The following "file" actions are available:
+
+    -   **★** (New): create a new empty virtual botanical laboratory in
+        a new window.
+    -   **▼ HTML** (Export to HTML): export the virtual botanical
+        laboratory to a HTML file. By default, this file is named after
+        the L-system.
+    -   **▼ PNG** (Export to PNG): export the rendered L-system to a PNG
+        file. By default, this file is named after the L-system.
+
+    The following "control" actions are available:
+
+    -   **▶️** (Run): derive new successors for the L-system until it
+        has reached the derivation length set by property
+        `derivationLength`. You can set that option on the
+        *Interpretation* tab.
+    -   **⏸** (Pause): stop deriving new successor.
+    -   **1** (Step): derive the next successor for the L-system. Note.
+        Due to the inefficiencies with respect to memory, this might
+        crash your browser.
+    -   **⏮** (Reset): reset the L-system to the axiom.
+
+2.  You can view and edit the L-system definition on the *L-system* tab
+    (see figure below).
+
+    ![The *L-system* tab to view and change the L-system's
+    definition](https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/lsystem-tab.png)
+
+    When you change the L-system, press the **Update** button to have
+    the changes take effect. This will parse the L-system's definition.
+    If you make an error, a warning is displayed. If everything is okay,
+    a temporary information message to that effect is shown. Switch back
+    to the *main* tab to see the changes in action.
+3.  You can view and change the configuration of the interpretation on
+    the *Interpretation* tab (see figure below).
+
+    ![The *Interpretation* tab to view and change the L-system's
+    interpretation](images/ui/https://heerdebeer.org/Software/virtual_botanical_laboratory/interpretation-tab.png)
+
+    On this *Interpretation* tab, there are two sections:
+
+    1.  **Properties**, which is an editable list of properties you can
+        set, update, or remove. These properties include:
+
+        -   the *width* and *height* of the canvas
+        -   the start coordinates *x*, *y*
+        -   the start angle *alpha*
+        -   the distance to draw each `F` command, *d*
+        -   the rotation to apply each `+` and `-` command, *delta*
+        -   the *close* property to connect start and end points
+        -   the *derivationLength* property to set the number or
+            derivation steps to perform
+        -   the *animate* property to indicate if each derivation step
+            has to be shown or only the final result
+        -   the *line-width*
+        -   the *line-color*
+
+    2.  **Commands**, which is a list of all commands defined in the
+        L-system. You can edit their definitions. Note. the `this`
+        refers to the
+        `[Interpretation](https://heerdebeer.org/Software/virtual_botanical_laboratory/documentation/api/Interpretation.html)`.
+
+        The commands `F`, `f`, `+`, and `-` are defined by default. If
+        you want to change their behavior, you have to introduce a new
+        symbol in the L-system and write its command's code. You can
+        call the default implementation as follows:
+
+            this.getCommand("F").execute(this);
+
+4.  You can read a short manual on the *Help* tab (labeled *?*).
+5.  You can read about the `virtual_botanical_laboratory` and its
+    license on the *About* tab (labeled *i*).
 
 The L-system language {#l-system}
 ---------------------
 
-to do
+The language to define a L-system follows the language described in the
+(first chapter of the) book *The algorithmic beauty of plants*
+[@Prusinkiewicz1990a]. There are some notable differences:
+
+1.  Symbol names should be separated from each other. If you want to
+    denote an `F` followed by another `F`, write `F F` rather than `FF`.
+2.  Symbols can have names of any length larger than 0. So you can use
+    symbol `Forward` instead of `F` if you so please.
+3.  3D aspects of the language have not yet been implemented.
+4.  Language features described outside of Chapter 1 of
+    @Prusinkiewicz1990a have not yet been implemented.
+
+Next the features of the L-system definition language are briefly
+introduced. For a more thorough overview, please see the [Chapter on
+reading @Prusinkiewicz1990a](\#reading).
+
+### Basic L-system definitions
+
+A basic L-system is defined by three parts:
+
+1.  An **alphabet** with symbols, such as `F`, `-`, and `+`.
+2.  The **axiom** or the initial string of symbols, such as `F F`.
+3.  A list of rewriting rules called **productions**, such as
+    `F -> - F + F`.
+
+You specify the above L-system as follows:
+
+``` {.lsystem}
+my_first_lsystem = lsystem(
+    alphabet: {F, -, +},
+    axiom: F F,
+    productions: {
+        F -> - F + F,
+        - -> -,
+        + -> +
+    }
+)
+```
+
+Identity rewriting rules like `+ -> +` can be omitted. If there is no
+rewriting rule specified for a symbol in the language, the identity
+rewriting rule is used by default.
+
+For documenting purposes, you can also add a **description** to the
+L-system definition. So, the above example can be rewritten as:
+
+``` {.lsystem}
+my_first_lsystem = lsystem(
+    description: "This is my first L-system definition!",
+    alphabet: {F, -, +},
+    axiom: F F,
+    productions: {
+        F -> - F + F
+    }
+)
+```
+
+One of the interesting features of L-systems are branching structures.
+To define a sub structure, place it in between `[` and `]`. For example:
+
+``` {.lsystem}
+expanding_tree_circle = lsystem(
+    alphabet: {F, -, +},
+    axiom: F,
+    productions: {
+        F -> F [ + F] - F
+    }
+)
+```
+
+This will generate some expanding circle of branching lines.
+
+### Extensions to the L-system definition language
+
+-   Stochastic L-systems. To bring some randomness into your generated
+    plants, you can configure different successor patterns for one
+    symbol and indicate the likelyhood these successor patterns are
+    chosen by prepending each successor pattern with a numerical
+    probability. The sum of these probabilities **must** be one (1).
+
+    For example, in the previous example you can choose circling left
+    over right more often as follows:
+
+    ``` {.lsystem}
+    expanding_random_tree_circle = lsystem(
+        alphabet: {F, -, +},
+        axiom: F,
+        productions: {
+            F: {
+                0.4 -> F [ + F] - F,
+                0.6 -> F [ - F] + F
+            }
+        }
+    )
+    ```
+
+-   Context-aware L-system. You can choose a different successor pattern
+    depending on the context wherein a symbol appears. For example, a
+    `F` after a `+` can be replaced by a `f + F`, and a `F` after a `-`
+    can be replaced by a `F - f`. You can indicate which symbols should
+    be ignored when checking the context using the **ignore** keyword.
+    For example:
+
+    ``` {.lsystem}
+    expanding_random_tree_circle = lsystem(
+        alphabet: {F, f, -, +},
+        axiom: f,
+        productions: {
+            - < F -> F - f,
+            + < F -> f + F.
+            f -> f [ - F] f [+ f]
+        },
+        ignore: {f}
+    )
+    ```
+
+    The *left context* is indicated by the string before the `<`
+    operator. You can indicate the *right context* by a string after the
+    `>` operator (not shown in the example).
+
+-   Parameterized symbols. To move information through a derivation, you
+    can user parameterized symbols. For example:
+
+    ``` {.lsystem}
+    dx = 10;
+    ddx = 0.5;
+
+    expanding_random_tree_circle = lsystem(
+        alphabet: {F'(x), -, +},
+        axiom: F'(100),
+        productions: {
+            F'(x): x > 100 -> F + [ F'(x - dx) - F'(x / ddx)],
+            F'(x): x < 100 -> F - [ F'(x + dx) - F'(x * ddx)]
+        }
+    )
+    ```
+
+    Here the `F'` symbol has parameter `x`. The successor to `F'(x)`
+    differs depending on the value of `x`. These rewriting rules are
+    *conditional*. You can define symbols with one or more parameters.
+    Conditions can be complex by using Boolean operators `and`, `or`,
+    and `not`.
+
+    Also note the definition of global values `dx` and `ddx`.
+
+    The power of parameterization is realized best by making using the
+    parameter in the interpretation to change the behavior of the
+    commands. For example, we can define the `F'` command as follows:
+
+        this.d = this.d + x;
+        this.getCommand("F").execute(this);
 
 Developing `virtual_botanical_laboratory` {#developing}
 =========================================

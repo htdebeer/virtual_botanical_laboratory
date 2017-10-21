@@ -1,3 +1,7 @@
+#!/usr/bin/env ruby
+
+
+puts <<~START
 /*
  * Copyright 2017 Huub de Beer <huub@heerdebeer.org>
  *
@@ -18,12 +22,16 @@
  * <http://www.gnu.org/licenses/>.
  * 
  */
-export default `{
-    "lsystem": "new_lab = lsystem(description: \\\"New lab, see '?' for help.\\\", alphabet: {F}, axiom: F, productions: {F -> F F})",
-    "interpretation": {
-        "config": {
-            "derivationLength": 1,
-            "y": 50
-        }
-    }
-}`;
+/**
+ * The manual.
+ */
+export default `
+<p>
+START
+
+puts $stdin.read
+
+puts <<~END
+</p>
+`;
+END

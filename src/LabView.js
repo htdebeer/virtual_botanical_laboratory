@@ -118,6 +118,38 @@ const updateLSystem = function (labview, lsystemTab) {
             labview.reset();
             labview.lab.lsystem = lsystem;
             lsystemTab.originalLSystem = lsystemString;
+
+            // Also update the Interpretation tab's commands
+            const interpretationTab = _tabs.get(labview)["interpretation"];
+            const interpretation = labview.lab.interpretation;
+        
+            const availableCommands = {};
+            lsystem
+                .alphabet
+                .moduleDefinitions
+                .forEach((md) => {
+                    if (!interpretation.hasCommand(md.name)) {
+                        availableCommands[md.name] = undefined;
+                    }
+                });
+
+            const interpretationConfig = _config.get(labview)["interpretation"];
+            // Commands can be (re)defined in a configuration of an Interpretation 
+            if ("commands" in interpretationConfig) {
+                Object
+                    .entries(interpretationConfig["commands"])
+                    .forEach((entry) => {
+                        const [name, func] = entry;
+                        availableCommands[name] = func;
+                    });
+            }
+
+            Object
+                .keys(availableCommands)
+                .forEach((name) => interpretation.setCommand(name, new Command(availableCommands[name])));
+
+            interpretationTab.updateCommands(interpretation);
+
             lsystemTab.showMessage("LSystem parsed and updated successfully.", "info", 2000);
             _config.get(labview)["lsystem"] = lsystemString;
         } catch (e) {
@@ -194,32 +226,32 @@ const setupTabs = function (labview, element, tabConfig) {
     const tabs = {};
 
     // General "render" tab to view and control L-System
-    const renderTabElement = createTab(labview, "render", "♣", "View interpreted L-System", true);
+    const renderTabElement = createTab(labview, "render", "♣", "View interpreted L-system", true);
     tabsElement.appendChild(renderTabElement);
     const renderTab = tabs["render"] = new RenderView(renderTabElement, {});
 
-    renderTab.addAction(new Action("create", "★", "Create a new L-System.", () => labview.create()));
-    renderTab.addAction(new Action("exportToHtml", "▼ HTML", "Save this L-System to a HTML file.", () => labview.exportToHTML()));
-    renderTab.addAction(new Action("exportToPng", "▼ PNG", "Export this L-System to a PNG file.", () => labview.exportToPNG()));
+    renderTab.addAction(new Action("create", "★", "Create a new L-system.", () => labview.create()));
+    renderTab.addAction(new Action("exportToHtml", "▼ HTML", "Save this L-system to a HTML file.", () => labview.exportToHTML()));
+    renderTab.addAction(new Action("exportToPng", "▼ PNG", "Export this L-system to a PNG file.", () => labview.exportToPNG()));
 
     renderTab.addAction(new Spacer());
 
-    renderTab.addAction(new Action("run", "▶️", "Run this L-System.", () => labview.run()));
-    renderTab.addAction(new Action("pause", "⏸", "Pause this L-System.", () => labview.pause()));
-    renderTab.addAction(new Action("step", "1", "Derive the next succesor of this L-System.", () => labview.step()));
-    renderTab.addAction(new Action("reset", "⏮", "Reset this L-System.", () => labview.reset()));
+    renderTab.addAction(new Action("run", "▶️", "Run this L-system.", () => labview.run()));
+    renderTab.addAction(new Action("pause", "⏸", "Pause this L-system.", () => labview.pause()));
+    renderTab.addAction(new Action("step", "1", "Derive the next succesor of this L-system.", () => labview.step()));
+    renderTab.addAction(new Action("reset", "⏮", "Reset this L-system.", () => labview.reset()));
 
     // L-System tab to edit L-System definition
-    const lsystemTabElement = createTab(labview, "lsystem", "L-System", "Edit L-System");
+    const lsystemTabElement = createTab(labview, "lsystem", "L-system", "Edit L-system");
     tabsElement.appendChild(lsystemTabElement);
     tabs["lsystem"] = new LSystemView(lsystemTabElement, tabConfig.lsystem, {
-        header: "L-System definition"
+        header: "L-system definition"
     });
     tabs["lsystem"].addAction(
         new Action(
             "update", 
             "update", 
-            "Update this L-System.", 
+            "Update this L-system.", 
             () => updateLSystem(labview, tabs["lsystem"])
         )
     );
@@ -234,7 +266,7 @@ const setupTabs = function (labview, element, tabConfig) {
         new Action(
             "update", 
             "update", 
-            "Update this L-System.", 
+            "Update this L-system.", 
             () => updateInterpretation(labview, tabs["interpretation"])
         )
     );

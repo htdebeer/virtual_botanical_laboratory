@@ -26,6 +26,9 @@ export default `
     virtual_botanical_laboratory © 2017 Huub de Beer &lt;<a href="mailto:Huub@heerdebeer.org">Huub@heerdebeer.org</a>&gt;.
 </p>
 <p>
+    See its <a href="https://heerdebeer.org/Software/virtual_botanical_laboratory/">website</a> for more information and its <a href="https://github.com/htdebeer/virtual_botanical_laboratory">repository</a> for its source code.
+</p>
+<p>
  virtual_botanical_laboratory is free software: you can redistribute it
  and/or modify it under the terms of the GNU General Public License as
  published by the Free Software Foundation, either version 3 of the License,

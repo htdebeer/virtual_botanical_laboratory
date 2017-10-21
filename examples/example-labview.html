@@ -6,14 +6,25 @@
     </head>
     <body>
         <header>
-            <h1>Experimental Virtual Botanical Lab</h1>
+            <h1>Virtual Botanical Laboratory</h1>
         </header>
-        <div id="lab">
-        </div>
+        <p>
+            This is the <em>virtual_botanical_laboratory</em>. In the box
+            below, click the "?" item to learn more about how to use this
+            program.
+        </p>
+        <p>
+            Have fun playing with L-systems and generating plants!
+        </p>
+        <figure id="lab">
+            <figcaption>A simple growing weed of sorts. From: Prusinkiewicz and
+                Lindenmayer (1990) <i>The Algorithmic Beauty of Plants</i>, p.
+            25, Figure 1.24</figcaption>
+        </figure>
         <script>
 new virtual_botanical_laboratory.LabView("#lab", {
-    lsystem: `simple_tree = lsystem(
-        description: "Simple growing tree from book.",
+    lsystem: `simple_weed = lsystem(
+        description: "Simple growing weed.",
         alphabet: {F, O, I, -, +},
         axiom: F I F I F I,
         productions: {
@@ -33,15 +44,17 @@ new virtual_botanical_laboratory.LabView("#lab", {
     interpretation: {
         config: {
             x: 200,
-            y: 300,
+            y: 500,
             width: 600,
-            height: 400,
+            height: 500,
             d: 10,
             delta: (-22.5 * Math.PI)/180,
             alpha: (270 * Math.PI)/180,
             close: false,
-            derivationLength: 10,
-            animate: false
+            derivationLength: 24,
+            animate: false,
+            "line-width": 2,
+            "line-color": "#4E9C25"
         },
         commands: {
         }

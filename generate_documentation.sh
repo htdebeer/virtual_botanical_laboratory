@@ -19,3 +19,11 @@ pandocomatic \
     --input README.md \
     --output ../README.md
 
+pandocomatic \
+    --data-dir data-dir \
+    --config config.yaml \
+    --input help.md \
+    --output ../src/view/help.html
+
+mv ../src/view/help.html ../src/view/help.js
+

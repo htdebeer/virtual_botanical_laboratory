@@ -2709,7 +2709,19 @@ class Command {
      * @returns {String}
      */
     toString() {
-        return _function.get(this).toString().split("\n").slice(1, -1).map(l => l.trim()).join("\n");
+        const functionLines = _function.get(this).toString().split("\n");
+
+        let lines = [];
+        
+        if (0 < functionLines.length) {
+            if ("function anonymous(" === functionLines[0]) {
+                lines = functionLines.slice(2, -1);
+            } else {
+                lines = functionLines.slice(1, -1);
+            }
+        }
+
+        return lines.map(l => l.trim()).join("\n");
     }
 }
 

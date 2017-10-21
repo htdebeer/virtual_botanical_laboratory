@@ -294,6 +294,16 @@ class PropertyEditor {
     }
 
     /**
+     * Set the specification of a property
+     *
+     * @param {String} name
+     * @param {Object} specification
+     */
+    setPropertySpecification(name, specification) {
+        this.propertySpecifications[name] = specification;
+    }
+
+    /**
      * Is setting a property allowed?
      *
      * @param {String} name

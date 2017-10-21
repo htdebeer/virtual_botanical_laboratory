@@ -115,6 +115,32 @@ class InterpretationView extends View {
     get commands() {
         return _commandEditor.get(this).propertyValues;
     }
+
+    updateCommands(interpretation) {
+        const commandEditor = _commandEditor.get(this);
+
+        const commands = Object.keys(interpretation.commands).map(command => {
+            return {
+                name: command,
+                type: "textarea",
+                default: "",
+                converter: (s) => s
+            };
+        });
+
+        const definedCommands = {};
+        
+        Object.keys(interpretation.commands).forEach(name => {
+            const command = interpretation.getCommand(name);
+            definedCommands[name] = undefined === command ? "" : command.toString();
+        });
+
+        commandEditor.element.parentNode.replaceChild(
+            createCommandPropertyEditor(this, commands, definedCommands).element,
+            commandEditor.element
+        );
+
+    }
 }
 
 export {
