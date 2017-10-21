@@ -408,7 +408,7 @@ The user interface consists of five tab pages:
     the *Interpretation* tab (see figure below).
 
     ![The *Interpretation* tab to view and change the L-system's
-    interpretation](images/ui/https://heerdebeer.org/Software/virtual_botanical_laboratory/interpretation-tab.png)
+    interpretation](https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/interpretation-tab.png)
 
     On this *Interpretation* tab, there are two sections:
 

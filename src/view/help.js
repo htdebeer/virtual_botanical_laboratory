@@ -53,7 +53,7 @@ export default `
 When you change the L-system, press the <strong>Update</strong> button to have the changes take effect. This will parse the L-system's definition. If you make an error, a warning is displayed. If everything is okay, a temporary information message to that effect is shown. Switch back to the <em>main</em> tab to see the changes in action.</li>
 <li><p>You can view and change the configuration of the interpretation on the <em>Interpretation</em> tab (see figure below).</p>
 <figure>
-<img src="images/ui/https://heerdebeer.org/Software/virtual_botanical_laboratory/interpretation-tab.png" alt="The Interpretation tab to view and change the L-system&#39;s interpretation" /><figcaption>The <em>Interpretation</em> tab to view and change the L-system's interpretation</figcaption>
+<img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/interpretation-tab.png" alt="The Interpretation tab to view and change the L-system&#39;s interpretation" /><figcaption>The <em>Interpretation</em> tab to view and change the L-system's interpretation</figcaption>
 </figure>
 <p>On this <em>Interpretation</em> tab, there are two sections:</p>
 <ol type="1">
