@@ -113,15 +113,17 @@ To run the `virtual_botanical_laboratory`, you need to:
             interpretation: {
                 config: {
                     x: 200,
-                    y: 300,
+                    y: 500,
                     width: 600,
-                    height: 400,
+                    height: 500,
                     d: 10,
                     delta: (-22.5 * Math.PI)/180,
                     alpha: (270 * Math.PI)/180,
                     close: false,
-                    derivationLength: 10,
-                    animate: false
+                    derivationLength: 24,
+                    animate: false,
+                    "line-width": 2,
+                    "line-color": "#4E9C25"
                 }
             }
         });
