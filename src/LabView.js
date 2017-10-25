@@ -38,17 +38,15 @@ import {Command} from "./interpretation/Command.js";
 import {Action} from "./view/Action.js";
 import {Spacer} from "./view/Spacer.js";
 
-const TOP_PADDING = 30; // px
-const LEFT_PADDING = 10; // px
-
 const _lab = new WeakMap();
 const _config = new WeakMap();
-
 const _tabs = new WeakMap();
-
 const _paused = new WeakMap();
-
 const _labViewElement = new WeakMap();
+
+
+const TOP_PADDING = 30; // px
+const LEFT_PADDING = 10; // px
 
 const resize = function (labview, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT) {
     const labViewElement = _labViewElement.get(labview);
@@ -335,6 +333,9 @@ const createLabView = function (labview, parentElementOrSelector, config) {
  * A user interface for a Lab.
  *
  * @property {Lab} lab
+ * @property {String} name
+ * @property {String} description
+ * @property {Object} configuration
  */
 class LabView {
 
@@ -399,6 +400,13 @@ class LabView {
 
     // Control the lab view
 
+    /**
+     * Set a property
+     *
+     * @param {String} sectionName
+     * @param {String} key
+     * @param {String|Boolean|Number} value
+     */
     set(sectionName, key, value) {
         let section = _config.get(this)[sectionName];
         if (undefined === section) {
@@ -408,6 +416,13 @@ class LabView {
         section[key] = value;
     }
 
+    /**
+     * Get a property
+     *
+     * @param {String} sectionName
+     * @param {String} key
+     * @returns {String|Boolean|Number} the value of the key
+     */
     get(sectionName, key) {
         const section = _config.get(this)[sectionName];
         return undefined === section ? section[key] : undefined;
@@ -467,6 +482,10 @@ class LabView {
 
     // Control a lab actions
 
+    /**
+     * Start deriving successors until this L-system's derivationLength has
+     * been reached.
+     */
     run() {
         if (undefined !== this.lab) {
             const derivationLength = getProperty(_config.get(this), "interpretation.config.derivationLength", 0);
@@ -478,12 +497,18 @@ class LabView {
         }
     }
 
+    /**
+     * Derive the next successor for this L-system
+     */
     step() {
         if (undefined !== this.lab) {
             this.lab.run(1);
         }
     }
 
+    /**
+     * Stop the automatic derivation of this L-system
+     */
     pause() {
         if (undefined !== this.lab) {
             this.lab.stop();
@@ -491,17 +516,22 @@ class LabView {
         }
     }
 
+    /**
+     * Is this L-system paused?
+     */
     isPaused() {
         return true === _paused.get(this);
     }
 
+    /**
+     * Reset this L-system back to the axiom
+     */
     reset() {
         if (undefined !== this.lab) {
             this.lab.reset();
             _paused.set(this, false);
         }
     }
-
 }
 
 export {
