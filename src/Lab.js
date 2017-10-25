@@ -245,5 +245,7 @@ class Lab {
 
 export {
     Lab,
-    getProperty
+    getProperty,
+    DEFAULT_WIDTH,
+    DEFAULT_HEIGHT
 };

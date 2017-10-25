@@ -5061,12 +5061,23 @@ class InterpretationView extends View {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+const TOP_PADDING = 30; // px
+const LEFT_PADDING = 10; // px
+
 const _lab = new WeakMap();
 const _config = new WeakMap();
 
 const _tabs = new WeakMap();
 
 const _paused = new WeakMap();
+
+const _labViewElement = new WeakMap();
+
+const resize = function (labview, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT) {
+    const labViewElement = _labViewElement.get(labview);
+    labViewElement.style.width = `${width + LEFT_PADDING}px`;
+    labViewElement.style.height = `${height + TOP_PADDING}px`;
+};
 
 const saveAs = function (labView, extension, dataURI) {
     const name = labView.name.replace(/[ \t\n\r]+/g, "_");
@@ -5213,7 +5224,11 @@ const updateInterpretation = function (labview, interpretationTab) {
                 "lsystem": lsystem,
                 "interpretation": interpretationConfig
             });
+        
+            const {width, height} = config;
+            resize(labview, width || DEFAULT_WIDTH, height || DEFAULT_HEIGHT);
 
+            // Updated commands
             Object.entries(commands).forEach(([key, func]) => {
                 if (undefined !== func && "" !== func) {
                     const modules = labview.lab.lsystem.alphabet.moduleDefinitions;
@@ -5336,7 +5351,7 @@ const createLabView = function (labview, parentElementOrSelector, config) {
 
     setupTabs(labview, template, config);
 
-    return elt;
+    return elt.firstChild;
 };
 
 /**
@@ -5361,7 +5376,10 @@ class LabView {
         Object.assign(_config.get(this), config);
         _lab.set(this, new Lab(config));
 
-        createLabView(this, parentElementOrSelector, config);
+        _labViewElement.set(this,  createLabView(this, parentElementOrSelector, config));
+
+        const {width, height} = config.interpretation;
+        resize(this, width || DEFAULT_WIDTH, height || DEFAULT_HEIGHT);
         
         this.lab = this.lab;
 
