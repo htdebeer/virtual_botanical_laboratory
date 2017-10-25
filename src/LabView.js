@@ -328,7 +328,7 @@ const createLabView = function (labview, parentElementOrSelector, config) {
 
     setupTabs(labview, template, config);
 
-    return elt.firstChild;
+    return elt;
 };
 
 /**
