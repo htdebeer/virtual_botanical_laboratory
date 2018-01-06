@@ -33,13 +33,13 @@ export default `
 <figure>
 <img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/main-tab.png" alt="The main tab to view and control the L-system" /><figcaption>The <em>main</em> tab to view and control the L-system</figcaption>
 </figure>
-<p>The following &quot;file&quot; actions are available:</p>
+<p>The following “file” actions are available:</p>
 <ul>
 <li><strong>★</strong> (New): create a new empty virtual botanical laboratory in a new window.</li>
 <li><strong>▼ HTML</strong> (Export to HTML): export the virtual botanical laboratory to a HTML file. By default, this file is named after the L-system.</li>
 <li><strong>▼ PNG</strong> (Export to PNG): export the rendered L-system to a PNG file. By default, this file is named after the L-system.</li>
 </ul>
-<p>The following &quot;control&quot; actions are available:</p>
+<p>The following “control” actions are available:</p>
 <ul>
 <li><strong>▶️</strong> (Run): derive new successors for the L-system until it has reached the derivation length set by property <code>derivationLength</code>. You can set that option on the <em>Interpretation</em> tab.</li>
 <li><strong>⏸</strong> (Pause): stop deriving new successor.</li>
@@ -48,12 +48,12 @@ export default `
 </ul></li>
 <li><p>You can view and edit the L-system definition on the <em>L-system</em> tab (see figure below).</p>
 <figure>
-<img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/lsystem-tab.png" alt="The L-system tab to view and change the L-system&#39;s definition" /><figcaption>The <em>L-system</em> tab to view and change the L-system's definition</figcaption>
+<img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/lsystem-tab.png" alt="The L-system tab to view and change the L-system’s definition" /><figcaption>The <em>L-system</em> tab to view and change the L-system’s definition</figcaption>
 </figure>
-When you change the L-system, press the <strong>Update</strong> button to have the changes take effect. This will parse the L-system's definition. If you make an error, a warning is displayed. If everything is okay, a temporary information message to that effect is shown. Switch back to the <em>main</em> tab to see the changes in action.</li>
+When you change the L-system, press the <strong>Update</strong> button to have the changes take effect. This will parse the L-system’s definition. If you make an error, a warning is displayed. If everything is okay, a temporary information message to that effect is shown. Switch back to the <em>main</em> tab to see the changes in action.</li>
 <li><p>You can view and change the configuration of the interpretation on the <em>Interpretation</em> tab (see figure below).</p>
 <figure>
-<img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/interpretation-tab.png" alt="The Interpretation tab to view and change the L-system&#39;s interpretation" /><figcaption>The <em>Interpretation</em> tab to view and change the L-system's interpretation</figcaption>
+<img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/interpretation-tab.png" alt="The Interpretation tab to view and change the L-system’s interpretation" /><figcaption>The <em>Interpretation</em> tab to view and change the L-system’s interpretation</figcaption>
 </figure>
 <p>On this <em>Interpretation</em> tab, there are two sections:</p>
 <ol type="1">
@@ -71,7 +71,7 @@ When you change the L-system, press the <strong>Update</strong> button to have t
 <li>the <em>line-color</em></li>
 </ul></li>
 <li><p><strong>Commands</strong>, which is a list of all commands defined in the L-system. You can edit their definitions. Note. the <code>this</code> refers to the <code>[Interpretation](https://heerdebeer.org/Software/virtual_botanical_laboratory/documentation/api/Interpretation.html)</code>.</p>
-<p>The commands <code>F</code>, <code>f</code>, <code>+</code>, and <code>-</code> are defined by default. If you want to change their behavior, you have to introduce a new symbol in the L-system and write its command's code. You can call the default implementation as follows:</p>
+<p>The commands <code>F</code>, <code>f</code>, <code>+</code>, and <code>-</code> are defined by default. If you want to change their behavior, you have to introduce a new symbol in the L-system and write its command’s code. You can call the default implementation as follows:</p>
 <pre><code>this.getCommand(&quot;F&quot;).execute(this);</code></pre></li>
 </ol></li>
 <li>You can read a short manual on the <em>Help</em> tab (labeled <em>?</em>).</li>
