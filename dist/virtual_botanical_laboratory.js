@@ -306,6 +306,7 @@ class Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
     const successor = new ModuleTree();
     for (const module of moduleTree) {
@@ -355,7 +356,7 @@ class Successor extends ModuleTree {
  * 
  */
 // A Module's private properties
-const _name$1 = new WeakMap();
+const _name = new WeakMap();
 const _parameters = new WeakMap();
 
 /**
@@ -373,12 +374,12 @@ class Module {
      * @param {Object[]} [parameters = []] - the module's parameters, if any
      */
     constructor(name, parameters = []) {
-        _name$1.set(this, name);
+        _name.set(this, name);
         _parameters.set(this, parameters);
     }
 
     get name() {
-        return _name$1.get(this);
+        return _name.get(this);
     }
 
     get parameters() {
@@ -440,6 +441,7 @@ class Module {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _module = new WeakMap();
 const _leftContext = new WeakMap();
 const _rightContext = new WeakMap();
@@ -731,6 +733,7 @@ class Expression {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _values = new WeakMap();
 
 /**
@@ -809,6 +812,7 @@ class ModuleValue extends Module {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _expressions = new WeakMap();
 
 /**
@@ -898,6 +902,7 @@ class ModuleApplication extends Module {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 /**
  * A NumericalExpression, which yields a Number value when evaluated
  */
@@ -946,6 +951,7 @@ class NumericalExpression extends Expression {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 /**
  * An IdentityProduction is a Production that maps a Module to itself. This is
  * used in an LSystem for all Modules in an Alphabet that do not have a
@@ -993,12 +999,12 @@ class IdentityProduction extends Production {
  * 
  */
 // Token's private members
-const _name$2 = new WeakMap();
+const _name$1 = new WeakMap();
 const _lexeme = new WeakMap();
 const _value = new WeakMap();
-const _column$1 = new WeakMap();
-const _line$1 = new WeakMap();
-const _lexemeBegin$1 = new WeakMap();
+const _column = new WeakMap();
+const _line = new WeakMap();
+const _lexemeBegin = new WeakMap();
 
 /**
  * A token recognized during the lexical analysis of a LSystem input string
@@ -1032,16 +1038,16 @@ class Token {
      *   lexeme in the input string
      */
     constructor(name, lexeme, value, line, column, lexemeBegin) {
-        _name$2.set(this, name);
+        _name$1.set(this, name);
         _lexeme.set(this, lexeme);
         _value.set(this, value);
-        _line$1.set(this, line);
-        _column$1.set(this, column);
-        _lexemeBegin$1.set(this, lexemeBegin);
+        _line.set(this, line);
+        _column.set(this, column);
+        _lexemeBegin.set(this, lexemeBegin);
     }
 
     get name() {
-        return _name$2.get(this);
+        return _name$1.get(this);
     }
     
     get lexeme() {
@@ -1053,15 +1059,15 @@ class Token {
     }
 
     get line() {
-        return _line$1.get(this);
+        return _line.get(this);
     }
 
     get column() {
-        return _column$1.get(this);
+        return _column.get(this);
     }
 
     get lexemeBegin() {
-        return _lexemeBegin$1.get(this);
+        return _lexemeBegin.get(this);
     }
 
     /**
@@ -1095,6 +1101,7 @@ class Token {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 // Token names
 
 const NUMBER = Symbol("NUMBER");
@@ -1109,10 +1116,10 @@ const STRING = Symbol("STRING");
 // Private data and functions for lexer
 
 const _input = new WeakMap();
-const _lexemeBegin = new WeakMap();
+const _lexemeBegin$1 = new WeakMap();
 const _forward = new WeakMap();
-const _line = new WeakMap();
-const _column = new WeakMap();
+const _line$1 = new WeakMap();
+const _column$1 = new WeakMap();
 
 const _context = new WeakMap();
 
@@ -1120,27 +1127,27 @@ const _context = new WeakMap();
 
 const reset = function (lexer, input) {
     _input.set(lexer, input);
-    _lexemeBegin.set(lexer, 0);
+    _lexemeBegin$1.set(lexer, 0);
     _forward.set(lexer, -1);
-    _line.set(lexer, 0);
-    _column.set(lexer, 0);
+    _line$1.set(lexer, 0);
+    _column$1.set(lexer, 0);
     _context.set(lexer, undefined);
 };
 
 const saveState = function (lexer) {
     return {
-        lexemeBegin: _lexemeBegin.get(lexer),
+        lexemeBegin: _lexemeBegin$1.get(lexer),
         forward: _forward.get(lexer),
-        line: _line.get(lexer),
-        column: _column.get(lexer)
+        line: _line$1.get(lexer),
+        column: _column$1.get(lexer)
     };
 };
 
 const restoreState = function (lexer, state) {
-    _lexemeBegin.set(lexer, state.lexemeBegin);
+    _lexemeBegin$1.set(lexer, state.lexemeBegin);
     _forward.set(lexer, state.forward);
-    _line.set(lexer, state.line);
-    _column.set(lexer, state.column);
+    _line$1.set(lexer, state.line);
+    _column$1.set(lexer, state.column);
 };
 
 const setContext = function (lexer, newContext = undefined) {
@@ -1152,11 +1159,11 @@ const isContext = function (lexer, context) {
 };
 
 const line = function (lexer) {
-    return _line.get(lexer);
+    return _line$1.get(lexer);
 };
 
 const column = function (lexer) {
-    return _column.get(lexer);
+    return _column$1.get(lexer);
 };
 
 const peek = function (lexer, distance = 1) {
@@ -1171,20 +1178,20 @@ const moveForward = function (lexer, skip = false) {
     if (c) {
         _forward.set(lexer, _forward.get(lexer) + 1);
         if ("\n" === c) {
-            _line.set(lexer, line(lexer) + 1);
-            _column.set(lexer, 0);
+            _line$1.set(lexer, line(lexer) + 1);
+            _column$1.set(lexer, 0);
         } else {
-            _column.set(lexer, column(lexer) + 1);
+            _column$1.set(lexer, column(lexer) + 1);
         }
 
         if (skip) {
-            _lexemeBegin.set(lexer, _lexemeBegin.get(lexer) + 1);
+            _lexemeBegin$1.set(lexer, _lexemeBegin$1.get(lexer) + 1);
         }
     }
 };
 
 const lexeme = function (lexer) {
-    const start = _lexemeBegin.get(lexer);
+    const start = _lexemeBegin$1.get(lexer);
     const end = _forward.get(lexer);
     return _input.get(lexer).slice(start, end + 1);
 };
@@ -1196,17 +1203,17 @@ const recognize  = function (lexer, tokenName, value, l = line(lexer), c = colum
         value, 
         l, 
         c,
-        _lexemeBegin.get(this)
+        _lexemeBegin$1.get(this)
     );
 
-    _lexemeBegin.set(lexer, _forward.get(lexer) + 1);
+    _lexemeBegin$1.set(lexer, _forward.get(lexer) + 1);
     _forward.set(lexer, _forward.get(lexer));
 
     return token;
 };
 
 const position = function (lexer) {
-    return `(${line(lexer)}, ${column(lexer) - (_forward.get(lexer) - _lexemeBegin.get(lexer))})`;
+    return `(${line(lexer)}, ${column(lexer) - (_forward.get(lexer) - _lexemeBegin$1.get(lexer))})`;
 };
 
 // Recognize patterns
@@ -1465,7 +1472,8 @@ class Lexer {
                 bracket(this) ||
                 delimiter(this) ||
                 operator(this) ||
-                string(this);
+                string(this)
+            ;
 
             if (token) {
                 return token;
@@ -1517,6 +1525,7 @@ class Lexer {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 /**
  * A ModuleDefinition defines a module in an alphabet.
  */
@@ -1665,6 +1674,8 @@ class Alphabet {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
+
 const _successorList = new WeakMap();
 
 
@@ -1762,6 +1773,7 @@ class StochasticProduction extends Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 /**
  * A BooleanExpression
  */
@@ -1814,6 +1826,7 @@ class BooleanExpression extends Expression {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _lexer = new WeakMap();
 const _idTable = new WeakMap();
 
@@ -2359,7 +2372,8 @@ class Parser {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const _name = new WeakMap();
+
+const _name$2 = new WeakMap();
 const _description = new WeakMap();
 const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
@@ -2478,7 +2492,7 @@ const LSystem = class {
      */
     constructor(name, description, alphabet, axiom, productions, ignore = []) {
         _globalContext.set(this, {});
-        _name.set(this, name);
+        _name$2.set(this, name);
         _description.set(this, description);
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
@@ -2501,11 +2515,11 @@ const LSystem = class {
     }
 
     get name() {
-        return _name.get(this) || "";
+        return _name$2.get(this) || "";
     }
 
     set name(newName) {
-        _name.set(this, newName);
+        _name$2.set(this, newName);
     }
     
     /**
@@ -2741,6 +2755,8 @@ class Command {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
+
 const property = function (name, type, defaultValue, convert) {
     return {
         "name": name,
@@ -3064,6 +3080,7 @@ class Interpretation {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 // Default values
 const X = 0;
 const Y = 0;
@@ -3228,6 +3245,7 @@ class TurtleInterpretation extends Interpretation {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _canvas = new WeakMap();
 
 /**
@@ -3341,6 +3359,7 @@ class CanvasTurtleInterpretation extends TurtleInterpretation {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const DEFAULT_WIDTH = 800;// px
 const DEFAULT_HEIGHT = 600;// px
 const SPEED = 500; // ms
@@ -3838,13 +3857,13 @@ var HELP = `
 <figure>
 <img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/main-tab.png" alt="The main tab to view and control the L-system" /><figcaption>The <em>main</em> tab to view and control the L-system</figcaption>
 </figure>
-<p>The following &quot;file&quot; actions are available:</p>
+<p>The following “file” actions are available:</p>
 <ul>
 <li><strong>★</strong> (New): create a new empty virtual botanical laboratory in a new window.</li>
 <li><strong>▼ HTML</strong> (Export to HTML): export the virtual botanical laboratory to a HTML file. By default, this file is named after the L-system.</li>
 <li><strong>▼ PNG</strong> (Export to PNG): export the rendered L-system to a PNG file. By default, this file is named after the L-system.</li>
 </ul>
-<p>The following &quot;control&quot; actions are available:</p>
+<p>The following “control” actions are available:</p>
 <ul>
 <li><strong>▶️</strong> (Run): derive new successors for the L-system until it has reached the derivation length set by property <code>derivationLength</code>. You can set that option on the <em>Interpretation</em> tab.</li>
 <li><strong>⏸</strong> (Pause): stop deriving new successor.</li>
@@ -3853,12 +3872,12 @@ var HELP = `
 </ul></li>
 <li><p>You can view and edit the L-system definition on the <em>L-system</em> tab (see figure below).</p>
 <figure>
-<img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/lsystem-tab.png" alt="The L-system tab to view and change the L-system&#39;s definition" /><figcaption>The <em>L-system</em> tab to view and change the L-system's definition</figcaption>
+<img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/lsystem-tab.png" alt="The L-system tab to view and change the L-system’s definition" /><figcaption>The <em>L-system</em> tab to view and change the L-system’s definition</figcaption>
 </figure>
-When you change the L-system, press the <strong>Update</strong> button to have the changes take effect. This will parse the L-system's definition. If you make an error, a warning is displayed. If everything is okay, a temporary information message to that effect is shown. Switch back to the <em>main</em> tab to see the changes in action.</li>
+When you change the L-system, press the <strong>Update</strong> button to have the changes take effect. This will parse the L-system’s definition. If you make an error, a warning is displayed. If everything is okay, a temporary information message to that effect is shown. Switch back to the <em>main</em> tab to see the changes in action.</li>
 <li><p>You can view and change the configuration of the interpretation on the <em>Interpretation</em> tab (see figure below).</p>
 <figure>
-<img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/interpretation-tab.png" alt="The Interpretation tab to view and change the L-system&#39;s interpretation" /><figcaption>The <em>Interpretation</em> tab to view and change the L-system's interpretation</figcaption>
+<img src="https://heerdebeer.org/Software/virtual_botanical_laboratory/images/ui/interpretation-tab.png" alt="The Interpretation tab to view and change the L-system’s interpretation" /><figcaption>The <em>Interpretation</em> tab to view and change the L-system’s interpretation</figcaption>
 </figure>
 <p>On this <em>Interpretation</em> tab, there are two sections:</p>
 <ol type="1">
@@ -3876,7 +3895,7 @@ When you change the L-system, press the <strong>Update</strong> button to have t
 <li>the <em>line-color</em></li>
 </ul></li>
 <li><p><strong>Commands</strong>, which is a list of all commands defined in the L-system. You can edit their definitions. Note. the <code>this</code> refers to the <code>[Interpretation](https://heerdebeer.org/Software/virtual_botanical_laboratory/documentation/api/Interpretation.html)</code>.</p>
-<p>The commands <code>F</code>, <code>f</code>, <code>+</code>, and <code>-</code> are defined by default. If you want to change their behavior, you have to introduce a new symbol in the L-system and write its command's code. You can call the default implementation as follows:</p>
+<p>The commands <code>F</code>, <code>f</code>, <code>+</code>, and <code>-</code> are defined by default. If you want to change their behavior, you have to introduce a new symbol in the L-system and write its command’s code. You can call the default implementation as follows:</p>
 <pre><code>this.getCommand(&quot;F&quot;).execute(this);</code></pre></li>
 </ol></li>
 <li>You can read a short manual on the <em>Help</em> tab (labeled <em>?</em>).</li>
@@ -4084,7 +4103,7 @@ const _tooltip = new WeakMap();
 const _callback = new WeakMap();
 const _enabled = new WeakMap();
 
-const _element$2 = new WeakMap();
+const _element$1 = new WeakMap();
 
 /**
  * Action
@@ -4158,11 +4177,11 @@ class Action {
     }
 
     set element(elt) {
-        _element$2.set(this, elt);
+        _element$1.set(this, elt);
     }
 
     get element() {
-        return _element$2.get(this);
+        return _element$1.get(this);
     }
 
 }
@@ -4187,6 +4206,7 @@ class Action {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 /**
  * A Spacer is an empty action, just a shortcut to separate groups of actions.
  */
@@ -4219,8 +4239,9 @@ class Spacer extends Action {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const _config$1 = new WeakMap();
-const _element$1 = new WeakMap();
+
+const _config = new WeakMap();
+const _element$2 = new WeakMap();
 
 const _actions = new WeakMap();
 const _actionBar = new WeakMap();
@@ -4274,7 +4295,7 @@ const createView = function (view, name, header, parentElt) {
     contents.appendChild(actionBar);
     _actionBar.set(view, actionBar);
 
-    _element$1.set(view, contents);
+    _element$2.set(view, contents);
 };
 
 /**
@@ -4298,7 +4319,7 @@ class View {
     }
 
     get element() {
-        return _element$1.get(this);
+        return _element$2.get(this);
     }
 
     /**
@@ -4375,7 +4396,7 @@ class View {
      * @param {Object} [config = {}]
      */
     configure(config = {}) {
-        _config$1.set(this, config);
+        _config.set(this, config);
     }
 }
 
@@ -4399,6 +4420,7 @@ class View {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _canvas$1 = new WeakMap();
 
 /**
@@ -4452,6 +4474,7 @@ class RenderView extends View {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _contents = new WeakMap();
 
 /**
@@ -4512,6 +4535,8 @@ class DocumentView extends View {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
+
 const TAB = 9;
 const INDENT = "  ";
 const _originalLSystem = new WeakMap();
@@ -4756,7 +4781,7 @@ const createTableBody = function (editor, config = {}) {
     return tableBody;
 };
 
-const createPropertyEditor$1 = function (editor, config) {
+const createPropertyEditor = function (editor, config) {
     const editorElement = document.createElement("div");
     editorElement.classList.add("property-editor");
 
@@ -4794,7 +4819,7 @@ class PropertyEditor {
 
         _editable.set(this, undefined === config.editable ? true : (true === config.editable) );
 
-        createPropertyEditor$1(this, config);
+        createPropertyEditor(this, config);
     }
 
     get element() {
@@ -4920,10 +4945,11 @@ class PropertyEditor {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _propertyEditor = new WeakMap();
 const _commandEditor = new WeakMap();
 
-const createPropertyEditor = function(view, properties, definedProperties) {
+const createPropertyEditor$1 = function(view, properties, definedProperties) {
     const propertyEditor = new PropertyEditor(properties, definedProperties, {
         header: "Properties",
         keyLabel: "Name",
@@ -4977,7 +5003,7 @@ class InterpretationView extends View {
 
         const properties = interpretation.registeredProperties;
 
-        container.appendChild(createPropertyEditor(this, properties, interpretationConfig.config).element);
+        container.appendChild(createPropertyEditor$1(this, properties, interpretationConfig.config).element);
         
         const commands = Object.keys(interpretation.commands).map(command => {
             return {
@@ -5061,8 +5087,9 @@ class InterpretationView extends View {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _lab = new WeakMap();
-const _config = new WeakMap();
+const _config$1 = new WeakMap();
 const _tabs = new WeakMap();
 const _paused = new WeakMap();
 const _labViewElement = new WeakMap();
@@ -5165,7 +5192,7 @@ const updateLSystem = function (labview, lsystemTab) {
                     }
                 });
 
-            const interpretationConfig = _config.get(labview)["interpretation"];
+            const interpretationConfig = _config$1.get(labview)["interpretation"];
             // Commands can be (re)defined in a configuration of an Interpretation 
             if ("commands" in interpretationConfig) {
                 Object
@@ -5183,7 +5210,7 @@ const updateLSystem = function (labview, lsystemTab) {
             interpretationTab.updateCommands(interpretation);
 
             lsystemTab.showMessage("LSystem parsed and updated successfully.", "info", 2000);
-            _config.get(labview)["lsystem"] = lsystemString;
+            _config$1.get(labview)["lsystem"] = lsystemString;
         } catch (e) {
             lsystemTab.showMessage(`Error parsing LSystem: "${e}"`, "error");
         }
@@ -5194,9 +5221,7 @@ const updateInterpretation = function (labview, interpretationTab) {
     const properties = interpretationTab.properties;
     const commands = interpretationTab.commands;
 
-    const changed = true; // TODO determine if interpretation specification has changed
-
-    if (changed) {
+    {
         // update interpretation
         try {
 
@@ -5212,7 +5237,7 @@ const updateInterpretation = function (labview, interpretationTab) {
                 "commands": {}
             };
 
-            _config.get(labview)["interpretation"] = interpretationConfig;
+            _config$1.get(labview)["interpretation"] = interpretationConfig;
 
             const lsystem = labview.lab.lsystem.stringify();
 
@@ -5373,8 +5398,8 @@ class LabView {
      */
     constructor(parentElementOrSelector, config = {}) {
         // TODO: It is probably a good idea to validate the config first, though.
-        _config.set(this, Object.create(null, {}));
-        Object.assign(_config.get(this), config);
+        _config$1.set(this, Object.create(null, {}));
+        Object.assign(_config$1.get(this), config);
         _lab.set(this, new Lab(config));
 
         _labViewElement.set(this,  createLabView(this, parentElementOrSelector, config));
@@ -5407,8 +5432,8 @@ class LabView {
         return JSON.stringify({
             "name": this.name,
             "description": this.description,
-            "lsystem": _config.get(this)["lsystem"],
-            "interpretation": _config.get(this)["interpretation"]
+            "lsystem": _config$1.get(this)["lsystem"],
+            "interpretation": _config$1.get(this)["interpretation"]
         }, null, 4);
     }
 
@@ -5431,10 +5456,10 @@ class LabView {
      * @param {String|Boolean|Number} value
      */
     set(sectionName, key, value) {
-        let section = _config.get(this)[sectionName];
+        let section = _config$1.get(this)[sectionName];
         if (undefined === section) {
             section = Object.create(null);
-            _config.get(this)[sectionName] = section;
+            _config$1.get(this)[sectionName] = section;
         }
         section[key] = value;
     }
@@ -5447,7 +5472,7 @@ class LabView {
      * @returns {String|Boolean|Number} the value of the key
      */
     get(sectionName, key) {
-        const section = _config.get(this)[sectionName];
+        const section = _config$1.get(this)[sectionName];
         return undefined === section ? section[key] : undefined;
     }
 
@@ -5461,7 +5486,8 @@ class LabView {
             .replace(/__NAME__/, "New_lab")
             .replace(/__SOURCE_URL__/, scriptURL())
             .replace(/__DESCRIPTION__/, "New Lab. See '?' for help.")
-            .replace(/__CONFIGURATION__/, EMPTY_CONFIGURATION);
+            .replace(/__CONFIGURATION__/, EMPTY_CONFIGURATION)
+        ;
 
         const newLabWindow = window.open();
         newLabWindow.document.write(htmlCode);
@@ -5479,7 +5505,8 @@ class LabView {
                 .replace(/__NAME__/, this.name)
                 .replace(/__SOURCE_URL__/, scriptURL())
                 .replace(/__DESCRIPTION__/, this.description)
-                .replace(/__CONFIGURATION__/, this.configuration);
+                .replace(/__CONFIGURATION__/, this.configuration)
+            ;
 
             const data = new Blob([htmlCode], {type: "text/html"});
             saveAs(this, "html", URL.createObjectURL(data));
@@ -5509,7 +5536,7 @@ class LabView {
      */
     run() {
         if (undefined !== this.lab) {
-            const derivationLength = getProperty(_config.get(this), "interpretation.config.derivationLength", 0);
+            const derivationLength = getProperty(_config$1.get(this), "interpretation.config.derivationLength", 0);
 
             const steps = derivationLength - this.lab.lsystem.derivationLength;
             this.lab.run(steps);
@@ -5575,6 +5602,7 @@ class LabView {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 window.virtual_botanical_laboratory = window.virtual_botanical_laboratory || {
     LexicalError,
     ParseError,
@@ -5585,4 +5613,3 @@ window.virtual_botanical_laboratory = window.virtual_botanical_laboratory || {
     Lab,
     LabView
 };
-//# sourceMappingURL=virtual_botanical_laboratory.js.map

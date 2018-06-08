@@ -1,6 +1,7 @@
 *.swp
 *.bak
 ~*
+*~
 
 node_modules
 documentation/api

@@ -1,6 +1,8 @@
 export default {
-    entry: "src/lab.js",
-    format: "es",
-    dest: "dist/virtual_botanical_laboratory.js",
-    sourceMap: true
+    input: "src/lab.js",
+    output: {
+        format: "es",
+        file: "dist/virtual_botanical_laboratory.js",
+        sourceMap: true
+    }
 };

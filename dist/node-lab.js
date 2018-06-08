@@ -413,6 +413,7 @@ class Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const applyParametersToModuleTree = function (moduleTree, parameters = {}) {
     const successor = new ModuleTree();
     for (const module of moduleTree) {
@@ -462,7 +463,7 @@ class Successor extends ModuleTree {
  * 
  */
 // A Module's private properties
-const _name$2 = new WeakMap();
+const _name$1 = new WeakMap();
 const _parameters = new WeakMap();
 
 /**
@@ -480,12 +481,12 @@ class Module {
      * @param {Object[]} [parameters = []] - the module's parameters, if any
      */
     constructor(name, parameters = []) {
-        _name$2.set(this, name);
+        _name$1.set(this, name);
         _parameters.set(this, parameters);
     }
 
     get name() {
-        return _name$2.get(this);
+        return _name$1.get(this);
     }
 
     get parameters() {
@@ -547,6 +548,7 @@ class Module {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _module = new WeakMap();
 const _leftContext = new WeakMap();
 const _rightContext = new WeakMap();
@@ -838,6 +840,7 @@ class Expression {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _values = new WeakMap();
 
 /**
@@ -916,6 +919,7 @@ class ModuleValue extends Module {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _expressions = new WeakMap();
 
 /**
@@ -1005,6 +1009,7 @@ class ModuleApplication extends Module {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 /**
  * A NumericalExpression, which yields a Number value when evaluated
  */
@@ -1053,6 +1058,7 @@ class NumericalExpression extends Expression {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 /**
  * An IdentityProduction is a Production that maps a Module to itself. This is
  * used in an LSystem for all Modules in an Alphabet that do not have a
@@ -1099,7 +1105,8 @@ class IdentityProduction extends Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
-const _name$1 = new WeakMap();
+
+const _name$2 = new WeakMap();
 const _description = new WeakMap();
 const _alphabet = new WeakMap();
 const _axiom = new WeakMap();
@@ -1218,7 +1225,7 @@ const LSystem = class {
      */
     constructor(name, description, alphabet, axiom, productions, ignore = []) {
         _globalContext.set(this, {});
-        _name$1.set(this, name);
+        _name$2.set(this, name);
         _description.set(this, description);
         _alphabet.set(this, alphabet);
         _axiom.set(this, axiom);
@@ -1241,11 +1248,11 @@ const LSystem = class {
     }
 
     get name() {
-        return _name$1.get(this) || "";
+        return _name$2.get(this) || "";
     }
 
     set name(newName) {
-        _name$1.set(this, newName);
+        _name$2.set(this, newName);
     }
     
     /**
@@ -1388,6 +1395,7 @@ const LSystem = class {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 /**
  * A ModuleDefinition defines a module in an alphabet.
  */
@@ -1536,6 +1544,8 @@ class Alphabet {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
+
 const _successorList = new WeakMap();
 
 
@@ -1633,6 +1643,7 @@ class StochasticProduction extends Production {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 /**
  * A BooleanExpression
  */
@@ -1685,6 +1696,7 @@ class BooleanExpression extends Expression {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 const _lexer = new WeakMap();
 const _idTable = new WeakMap();
 
@@ -2230,6 +2242,7 @@ class Parser {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 // Token names
 
 const NUMBER = Symbol("NUMBER");
@@ -2600,7 +2613,8 @@ class Lexer {
                 bracket(this) ||
                 delimiter(this) ||
                 operator(this) ||
-                string(this);
+                string(this)
+            ;
 
             if (token) {
                 return token;
@@ -2745,6 +2759,8 @@ class Command {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
+
 const property = function (name, type, defaultValue, convert) {
     return {
         "name": name,
@@ -3068,6 +3084,7 @@ class Interpretation {
  * <http://www.gnu.org/licenses/>.
  * 
  */
+
 // Default values
 const X = 0;
 const Y = 0;

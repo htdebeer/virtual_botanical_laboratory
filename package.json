@@ -1,6 +1,6 @@
 {
   "name": "virtual_botanical_laboratory",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A virtual botanical laboratory",
   "main": "dist/node-lab.js",
   "directories": {
@@ -32,7 +32,7 @@
   "devDependencies": {
     "docdash": "^0.4.0",
     "jsdoc": "^3.5.5",
-    "mocha": "^3.5.3",
-    "rollup": "^0.45.2"
+    "mocha": "^5.2.0",
+    "rollup": "^0.60.1"
   }
 }
